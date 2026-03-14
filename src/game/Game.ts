@@ -35,7 +35,7 @@ export class Game {
 
   public constructor(host: HTMLElement) {
     this.state = createInitialState();
-    this.sceneRoot = new SceneRoot(host, gameConfig.jarCount);
+    this.sceneRoot = new SceneRoot(host, gameConfig.jarCount, gameConfig.orbitRadius);
     this.uiSystem = new UISystem(host);
     this.scoringSystem = new ScoringSystem();
     this.audioSystem = new AudioSystem();

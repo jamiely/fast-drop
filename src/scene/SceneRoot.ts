@@ -1,6 +1,11 @@
 import { Color, Group, Mesh, Scene, WebGLRenderer } from 'three';
 import { BALL_RADIUS, createBallMesh } from '../entities/Ball';
-import { createJarPetalMesh, createPlayfieldBase } from '../entities/Playfield';
+import {
+  type PlayfieldDimensions,
+  createJarPetalMesh,
+  createPlayfieldBase,
+  createPlayfieldDimensions
+} from '../entities/Playfield';
 import { JAR_HEIGHT, JAR_RADIUS, createJarMesh } from '../entities/Jar';
 import { createCamera } from './camera';
 import { addLighting } from './lighting';
@@ -31,6 +36,9 @@ const bonusJarIndices = new Set([0, 1]);
 
 const GRAVITY = 7.6;
 const AIR_DAMPING = 0.998;
+const PLAYFIELD_RESTITUTION = 0.22;
+const PLAYFIELD_FRICTION = 0.92;
+const MOUND_OUTWARD_ACCELERATION = 2.8;
 const JAR_AIR_DAMPING = 0.992;
 const RIM_BOUNCE = 0.46;
 const JAR_WALL_RESTITUTION = 0.52;
@@ -52,12 +60,16 @@ export class SceneRoot {
   public readonly camera;
   public readonly jarGroup: Group;
   public readonly jars: Mesh[];
+  private readonly petalGroup: Group;
+  private readonly petals: Mesh[];
+  private readonly playfieldDimensions: PlayfieldDimensions;
   private readonly ballGroup: Group;
   private readonly activeBalls: ActiveBallVisual[] = [];
 
   public constructor(
     private readonly host: HTMLElement,
-    jarCount: number
+    jarCount: number,
+    jarOrbitRadius = 2.2
   ) {
     this.scene = new Scene();
     this.scene.background = new Color('#0f1724');
@@ -80,16 +92,24 @@ export class SceneRoot {
 
     addLighting(this.scene);
 
-    this.scene.add(createPlayfieldBase());
+    this.playfieldDimensions = createPlayfieldDimensions(jarOrbitRadius, JAR_RADIUS);
+    this.scene.add(createPlayfieldBase(this.playfieldDimensions));
 
     this.jarGroup = new Group();
     this.jars = Array.from({ length: jarCount }, (_, index) => {
       const jar = createJarMesh(index < 2);
-      jar.add(createJarPetalMesh());
       this.jarGroup.add(jar);
       return jar;
     });
     this.scene.add(this.jarGroup);
+
+    this.petalGroup = new Group();
+    this.petals = Array.from({ length: jarCount }, () => {
+      const petal = createJarPetalMesh(this.playfieldDimensions);
+      this.petalGroup.add(petal);
+      return petal;
+    });
+    this.scene.add(this.petalGroup);
 
     this.ballGroup = new Group();
     this.scene.add(this.ballGroup);
@@ -122,7 +142,7 @@ export class SceneRoot {
   public update(dt: number): SceneBallSettlement[] {
     const settlements: SceneBallSettlement[] = [];
 
-    this.syncJarVisuals();
+    this.syncPlayfieldVisuals();
 
     for (let index = this.activeBalls.length - 1; index >= 0; index -= 1) {
       const activeBall = this.activeBalls[index];
@@ -141,6 +161,7 @@ export class SceneRoot {
       activeBall.mesh.position.z += activeBall.velocityZ * dt;
 
       if (activeBall.enteredJarIndex === null) {
+        this.resolvePlayfieldCollision(activeBall, dt);
         this.resolveRimBounce(activeBall);
       }
 
@@ -198,10 +219,97 @@ export class SceneRoot {
     this.renderer?.render(this.scene, this.camera);
   }
 
-  private syncJarVisuals(): void {
-    for (const jar of this.jars) {
+  private syncPlayfieldVisuals(): void {
+    const { petalCenterRadius } = this.playfieldDimensions;
+
+    for (const [index, jar] of this.jars.entries()) {
       jar.lookAt(0, jar.position.y, 0);
+
+      const petal = this.petals[index];
+      if (!petal) {
+        continue;
+      }
+
+      const distanceFromCenter = Math.hypot(jar.position.x, jar.position.z);
+      if (distanceFromCenter < 0.0001) {
+        petal.position.set(0, petal.position.y, petalCenterRadius);
+        petal.rotation.y = 0;
+        continue;
+      }
+
+      const dirX = jar.position.x / distanceFromCenter;
+      const dirZ = jar.position.z / distanceFromCenter;
+
+      petal.position.x = dirX * petalCenterRadius;
+      petal.position.z = dirZ * petalCenterRadius;
+      petal.rotation.y = Math.atan2(dirX, dirZ);
     }
+  }
+
+  private resolvePlayfieldCollision(activeBall: ActiveBallVisual, dt: number): void {
+    const supportHeight = this.getSupportHeightAt(
+      activeBall.mesh.position.x,
+      activeBall.mesh.position.z
+    );
+
+    if (!Number.isFinite(supportHeight)) {
+      return;
+    }
+
+    const contactY = supportHeight + BALL_RADIUS;
+    if (activeBall.mesh.position.y > contactY) {
+      return;
+    }
+
+    activeBall.mesh.position.y = contactY;
+
+    if (activeBall.velocityY < 0) {
+      activeBall.velocityY = -activeBall.velocityY * PLAYFIELD_RESTITUTION;
+    }
+
+    activeBall.velocityX *= PLAYFIELD_FRICTION;
+    activeBall.velocityZ *= PLAYFIELD_FRICTION;
+
+    const radiusFromCenter = Math.hypot(activeBall.mesh.position.x, activeBall.mesh.position.z);
+    const { moundRadius, moundHeight } = this.playfieldDimensions;
+    if (radiusFromCenter <= 0.0001 || radiusFromCenter >= moundRadius) {
+      return;
+    }
+
+    const outwardX = activeBall.mesh.position.x / radiusFromCenter;
+    const outwardZ = activeBall.mesh.position.z / radiusFromCenter;
+    const slopeStrength = moundHeight / moundRadius;
+    const outwardAcceleration = MOUND_OUTWARD_ACCELERATION * slopeStrength;
+
+    activeBall.velocityX += outwardX * outwardAcceleration * dt;
+    activeBall.velocityZ += outwardZ * outwardAcceleration * dt;
+  }
+
+  private getSupportHeightAt(x: number, z: number): number {
+    const { moundRadius, moundHeight, petalTopY } = this.playfieldDimensions;
+
+    const radiusFromCenter = Math.hypot(x, z);
+    const moundHeightAtPoint =
+      radiusFromCenter <= moundRadius
+        ? Math.max(0, moundHeight * (1 - radiusFromCenter / moundRadius))
+        : Number.NEGATIVE_INFINITY;
+
+    let petalHeightAtPoint = Number.NEGATIVE_INFINITY;
+    const halfWidth = this.playfieldDimensions.petalWidth * 0.5;
+    const halfLength = this.playfieldDimensions.petalLength * 0.5;
+
+    for (const petal of this.petals) {
+      const cosY = Math.cos(petal.rotation.y);
+      const sinY = Math.sin(petal.rotation.y);
+      const localX = (x - petal.position.x) * cosY - (z - petal.position.z) * sinY;
+      const localZ = (x - petal.position.x) * sinY + (z - petal.position.z) * cosY;
+
+      if (Math.abs(localX) <= halfWidth && Math.abs(localZ) <= halfLength) {
+        petalHeightAtPoint = Math.max(petalHeightAtPoint, petalTopY);
+      }
+    }
+
+    return Math.max(moundHeightAtPoint, petalHeightAtPoint);
   }
 
   private resolveRimBounce(activeBall: ActiveBallVisual): void {

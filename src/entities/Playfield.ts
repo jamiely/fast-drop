@@ -1,21 +1,27 @@
 import {
+  BoxGeometry,
   ConeGeometry,
-  CylinderGeometry,
   Group,
   Mesh,
   MeshStandardMaterial
 } from 'three';
 
-const centerBaseMaterial = new MeshStandardMaterial({
-  color: '#36506d',
-  metalness: 0.08,
-  roughness: 0.44
-});
+export interface PlayfieldDimensions {
+  moundRadius: number;
+  moundHeight: number;
+  petalLength: number;
+  petalWidth: number;
+  petalThickness: number;
+  petalInnerRadius: number;
+  petalOuterRadius: number;
+  petalCenterRadius: number;
+  petalTopY: number;
+}
 
-const centerMoundMaterial = new MeshStandardMaterial({
+const moundMaterial = new MeshStandardMaterial({
   color: '#4f74a0',
   metalness: 0.08,
-  roughness: 0.4
+  roughness: 0.42
 });
 
 const petalMaterial = new MeshStandardMaterial({
@@ -24,29 +30,56 @@ const petalMaterial = new MeshStandardMaterial({
   roughness: 0.42
 });
 
-export const createPlayfieldBase = (): Group => {
+export const createPlayfieldDimensions = (
+  jarOrbitRadius: number,
+  jarRadius: number
+): PlayfieldDimensions => {
+  const moundRadius = jarOrbitRadius * 0.35;
+  const moundHeight = jarOrbitRadius * 0.1;
+
+  const suggestedPetalLength = jarOrbitRadius * 0.6;
+  const suggestedPetalWidth = jarRadius * 2 * 1.8;
+  const petalThickness = jarRadius * 2 * 0.25;
+
+  const petalInnerRadius = moundRadius * 0.98;
+  const targetJarOffsetFromInner = suggestedPetalLength * 0.82;
+  const adjustedPetalLength = Math.max(
+    suggestedPetalLength,
+    jarOrbitRadius - petalInnerRadius + jarRadius * 0.55
+  );
+
+  const petalLength = Math.max(adjustedPetalLength, targetJarOffsetFromInner + jarRadius * 0.55);
+  const petalOuterRadius = petalInnerRadius + petalLength;
+  const petalCenterRadius = petalInnerRadius + petalLength * 0.5;
+
+  return {
+    moundRadius,
+    moundHeight,
+    petalLength,
+    petalWidth: suggestedPetalWidth,
+    petalThickness,
+    petalInnerRadius,
+    petalOuterRadius,
+    petalCenterRadius,
+    petalTopY: 0
+  };
+};
+
+export const createPlayfieldBase = (dimensions: PlayfieldDimensions): Group => {
   const group = new Group();
 
-  const centerBaseRadius = 1.15;
-  const centerBaseHeight = 0.24;
-
-  const centerBase = new Mesh(
-    new CylinderGeometry(centerBaseRadius, centerBaseRadius * 1.18, centerBaseHeight, 48),
-    centerBaseMaterial
-  );
-  centerBase.position.y = centerBaseHeight * 0.5 - 0.1;
-  group.add(centerBase);
-
-  const mound = new Mesh(new ConeGeometry(0.92, 0.5, 48), centerMoundMaterial);
-  mound.position.y = 0.22;
+  const mound = new Mesh(new ConeGeometry(dimensions.moundRadius, dimensions.moundHeight, 64), moundMaterial);
+  mound.position.y = dimensions.moundHeight * 0.5;
   group.add(mound);
 
   return group;
 };
 
-export const createJarPetalMesh = (): Mesh => {
-  const petal = new Mesh(new CylinderGeometry(0.44, 0.64, 1.56, 24), petalMaterial);
-  petal.rotation.x = Math.PI * 0.5;
-  petal.position.set(0, -0.3, -0.86);
+export const createJarPetalMesh = (dimensions: PlayfieldDimensions): Mesh => {
+  const petal = new Mesh(
+    new BoxGeometry(dimensions.petalWidth, dimensions.petalThickness, dimensions.petalLength),
+    petalMaterial
+  );
+  petal.position.y = dimensions.petalTopY - dimensions.petalThickness * 0.5;
   return petal;
 };
