@@ -335,20 +335,12 @@ export class SceneRoot {
   }
 
   private syncPlayfieldVisuals(): void {
-    const { petalCenterRadius } = this.playfieldDimensions;
-
     for (const [index, jar] of this.jars.entries()) {
       jar.lookAt(0, jar.position.y, 0);
 
       const petal = this.petals[index];
-      const distanceFromCenter = Math.hypot(jar.position.x, jar.position.z);
-      const safeDistance = Math.max(0.0001, distanceFromCenter);
-      const dirX = jar.position.x / safeDistance;
-      const dirZ = jar.position.z / safeDistance;
-
-      petal.position.x = dirX * petalCenterRadius;
-      petal.position.z = dirZ * petalCenterRadius;
-      petal.rotation.y = Math.atan2(dirX, dirZ);
+      petal.position.x = jar.position.x;
+      petal.position.z = jar.position.z;
     }
   }
 
@@ -399,7 +391,8 @@ export class SceneRoot {
   }
 
   private getSupportHeightAt(x: number, z: number): number {
-    const { moundRadius, moundHeight, petalTopY } = this.playfieldDimensions;
+    const { moundRadius, moundHeight, petalTopY, petalRadius } =
+      this.playfieldDimensions;
 
     const radiusFromCenter = Math.hypot(x, z);
     const moundHeightAtPoint =
@@ -408,18 +401,13 @@ export class SceneRoot {
         : Number.NEGATIVE_INFINITY;
 
     let petalHeightAtPoint = Number.NEGATIVE_INFINITY;
-    const halfWidth = this.playfieldDimensions.petalWidth * 0.5;
-    const halfLength = this.playfieldDimensions.petalLength * 0.5;
 
     for (const petal of this.petals) {
-      const cosY = Math.cos(petal.rotation.y);
-      const sinY = Math.sin(petal.rotation.y);
-      const localX =
-        (x - petal.position.x) * cosY - (z - petal.position.z) * sinY;
-      const localZ =
-        (x - petal.position.x) * sinY + (z - petal.position.z) * cosY;
+      const dx = x - petal.position.x;
+      const dz = z - petal.position.z;
+      const distanceFromPetalCenter = Math.hypot(dx, dz);
 
-      if (Math.abs(localX) <= halfWidth && Math.abs(localZ) <= halfLength) {
+      if (distanceFromPetalCenter <= petalRadius) {
         petalHeightAtPoint = Math.max(petalHeightAtPoint, petalTopY);
       }
     }

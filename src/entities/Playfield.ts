@@ -1,6 +1,6 @@
 import {
-  BoxGeometry,
   ConeGeometry,
+  CylinderGeometry,
   Group,
   Mesh,
   MeshPhysicalMaterial
@@ -9,12 +9,8 @@ import {
 export interface PlayfieldDimensions {
   moundRadius: number;
   moundHeight: number;
-  petalLength: number;
-  petalWidth: number;
+  petalRadius: number;
   petalThickness: number;
-  petalInnerRadius: number;
-  petalOuterRadius: number;
-  petalCenterRadius: number;
   petalTopY: number;
 }
 
@@ -48,27 +44,16 @@ export const createPlayfieldDimensions = (
   );
   const moundHeight = jarOrbitRadius * 0.11;
 
-  const petalWidth = jarRadius * 2 * 1.8;
+  const petalRadius = jarRadius * 1.15;
   const petalThickness = jarRadius * 2 * 0.25;
 
   const petalTopY = 0;
-  const petalInnerRadius = moundRadius * 0.995;
-  const petalOuterRadius = jarOrbitRadius + jarRadius * 0.65;
-  const petalLength = Math.max(
-    jarRadius * 1.4,
-    petalOuterRadius - petalInnerRadius
-  );
-  const petalCenterRadius = petalInnerRadius + petalLength * 0.5;
 
   return {
     moundRadius,
     moundHeight,
-    petalLength,
-    petalWidth,
+    petalRadius,
     petalThickness,
-    petalInnerRadius,
-    petalOuterRadius,
-    petalCenterRadius,
     petalTopY
   };
 };
@@ -88,10 +73,11 @@ export const createPlayfieldBase = (dimensions: PlayfieldDimensions): Group => {
 
 export const createJarPetalMesh = (dimensions: PlayfieldDimensions): Mesh => {
   const petal = new Mesh(
-    new BoxGeometry(
-      dimensions.petalWidth,
+    new CylinderGeometry(
+      dimensions.petalRadius,
+      dimensions.petalRadius,
       dimensions.petalThickness,
-      dimensions.petalLength
+      48
     ),
     petalMaterial
   );
