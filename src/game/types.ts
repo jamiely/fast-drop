@@ -1,7 +1,13 @@
+export type RoundPhase = 'idle' | 'countdown' | 'playing' | 'ended';
+
 export interface GameState {
+  phase: RoundPhase;
   score: number;
   timeRemaining: number;
   ballsRemaining: number;
+  ballsDropped: number;
+  hits: number;
+  misses: number;
 }
 
 export interface BallSettledEvent {
@@ -39,6 +45,7 @@ export interface AudioSystemContract {
 export interface TestBridgeContract {
   dropBall: () => void;
   stepFrames: (n: number) => void;
+  restartRound?: () => void;
   setTimeRemaining?: (seconds: number) => void;
   setScore?: (score: number) => void;
   setBallsRemaining?: (remaining: number) => void;

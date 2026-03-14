@@ -6,8 +6,12 @@ import {
 } from './config';
 import {
   applyBallSettledState,
+  applyMissState,
+  canDropBall,
   createInitialState,
   dropBallState,
+  endRoundState,
+  startRoundState,
   tickState
 } from './state';
 import type { BallSettledEvent, GameState, TestBridgeContract } from './types';
@@ -41,8 +45,9 @@ export class Game {
   private nextBallId = 1;
   private speedMultiplier = 1;
   private paused = false;
-  private hasPlayedGameOver = false;
   private hasPlayedWarning = false;
+  private simulationTimeSeconds = 0;
+  private lastDropAtSeconds: number | null = null;
   private readonly runtimeConfig = createRuntimeConfig();
 
   public constructor(host: HTMLElement) {
@@ -91,6 +96,10 @@ export class Game {
     this.uiSystem.onDrop(() => {
       this.dropBall();
     });
+    this.uiSystem.onPlayAgain(() => {
+      this.startRound();
+    });
+
     new InputSystem(() => {
       this.dropBall();
     });
@@ -101,7 +110,7 @@ export class Game {
 
     installTestBridge(this.createTestBridge());
 
-    this.uiSystem.render(this.state);
+    this.startRound();
   }
 
   public start(): void {
@@ -131,6 +140,7 @@ export class Game {
           this.step(dt);
         }
       },
+      restartRound: () => this.startRound(),
       setTimeRemaining: (seconds: number) => this.setTimeRemaining(seconds),
       setScore: (score: number) => this.setScore(score),
       setBallsRemaining: (remaining: number) =>
@@ -204,14 +214,46 @@ export class Game {
     this.sceneRoot.applyCameraTuning(this.runtimeConfig.camera);
   }
 
-  private dropBall(): void {
-    const nextState = dropBallState(this.state);
+  private startRound(): void {
+    this.state = startRoundState();
+    this.nextBallId = 1;
+    this.simulationTimeSeconds = 0;
+    this.lastDropAtSeconds = null;
+    this.hasPlayedWarning = false;
+    this.paused = false;
+    this.orbitSystem.setPaused(false);
+    this.sceneRoot.resetRound();
+    this.uiSystem.render(this.state);
+  }
 
+  private endRound(): void {
+    const next = endRoundState(this.state);
+    if (next === this.state) {
+      return;
+    }
+
+    this.state = next;
+    this.audioSystem.play('game-over');
+  }
+
+  private dropBall(): void {
+    if (
+      !canDropBall(this.state, {
+        simulationTimeSeconds: this.simulationTimeSeconds,
+        lastDropAtSeconds: this.lastDropAtSeconds,
+        dropCooldownMs: this.runtimeConfig.tuning.dropCooldownMs
+      })
+    ) {
+      return;
+    }
+
+    const nextState = dropBallState(this.state);
     if (nextState === this.state) {
       return;
     }
 
     this.state = nextState;
+    this.lastDropAtSeconds = this.simulationTimeSeconds;
 
     this.audioSystem.play('drop');
     this.spawnBall();
@@ -257,37 +299,53 @@ export class Game {
   }
 
   private step(dt: number): void {
+    const simDt = this.paused ? 0 : dt * this.speedMultiplier;
+
     if (!this.paused) {
-      this.state = tickState(this.state, dt * this.speedMultiplier);
+      if (this.state.phase === 'playing') {
+        this.simulationTimeSeconds += simDt;
+        this.state = tickState(this.state, simDt);
+      }
       this.orbitSystem.update(dt);
     }
 
-    const settlements = this.sceneRoot.update(dt * this.speedMultiplier);
-    for (const settlement of settlements) {
-      const scoringResult = this.scoringSystem.onBallSettled(
-        this.toBallSettledEvent(settlement)
-      );
+    const settlements = this.sceneRoot.update(simDt);
+    if (this.state.phase === 'playing') {
+      for (const settlement of settlements) {
+        const scoringResult = this.scoringSystem.onBallSettled(
+          this.toBallSettledEvent(settlement)
+        );
 
-      this.state = applyBallSettledState(
-        this.state,
-        scoringResult.scoreDelta,
-        scoringResult.bonusTimeDelta
-      );
+        this.state = applyBallSettledState(
+          this.state,
+          scoringResult.scoreDelta,
+          scoringResult.bonusTimeDelta
+        );
 
-      this.audioSystem.play('ball-settled');
-      if (scoringResult.bonusTimeDelta > 0) {
-        this.audioSystem.play('bonus-awarded');
+        this.audioSystem.play('ball-settled');
+        if (scoringResult.bonusTimeDelta > 0) {
+          this.audioSystem.play('bonus-awarded');
+        }
       }
-    }
 
-    if (this.state.timeRemaining <= 8 && !this.hasPlayedWarning) {
-      this.audioSystem.play('time-warning');
-      this.hasPlayedWarning = true;
-    }
+      const missedCount = this.sceneRoot.consumeMissedBallCount();
+      if (missedCount > 0) {
+        this.state = applyMissState(this.state, missedCount);
+      }
 
-    if (this.state.timeRemaining <= 0 && !this.hasPlayedGameOver) {
-      this.audioSystem.play('game-over');
-      this.hasPlayedGameOver = true;
+      if (this.state.timeRemaining <= 8 && !this.hasPlayedWarning) {
+        this.audioSystem.play('time-warning');
+        this.hasPlayedWarning = true;
+      }
+
+      if (this.state.timeRemaining <= 0) {
+        this.endRound();
+      } else if (
+        this.state.ballsRemaining <= 0 &&
+        !this.sceneRoot.hasUnresolvedBalls()
+      ) {
+        this.endRound();
+      }
     }
 
     this.physicsWorld?.step();

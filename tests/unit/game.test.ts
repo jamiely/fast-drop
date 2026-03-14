@@ -4,13 +4,18 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const gameMocks = vi.hoisted(() => {
   const uiRender = vi.fn();
   const uiOnDrop = vi.fn<(handler: () => void) => void>();
+  const uiOnPlayAgain = vi.fn<(handler: () => void) => void>();
   const audioPlay = vi.fn();
   const orbitUpdate = vi.fn();
+  const orbitSetPaused = vi.fn();
   const sceneResize = vi.fn();
   const sceneRender = vi.fn();
   const sceneSpawnDropBall = vi.fn();
   const sceneApplyCameraTuning = vi.fn();
   const sceneApplyGameplayTuning = vi.fn();
+  const sceneResetRound = vi.fn();
+  const sceneHasUnresolvedBalls = vi.fn(() => true);
+  const sceneConsumeMissedBallCount = vi.fn(() => 0);
   const sceneUpdate = vi.fn<
     () => Array<{
       ballId: number | null;
@@ -25,22 +30,29 @@ const gameMocks = vi.hoisted(() => {
   const scoring = vi.fn(() => ({ scoreDelta: 7, bonusTimeDelta: 0 }));
 
   let dropHandler: (() => void) | null = null;
+  let playAgainHandler: (() => void) | null = null;
   let inputHandler: (() => void) | null = null;
   let bridge: {
     dropBall: () => void;
     stepFrames: (frames: number) => void;
+    restartRound?: () => void;
   } | null = null;
 
   return {
     uiRender,
     uiOnDrop,
+    uiOnPlayAgain,
     audioPlay,
     orbitUpdate,
+    orbitSetPaused,
     sceneResize,
     sceneRender,
     sceneSpawnDropBall,
     sceneApplyCameraTuning,
     sceneApplyGameplayTuning,
+    sceneResetRound,
+    sceneHasUnresolvedBalls,
+    sceneConsumeMissedBallCount,
     sceneUpdate,
     physicsStep,
     createDebugMenu,
@@ -55,6 +67,15 @@ const gameMocks = vi.hoisted(() => {
       }
       return dropHandler;
     },
+    setPlayAgainHandler: (handler: () => void): void => {
+      playAgainHandler = handler;
+    },
+    getPlayAgainHandler: (): (() => void) => {
+      if (!playAgainHandler) {
+        throw new Error('Missing play again handler');
+      }
+      return playAgainHandler;
+    },
     setInputHandler: (handler: () => void): void => {
       inputHandler = handler;
     },
@@ -67,12 +88,14 @@ const gameMocks = vi.hoisted(() => {
     setBridge: (nextBridge: {
       dropBall: () => void;
       stepFrames: (frames: number) => void;
+      restartRound?: () => void;
     }): void => {
       bridge = nextBridge;
     },
     getBridge: (): {
       dropBall: () => void;
       stepFrames: (frames: number) => void;
+      restartRound?: () => void;
     } => {
       if (!bridge) {
         throw new Error('Missing test bridge');
@@ -94,6 +117,10 @@ vi.mock('../../src/scene/SceneRoot', () => ({
     public readonly applyCameraTuning = gameMocks.sceneApplyCameraTuning;
     public readonly applyGameplayTuning = gameMocks.sceneApplyGameplayTuning;
     public readonly update = gameMocks.sceneUpdate;
+    public readonly consumeMissedBallCount =
+      gameMocks.sceneConsumeMissedBallCount;
+    public readonly hasUnresolvedBalls = gameMocks.sceneHasUnresolvedBalls;
+    public readonly resetRound = gameMocks.sceneResetRound;
   }
 }));
 
@@ -104,6 +131,11 @@ vi.mock('../../src/systems/UISystem', () => ({
     public onDrop(handler: () => void): void {
       gameMocks.uiOnDrop(handler);
       gameMocks.setDropHandler(handler);
+    }
+
+    public onPlayAgain(handler: () => void): void {
+      gameMocks.uiOnPlayAgain(handler);
+      gameMocks.setPlayAgainHandler(handler);
     }
 
     public render = gameMocks.uiRender;
@@ -127,6 +159,13 @@ vi.mock('../../src/systems/AudioSystem', () => ({
 vi.mock('../../src/systems/OrbitSystem', () => ({
   OrbitSystem: class {
     public update = gameMocks.orbitUpdate;
+    public setPaused = gameMocks.orbitSetPaused;
+    public togglePause(): boolean {
+      return false;
+    }
+    public setBaseSpeed(): void {}
+    public setRadius(): void {}
+    public setSpeedMultiplier(): void {}
   }
 }));
 
@@ -156,6 +195,7 @@ vi.mock('../../src/testhooks/testBridge', () => ({
   installTestBridge: (bridge: {
     dropBall: () => void;
     stepFrames: (frames: number) => void;
+    restartRound?: () => void;
   }) => {
     gameMocks.installTestBridge(bridge);
     gameMocks.setBridge(bridge);
@@ -168,6 +208,9 @@ describe('Game', () => {
     vi.clearAllMocks();
     document.body.innerHTML = '';
     window.history.pushState({}, '', '/');
+    gameMocks.sceneHasUnresolvedBalls.mockReturnValue(true);
+    gameMocks.sceneConsumeMissedBallCount.mockReturnValue(0);
+    gameMocks.sceneUpdate.mockImplementation(() => []);
   });
 
   it('creates debug menu based on URL flag', async () => {
@@ -193,18 +236,19 @@ describe('Game', () => {
     expect(gameMocks.uiRender).toHaveBeenCalled();
 
     gameMocks.getDropHandler()();
-    expect(gameMocks.audioPlay).toHaveBeenCalledTimes(1);
+    expect(gameMocks.audioPlay).toHaveBeenCalledWith('drop');
     expect(gameMocks.sceneSpawnDropBall).toHaveBeenCalledTimes(1);
 
     const latestState = gameMocks.uiRender.mock.calls.at(-1)?.[0] as {
       score: number;
       ballsRemaining: number;
+      ballsDropped: number;
     };
     expect(latestState.score).toBe(0);
     expect(latestState.ballsRemaining).toBe(49);
+    expect(latestState.ballsDropped).toBe(1);
 
     gameMocks.getInputHandler()();
-    expect(gameMocks.audioPlay).toHaveBeenCalledTimes(2);
 
     gameMocks.getBridge().stepFrames(3);
     expect(gameMocks.orbitUpdate).toHaveBeenCalledTimes(3);
@@ -213,7 +257,7 @@ describe('Game', () => {
     expect(gameMocks.sceneRender).toHaveBeenCalledTimes(3);
   });
 
-  it('applies scoring when a ball settles into a jar', async () => {
+  it('applies scoring and misses while round is playing', async () => {
     const { Game } = await import('../../src/game/Game');
     const game = new Game(document.createElement('div'));
 
@@ -227,6 +271,7 @@ describe('Game', () => {
         isBonusJar: true
       }
     ]);
+    gameMocks.sceneConsumeMissedBallCount.mockReturnValueOnce(2);
     gameMocks.scoring.mockReturnValueOnce({ scoreDelta: 7, bonusTimeDelta: 3 });
 
     gameMocks.getBridge().stepFrames(1);
@@ -234,11 +279,77 @@ describe('Game', () => {
     const latestState = gameMocks.uiRender.mock.calls.at(-1)?.[0] as {
       score: number;
       timeRemaining: number;
+      hits: number;
+      misses: number;
     };
     expect(latestState.score).toBe(7);
     expect(latestState.timeRemaining).toBeGreaterThan(30);
+    expect(latestState.hits).toBe(1);
+    expect(latestState.misses).toBe(2);
     expect(gameMocks.audioPlay).toHaveBeenCalledWith('ball-settled');
     expect(gameMocks.audioPlay).toHaveBeenCalledWith('bonus-awarded');
+  });
+
+  it('ends round on timer expiry', async () => {
+    const { Game } = await import('../../src/game/Game');
+    const game = new Game(document.createElement('div'));
+
+    await game.init();
+    gameMocks.getBridge().stepFrames(1801);
+
+    const latestState = gameMocks.uiRender.mock.calls.at(-1)?.[0] as {
+      phase: string;
+    };
+    expect(latestState.phase).toBe('ended');
+    expect(gameMocks.audioPlay).toHaveBeenCalledWith('game-over');
+  });
+
+  it('ends round when balls are exhausted and unresolved balls are cleared', async () => {
+    const { Game } = await import('../../src/game/Game');
+    const game = new Game(document.createElement('div'));
+
+    await game.init();
+
+    const bridge = gameMocks.getBridge();
+    for (let index = 0; index < 50; index += 1) {
+      bridge.dropBall();
+      bridge.stepFrames(5);
+    }
+
+    gameMocks.sceneHasUnresolvedBalls.mockReturnValue(false);
+    bridge.stepFrames(1);
+
+    const latestState = gameMocks.uiRender.mock.calls.at(-1)?.[0] as {
+      phase: string;
+      ballsRemaining: number;
+    };
+    expect(latestState.ballsRemaining).toBe(0);
+    expect(latestState.phase).toBe('ended');
+  });
+
+  it('restarts round from play again handler', async () => {
+    const { Game } = await import('../../src/game/Game');
+    const game = new Game(document.createElement('div'));
+
+    await game.init();
+
+    gameMocks.getBridge().stepFrames(1801);
+    gameMocks.getPlayAgainHandler()();
+
+    const latestState = gameMocks.uiRender.mock.calls.at(-1)?.[0] as {
+      phase: string;
+      score: number;
+      ballsRemaining: number;
+      hits: number;
+      misses: number;
+    };
+
+    expect(gameMocks.sceneResetRound).toHaveBeenCalled();
+    expect(latestState.phase).toBe('playing');
+    expect(latestState.score).toBe(0);
+    expect(latestState.ballsRemaining).toBe(50);
+    expect(latestState.hits).toBe(0);
+    expect(latestState.misses).toBe(0);
   });
 
   it('starts and destroys animation loop', async () => {

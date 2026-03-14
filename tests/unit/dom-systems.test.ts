@@ -63,11 +63,26 @@ describe('DOM systems and UI helpers', () => {
 
     ui.onDrop(handler);
 
-    ui.render({ score: 25, timeRemaining: 9.91, ballsRemaining: 3 });
+    const onPlayAgain = vi.fn();
+    ui.onPlayAgain(onPlayAgain);
+
+    ui.render({
+      phase: 'playing',
+      score: 25,
+      timeRemaining: 9.91,
+      ballsRemaining: 3,
+      ballsDropped: 2,
+      hits: 1,
+      misses: 1
+    });
+
     const score = host.querySelector('[data-role="score"]');
     const time = host.querySelector('[data-role="time"]');
     const balls = host.querySelector('[data-role="balls"]');
-    const button = host.querySelector<HTMLButtonElement>('button');
+    const button = host.querySelector<HTMLButtonElement>('.drop-btn');
+    const playAgainButton = host.querySelector<HTMLButtonElement>(
+      '.summary-overlay__play-again'
+    );
 
     expect(score?.textContent).toBe('000025');
     expect(time?.textContent).toBe('09.9');
@@ -77,7 +92,25 @@ describe('DOM systems and UI helpers', () => {
     button?.click();
     expect(handler).toHaveBeenCalledTimes(1);
 
-    ui.render({ score: 25, timeRemaining: 0, ballsRemaining: 3 });
+    ui.render({
+      phase: 'ended',
+      score: 25,
+      timeRemaining: 0,
+      ballsRemaining: 3,
+      ballsDropped: 2,
+      hits: 1,
+      misses: 1
+    });
+
     expect(button?.disabled).toBe(true);
+    expect(host.querySelector('.summary-overlay')?.hasAttribute('hidden')).toBe(
+      false
+    );
+    expect(
+      host.querySelector('[data-role="summary-accuracy"]')?.textContent
+    ).toBe('50%');
+
+    playAgainButton?.click();
+    expect(onPlayAgain).toHaveBeenCalledTimes(1);
   });
 });

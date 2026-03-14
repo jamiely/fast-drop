@@ -1,12 +1,4 @@
-import {
-  BoxGeometry,
-  Color,
-  Group,
-  Mesh,
-  MeshStandardMaterial,
-  Scene,
-  WebGLRenderer
-} from 'three';
+import { Color, Group, Mesh, Scene, WebGLRenderer } from 'three';
 import type { CameraTuning, GameplayTuning } from '../game/config';
 import { BALL_RADIUS, createBallMesh } from '../entities/Ball';
 import {
@@ -69,6 +61,7 @@ export class SceneRoot {
   private readonly activeBalls: ActiveBallVisual[] = [];
   private readonly playfieldMesh: Group;
   private readonly bonusJarIndices: Set<number>;
+  private missedBallCountSinceLastUpdate = 0;
 
   private dropPoint = { x: 0, z: 2.2, y: 2.6 };
   private jarDiameterScale = 1;
@@ -84,7 +77,7 @@ export class SceneRoot {
     bonusBucketCount = 2
   ) {
     this.scene = new Scene();
-    this.scene.background = new Color('#0f1724');
+    this.scene.background = new Color('#170a2e');
 
     const aspect = host.clientWidth / host.clientHeight;
     this.camera = createCamera(aspect);
@@ -133,8 +126,6 @@ export class SceneRoot {
 
     this.ballGroup = new Group();
     this.scene.add(this.ballGroup);
-
-    this.scene.add(this.createCabinetShell());
   }
 
   public applyGameplayTuning(key: keyof GameplayTuning, value: number): void {
@@ -256,6 +247,7 @@ export class SceneRoot {
       const settled = this.resolveEnteredJarPhysics(activeBall, dt);
       if (settled) {
         if (activeBall.enteredJarIndex === null) {
+          this.missedBallCountSinceLastUpdate += 1;
           this.ballGroup.remove(activeBall.mesh);
           this.activeBalls.splice(index, 1);
           continue;
@@ -274,6 +266,7 @@ export class SceneRoot {
         (activeBall.ageSeconds >= MAX_BALL_AGE_SECONDS ||
           activeBall.mesh.position.y <= MISSED_BALL_CLEANUP_Y)
       ) {
+        this.missedBallCountSinceLastUpdate += 1;
         this.ballGroup.remove(activeBall.mesh);
         this.activeBalls.splice(index, 1);
       }
@@ -282,6 +275,25 @@ export class SceneRoot {
     this.resolveBallPairCollisions();
 
     return settlements;
+  }
+
+  public consumeMissedBallCount(): number {
+    const value = this.missedBallCountSinceLastUpdate;
+    this.missedBallCountSinceLastUpdate = 0;
+    return value;
+  }
+
+  public hasUnresolvedBalls(): boolean {
+    return this.activeBalls.some((ball) => !ball.isSettled);
+  }
+
+  public resetRound(): void {
+    for (const activeBall of this.activeBalls) {
+      this.ballGroup.remove(activeBall.mesh);
+    }
+
+    this.activeBalls.length = 0;
+    this.missedBallCountSinceLastUpdate = 0;
   }
 
   public resize(): void {
@@ -731,39 +743,5 @@ export class SceneRoot {
     activeBall.mesh.position.x = jar.position.x + activeBall.settledOffsetX;
     activeBall.mesh.position.y = activeBall.settledOffsetY;
     activeBall.mesh.position.z = jar.position.z + activeBall.settledOffsetZ;
-  }
-
-  private createCabinetShell(): Group {
-    const shell = new Group();
-
-    const frameMaterial = new MeshStandardMaterial({
-      color: '#2f5f8f',
-      metalness: 0.12,
-      roughness: 0.48
-    });
-    const trimMaterial = new MeshStandardMaterial({
-      color: '#f59e0b',
-      metalness: 0.2,
-      roughness: 0.35,
-      emissive: '#7a4200',
-      emissiveIntensity: 0.3
-    });
-
-    const left = new Mesh(new BoxGeometry(0.35, 3.4, 5.1), frameMaterial);
-    left.position.set(-2.45, 1.6, 0);
-    const right = left.clone();
-    right.position.x = 2.45;
-
-    const top = new Mesh(new BoxGeometry(5.25, 0.35, 5.1), frameMaterial);
-    top.position.set(0, 3.1, 0);
-
-    const bottom = new Mesh(new BoxGeometry(5.3, 0.4, 5.2), frameMaterial);
-    bottom.position.set(0, -0.25, 0);
-
-    const marquee = new Mesh(new BoxGeometry(2.6, 0.22, 0.35), trimMaterial);
-    marquee.position.set(0, 2.75, 2.35);
-
-    shell.add(left, right, top, bottom, marquee);
-    return shell;
   }
 }

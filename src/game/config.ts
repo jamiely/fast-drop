@@ -4,6 +4,7 @@ export interface GameplayTuning {
   dropPointX: number;
   dropPointZ: number;
   dropHeight: number;
+  dropCooldownMs: number;
   jarDiameterScale: number;
   jarHeightScale: number;
   ballBounciness: number;
@@ -42,6 +43,7 @@ export const gameConfig: RuntimeConfig = {
     dropPointX: 0,
     dropPointZ: 2.2,
     dropHeight: 2.6,
+    dropCooldownMs: 80,
     jarDiameterScale: 1,
     jarHeightScale: 1,
     ballBounciness: 0.46,
