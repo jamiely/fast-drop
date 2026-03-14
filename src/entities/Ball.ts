@@ -12,13 +12,13 @@ const ballGeometry = new SphereGeometry(BALL_RADIUS, 20, 20);
 
 export const createBallMesh = (): Mesh => {
   const material = new MeshPhysicalMaterial({
-    color: '#f7fbff',
-    metalness: 0.18,
-    roughness: 0.08,
-    clearcoat: 1,
-    clearcoatRoughness: 0.08,
-    emissive: '#6cd6ff',
-    emissiveIntensity: 0.15
+    color: '#df2a2a',
+    metalness: 0.02,
+    roughness: 0.85,
+    clearcoat: 0.08,
+    clearcoatRoughness: 0.8,
+    emissive: '#4a0808',
+    emissiveIntensity: 0.1
   });
 
   return new Mesh(ballGeometry, material);

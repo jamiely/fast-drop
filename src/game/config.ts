@@ -7,6 +7,7 @@ export interface GameplayTuning {
   dropCooldownMs: number;
   jarDiameterScale: number;
   jarHeightScale: number;
+  ballSizeScale: number;
   ballBounciness: number;
   wallBounciness: number;
   floorBounciness: number;
@@ -46,6 +47,7 @@ export const gameConfig: RuntimeConfig = {
     dropCooldownMs: 80,
     jarDiameterScale: 1,
     jarHeightScale: 1,
+    ballSizeScale: 1,
     ballBounciness: 0.46,
     wallBounciness: 0.52,
     floorBounciness: 0.42

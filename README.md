@@ -39,9 +39,12 @@ Storybook stories currently included:
   - pause/resume + step
   - score/time mutators
   - speed controls
-  - gameplay tuning (including drop cooldown)
+  - gameplay tuning (including drop cooldown, ball size, drop height)
   - camera tuning
   - preset save/load
+- Controls:
+  - click/tap the page (outside UI controls) or press `Space` to drop
+  - on round summary, press `Enter` or `Space` to play again
 
 ## Scripts
 
@@ -109,11 +112,14 @@ Implemented in this pass:
 
 - deterministic round lifecycle (`playing`/`ended`) + restart flow,
 - hit/miss/balls-dropped stats + derived accuracy,
-- deterministic round-end conditions (timer expiry and no balls + resolved scene),
-- end-of-round summary overlay with Play Again,
+- deterministic round-end conditions (timer expiry or immediate ball exhaustion),
+- end-of-round summary overlay with Play Again (`Enter`/`Space` shortcuts),
 - e2e regressions for summary/round-end behavior,
 - configurable drop cooldown (default 80ms, debug-tunable),
+- click-anywhere drop input (outside UI controls),
 - visual style refresh inspired by the neon reference image,
+- decorative outer ring around the jar orbit,
+- material/lighting polish pass (metallic center, glass jars, red rubber balls),
 - audio polish pass with dynamic-range compression and event throttling to reduce clipping/stacking,
 - improved HUD/summary readability polish and mobile-safe-area spacing,
 - ball size updated to 1/8 jar diameter,

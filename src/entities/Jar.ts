@@ -24,32 +24,35 @@ const jarRimGeometry = new TorusGeometry(rimOuterRadius, rimTubeRadius, 20, 48);
 
 export const createJarMesh = (isBonus: boolean): Mesh => {
   const material = new MeshPhysicalMaterial({
-    color: isBonus ? '#57d66a' : '#4ea4ff',
+    color: isBonus ? '#70f08f' : '#79c2ff',
     transparent: true,
-    opacity: isBonus ? 0.56 : 0.5,
+    opacity: isBonus ? 0.44 : 0.4,
     depthWrite: false,
     side: DoubleSide,
-    metalness: 0.05,
-    roughness: 0.14,
-    transmission: 0.62,
+    metalness: 0,
+    roughness: 0.04,
+    transmission: 0.92,
+    ior: 1.48,
+    thickness: 0.6,
     clearcoat: 1,
-    clearcoatRoughness: 0.05,
-    emissive: isBonus ? '#a6ff5c' : '#66b7ff',
-    emissiveIntensity: isBonus ? 0.45 : 0.24
+    clearcoatRoughness: 0.02,
+    emissive: isBonus ? '#86ff91' : '#8fd1ff',
+    emissiveIntensity: isBonus ? 0.36 : 0.22
   });
 
   const rimMaterial = new MeshPhysicalMaterial({
-    color: isBonus ? '#7deb88' : '#7dc0ff',
+    color: isBonus ? '#95ffaf' : '#9fd6ff',
     transparent: true,
-    opacity: isBonus ? 0.9 : 0.84,
+    opacity: isBonus ? 0.72 : 0.68,
     depthWrite: false,
-    metalness: 0.08,
-    roughness: 0.2,
-    transmission: 0.4,
+    metalness: 0.04,
+    roughness: 0.1,
+    transmission: 0.75,
+    ior: 1.42,
     clearcoat: 1,
-    clearcoatRoughness: 0.07,
-    emissive: isBonus ? '#b6ff74' : '#84ccff',
-    emissiveIntensity: isBonus ? 0.38 : 0.25
+    clearcoatRoughness: 0.03,
+    emissive: isBonus ? '#c9ff9f' : '#a9ddff',
+    emissiveIntensity: isBonus ? 0.33 : 0.2
   });
 
   const jar = new Mesh(jarGeometry, material);

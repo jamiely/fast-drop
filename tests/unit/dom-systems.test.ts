@@ -44,16 +44,53 @@ describe('DOM systems and UI helpers', () => {
     expect(controls.togglePause).toHaveBeenCalled();
   });
 
-  it('wires space key drop in InputSystem', () => {
+  it('wires keyboard and pointer events in InputSystem', () => {
     let drops = 0;
-    new InputSystem(() => {
-      drops += 1;
+    let playAgain = 0;
+    let ended = false;
+
+    new InputSystem({
+      onDrop: () => {
+        drops += 1;
+      },
+      onPlayAgain: () => {
+        playAgain += 1;
+      },
+      isRoundEnded: () => ended
     });
 
     window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyA' }));
     window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space' }));
+    window.dispatchEvent(new MouseEvent('pointerdown', { button: 0 }));
+    window.dispatchEvent(new MouseEvent('pointerdown', { button: 1 }));
 
-    expect(drops).toBe(1);
+    const button = document.createElement('button');
+    document.body.appendChild(button);
+    button.dispatchEvent(
+      new MouseEvent('pointerdown', { button: 0, bubbles: true })
+    );
+
+    ended = true;
+    window.dispatchEvent(new MouseEvent('pointerdown', { button: 0 }));
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Enter' }));
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space' }));
+
+    expect(drops).toBe(2);
+    expect(playAgain).toBe(2);
+  });
+
+  it('handles ended-key input without play-again handler', () => {
+    let drops = 0;
+    new InputSystem({
+      onDrop: () => {
+        drops += 1;
+      },
+      isRoundEnded: () => true
+    });
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space' }));
+
+    expect(drops).toBe(0);
   });
 
   it('renders state and handles button events in UISystem', () => {

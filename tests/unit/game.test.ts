@@ -171,8 +171,8 @@ vi.mock('../../src/systems/OrbitSystem', () => ({
 
 vi.mock('../../src/systems/InputSystem', () => ({
   InputSystem: class {
-    public constructor(handler: () => void) {
-      gameMocks.setInputHandler(handler);
+    public constructor(options: { onDrop: () => void }) {
+      gameMocks.setInputHandler(options.onDrop);
     }
   }
 }));
@@ -304,20 +304,19 @@ describe('Game', () => {
     expect(gameMocks.audioPlay).toHaveBeenCalledWith('game-over');
   });
 
-  it('ends round when balls are exhausted and unresolved balls are cleared', async () => {
+  it('ends round immediately when balls are exhausted', async () => {
     const { Game } = await import('../../src/game/Game');
     const game = new Game(document.createElement('div'));
 
     await game.init();
 
     const bridge = gameMocks.getBridge();
-    for (let index = 0; index < 50; index += 1) {
+    for (let index = 0; index < 49; index += 1) {
       bridge.dropBall();
       bridge.stepFrames(5);
     }
 
-    gameMocks.sceneHasUnresolvedBalls.mockReturnValue(false);
-    bridge.stepFrames(1);
+    bridge.dropBall();
 
     const latestState = gameMocks.uiRender.mock.calls.at(-1)?.[0] as {
       phase: string;

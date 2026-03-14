@@ -11,7 +11,7 @@ describe('entity factories', () => {
     expect(jar.position.y).toBeCloseTo(0.4);
     expect(material.color.getStyle()).toContain('rgb');
     expect(material.transparent).toBe(true);
-    expect(material.opacity).toBeCloseTo(0.5);
+    expect(material.opacity).toBeCloseTo(0.4);
   });
 
   it('creates a bonus jar mesh with a different material color', () => {

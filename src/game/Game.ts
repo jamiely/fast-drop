@@ -100,8 +100,14 @@ export class Game {
       this.startRound();
     });
 
-    new InputSystem(() => {
-      this.dropBall();
+    new InputSystem({
+      onDrop: () => {
+        this.dropBall();
+      },
+      onPlayAgain: () => {
+        this.startRound();
+      },
+      isRoundEnded: () => this.state.phase === 'ended'
     });
 
     window.addEventListener('resize', () => {
@@ -260,6 +266,11 @@ export class Game {
 
     this.audioSystem.play('drop');
     this.spawnBall();
+
+    if (this.state.ballsRemaining <= 0) {
+      this.endRound();
+    }
+
     this.uiSystem.render(this.state);
   }
 
@@ -341,12 +352,7 @@ export class Game {
         this.hasPlayedWarning = true;
       }
 
-      if (this.state.timeRemaining <= 0) {
-        this.endRound();
-      } else if (
-        this.state.ballsRemaining <= 0 &&
-        !this.sceneRoot.hasUnresolvedBalls()
-      ) {
+      if (this.state.timeRemaining <= 0 || this.state.ballsRemaining <= 0) {
         this.endRound();
       }
     }

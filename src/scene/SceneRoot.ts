@@ -47,7 +47,6 @@ const SETTLE_FRAME_COUNT = 20;
 const MAX_BALL_AGE_SECONDS = 8;
 const MISSED_BALL_CLEANUP_Y = -3.5;
 const BALL_COLLISION_RESTITUTION = 0.45;
-const BALL_COLLISION_MIN_DISTANCE = BALL_RADIUS * 2;
 
 export class SceneRoot {
   public readonly renderer: WebGLRenderer | null;
@@ -69,6 +68,7 @@ export class SceneRoot {
   private dropPoint = { x: 0, z: 2.2, y: 2.6 };
   private jarDiameterScale = 1;
   private jarHeightScale = 1;
+  private ballSizeScale = 1;
   private rimBounce = 0.46;
   private wallRestitution = 0.52;
   private floorRestitution = 0.42;
@@ -171,6 +171,12 @@ export class SceneRoot {
       return;
     }
 
+    if (key === 'ballSizeScale') {
+      this.ballSizeScale = Math.max(0.55, Math.min(1.9, value));
+      this.syncBallScale();
+      return;
+    }
+
     if (key === 'ballBounciness') {
       this.rimBounce = Math.max(0.05, Math.min(0.95, value));
       return;
@@ -196,6 +202,7 @@ export class SceneRoot {
     ballId: number | null = null
   ): void {
     const ball = createBallMesh();
+    ball.scale.setScalar(this.ballSizeScale);
     ball.position.set(dropX, this.dropPoint.y, dropZ);
     this.ballGroup.add(ball);
 
@@ -329,6 +336,20 @@ export class SceneRoot {
     }
   }
 
+  private syncBallScale(): void {
+    for (const activeBall of this.activeBalls) {
+      activeBall.mesh.scale.setScalar(this.ballSizeScale);
+    }
+  }
+
+  private getBallRadius(): number {
+    return BALL_RADIUS * this.ballSizeScale;
+  }
+
+  private getBallCollisionMinDistance(): number {
+    return this.getBallRadius() * 2;
+  }
+
   private getJarRadius(): number {
     return JAR_RADIUS * this.jarDiameterScale;
   }
@@ -338,11 +359,11 @@ export class SceneRoot {
   }
 
   private getEntryPlaneY(): number {
-    return this.getJarHeight() + BALL_RADIUS;
+    return this.getJarHeight() + this.getBallRadius();
   }
 
   private getContainmentTopY(): number {
-    return this.getJarHeight() + BALL_RADIUS * CONTAINMENT_TOP_FACTOR;
+    return this.getJarHeight() + this.getBallRadius() * CONTAINMENT_TOP_FACTOR;
   }
 
   private syncPlayfieldVisuals(): void {
@@ -380,7 +401,7 @@ export class SceneRoot {
       return;
     }
 
-    const contactY = supportHeight + BALL_RADIUS;
+    const contactY = supportHeight + this.getBallRadius();
     if (activeBall.mesh.position.y > contactY) {
       return;
     }
@@ -466,11 +487,12 @@ export class SceneRoot {
 
   private resolveRimBounce(activeBall: ActiveBallVisual): void {
     const y = activeBall.mesh.position.y;
+    const ballRadius = this.getBallRadius();
     const jarHeight = this.getJarHeight();
     const jarRadius = this.getJarRadius();
-    const cleanEntryRadius = jarRadius - BALL_RADIUS * 0.25;
-    const rimMinY = jarHeight - BALL_RADIUS * 0.5;
-    const rimMaxY = jarHeight + BALL_RADIUS * 1.1;
+    const cleanEntryRadius = jarRadius - ballRadius * 0.25;
+    const rimMinY = jarHeight - ballRadius * 0.5;
+    const rimMaxY = jarHeight + ballRadius * 1.1;
 
     if (y < rimMinY || y > rimMaxY || activeBall.velocityY >= 0) {
       return;
@@ -483,14 +505,14 @@ export class SceneRoot {
 
       if (
         distanceXZ < cleanEntryRadius ||
-        distanceXZ > jarRadius + BALL_RADIUS
+        distanceXZ > jarRadius + ballRadius
       ) {
         continue;
       }
 
       const nx = dx / Math.max(0.0001, distanceXZ);
       const nz = dz / Math.max(0.0001, distanceXZ);
-      const targetDistance = jarRadius + BALL_RADIUS;
+      const targetDistance = jarRadius + ballRadius;
       const correction = targetDistance - distanceXZ;
 
       activeBall.mesh.position.x += nx * correction;
@@ -521,7 +543,7 @@ export class SceneRoot {
       return null;
     }
 
-    const cleanEntryRadius = this.getJarRadius() - BALL_RADIUS * 0.25;
+    const cleanEntryRadius = this.getJarRadius() - this.getBallRadius() * 0.25;
 
     for (const [jarIndex, jar] of this.jars.entries()) {
       const dx = activeBall.mesh.position.x - jar.position.x;
@@ -564,14 +586,14 @@ export class SceneRoot {
         const dz = rightBall.mesh.position.z - leftBall.mesh.position.z;
         const distance = Math.hypot(dx, dy, dz);
 
-        if (distance >= BALL_COLLISION_MIN_DISTANCE) {
+        if (distance >= this.getBallCollisionMinDistance()) {
           continue;
         }
 
         const nx = dx / Math.max(0.0001, distance);
         const ny = dy / Math.max(0.0001, distance);
         const nz = dz / Math.max(0.0001, distance);
-        const penetration = BALL_COLLISION_MIN_DISTANCE - distance;
+        const penetration = this.getBallCollisionMinDistance() - distance;
 
         if (leftBall.isSettled && rightBall.isSettled) {
           continue;
@@ -673,7 +695,8 @@ export class SceneRoot {
       return true;
     }
 
-    const jarInnerRadius = this.getJarRadius() - BALL_RADIUS;
+    const ballRadius = this.getBallRadius();
+    const jarInnerRadius = this.getJarRadius() - ballRadius;
 
     const dx = activeBall.mesh.position.x - jar.position.x;
     const dz = activeBall.mesh.position.z - jar.position.z;
@@ -698,10 +721,10 @@ export class SceneRoot {
     }
 
     if (
-      activeBall.mesh.position.y <= BALL_RADIUS + 0.01 &&
+      activeBall.mesh.position.y <= ballRadius + 0.01 &&
       activeBall.velocityY < 0
     ) {
-      activeBall.mesh.position.y = BALL_RADIUS + 0.01;
+      activeBall.mesh.position.y = ballRadius + 0.01;
       activeBall.velocityY = -activeBall.velocityY * this.floorRestitution;
     }
 
@@ -729,7 +752,7 @@ export class SceneRoot {
     );
 
     if (
-      activeBall.mesh.position.y <= BALL_RADIUS + 0.03 &&
+      activeBall.mesh.position.y <= ballRadius + 0.03 &&
       speed <= SETTLE_SPEED_EPSILON
     ) {
       activeBall.settledFrames += 1;
@@ -757,7 +780,7 @@ export class SceneRoot {
     activeBall.velocityZ = 0;
     activeBall.settledOffsetX = activeBall.mesh.position.x - jar.position.x;
     activeBall.settledOffsetY = Math.max(
-      BALL_RADIUS + 0.01,
+      this.getBallRadius() + 0.01,
       activeBall.mesh.position.y
     );
     activeBall.settledOffsetZ = activeBall.mesh.position.z - jar.position.z;
