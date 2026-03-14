@@ -8,7 +8,9 @@ Bootstrap a production-ready TypeScript game project with strong dev workflow an
 
 - ✅ Phase 0 — Repository Initialization (completed)
 - ✅ Phase 1 — Project Skeleton (completed)
-- 🚧 Phase 2 — Testing Foundation (in progress)
+- ✅ Phase 2 — Testing Foundation (completed)
+- ✅ Phase 3 — Dev Experience + CI (completed)
+- 🚧 Phase 4 — Placeholder-to-Feature Hand-off (next)
 
 ---
 
@@ -106,6 +108,12 @@ public/
 
 ## Phase 2 — Testing Foundation (Before Full Gameplay)
 
+### Completion notes
+
+- Added broad Vitest unit coverage across game state, systems, scene helpers, physics wrapper, app bootstrap, and game orchestration.
+- Kept Playwright smoke coverage for HUD updates and debug mode visibility.
+- Coverage now generated in multiple formats (`text`, `text-summary`, `json-summary`, `html`, `lcov`) and enforced with global 80% minimum thresholds.
+
 ### Tasks
 
 1. Unit tests (Vitest):
@@ -130,6 +138,12 @@ public/
 ---
 
 ## Phase 3 — Dev Experience + CI
+
+### Completion notes
+
+- Added and verified lint/typecheck/format/test/coverage workflows.
+- Added Husky pre-commit hook enforcing `lint`, `test`, `coverage` (>=80%), and `test:e2e` before commit.
+- Added CI quality gating and made deploy depend on passing quality checks.
 
 ### Tasks
 
@@ -173,7 +187,7 @@ public/
 
 ---
 
-## Scripts (Target)
+## Scripts (Current)
 
 ```json
 {
@@ -182,12 +196,16 @@ public/
   "preview": "vite preview",
   "typecheck": "tsc -b --pretty",
   "lint": "eslint .",
+  "lint:fix": "eslint . --fix",
   "format": "prettier --write .",
-  "test": "vitest run --coverage",
+  "format:check": "prettier --check .",
+  "test": "vitest run",
+  "coverage": "vitest run --coverage",
   "test:watch": "vitest",
   "test:e2e": "playwright test",
   "test:e2e:ui": "playwright test --ui",
-  "check": "npm-run-all -s typecheck lint test"
+  "check": "npm-run-all -s typecheck lint format:check coverage",
+  "prepare": "husky"
 }
 ```
 
