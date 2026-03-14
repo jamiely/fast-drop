@@ -3,6 +3,7 @@ import type { CameraTuning, GameplayTuning } from '../game/config';
 import { BALL_RADIUS, createBallMesh } from '../entities/Ball';
 import {
   type PlayfieldDimensions,
+  createJarBridgeMesh,
   createJarPetalMesh,
   createPlayfieldBase,
   createPlayfieldDimensions
@@ -56,6 +57,8 @@ export class SceneRoot {
   public readonly jars: Mesh[];
   private readonly petalGroup: Group;
   private readonly petals: Mesh[];
+  private readonly bridgeGroup: Group;
+  private readonly bridges: Mesh[];
   private playfieldDimensions: PlayfieldDimensions;
   private readonly ballGroup: Group;
   private readonly activeBalls: ActiveBallVisual[] = [];
@@ -123,6 +126,14 @@ export class SceneRoot {
       return petal;
     });
     this.scene.add(this.petalGroup);
+
+    this.bridgeGroup = new Group();
+    this.bridges = Array.from({ length: jarCount }, () => {
+      const bridge = createJarBridgeMesh(this.playfieldDimensions);
+      this.bridgeGroup.add(bridge);
+      return bridge;
+    });
+    this.scene.add(this.bridgeGroup);
 
     this.ballGroup = new Group();
     this.scene.add(this.ballGroup);
@@ -335,12 +346,24 @@ export class SceneRoot {
   }
 
   private syncPlayfieldVisuals(): void {
+    const { bridgeCenterRadius } = this.playfieldDimensions;
+
     for (const [index, jar] of this.jars.entries()) {
       jar.lookAt(0, jar.position.y, 0);
 
       const petal = this.petals[index];
       petal.position.x = jar.position.x;
       petal.position.z = jar.position.z;
+
+      const bridge = this.bridges[index];
+      const distanceFromCenter = Math.hypot(jar.position.x, jar.position.z);
+      const safeDistance = Math.max(0.0001, distanceFromCenter);
+      const dirX = jar.position.x / safeDistance;
+      const dirZ = jar.position.z / safeDistance;
+
+      bridge.position.x = dirX * bridgeCenterRadius;
+      bridge.position.z = dirZ * bridgeCenterRadius;
+      bridge.rotation.y = Math.atan2(dirX, dirZ);
     }
   }
 
@@ -391,8 +414,14 @@ export class SceneRoot {
   }
 
   private getSupportHeightAt(x: number, z: number): number {
-    const { moundRadius, moundHeight, petalTopY, petalRadius } =
-      this.playfieldDimensions;
+    const {
+      moundRadius,
+      moundHeight,
+      petalTopY,
+      petalRadius,
+      bridgeWidth,
+      bridgeLength
+    } = this.playfieldDimensions;
 
     const radiusFromCenter = Math.hypot(x, z);
     const moundHeightAtPoint =
@@ -412,7 +441,27 @@ export class SceneRoot {
       }
     }
 
-    return Math.max(moundHeightAtPoint, petalHeightAtPoint);
+    let bridgeHeightAtPoint = Number.NEGATIVE_INFINITY;
+    const halfBridgeWidth = bridgeWidth * 0.5;
+    const halfBridgeLength = bridgeLength * 0.5;
+
+    for (const bridge of this.bridges) {
+      const cosY = Math.cos(bridge.rotation.y);
+      const sinY = Math.sin(bridge.rotation.y);
+      const localX =
+        (x - bridge.position.x) * cosY - (z - bridge.position.z) * sinY;
+      const localZ =
+        (x - bridge.position.x) * sinY + (z - bridge.position.z) * cosY;
+
+      if (
+        Math.abs(localX) <= halfBridgeWidth &&
+        Math.abs(localZ) <= halfBridgeLength
+      ) {
+        bridgeHeightAtPoint = Math.max(bridgeHeightAtPoint, petalTopY);
+      }
+    }
+
+    return Math.max(moundHeightAtPoint, petalHeightAtPoint, bridgeHeightAtPoint);
   }
 
   private resolveRimBounce(activeBall: ActiveBallVisual): void {
