@@ -2,7 +2,8 @@ import {
   CylinderGeometry,
   DoubleSide,
   Mesh,
-  MeshPhysicalMaterial
+  MeshPhysicalMaterial,
+  TorusGeometry
 } from 'three';
 
 export const JAR_RADIUS = 0.33;
@@ -16,6 +17,10 @@ const jarGeometry = new CylinderGeometry(
   1,
   true
 );
+
+const rimOuterRadius = JAR_RADIUS * 1.06;
+const rimTubeRadius = JAR_RADIUS * 0.08;
+const jarRimGeometry = new TorusGeometry(rimOuterRadius, rimTubeRadius, 20, 48);
 
 export const createJarMesh = (isBonus: boolean): Mesh => {
   const material = new MeshPhysicalMaterial({
@@ -33,7 +38,27 @@ export const createJarMesh = (isBonus: boolean): Mesh => {
     emissiveIntensity: isBonus ? 0.45 : 0.24
   });
 
+  const rimMaterial = new MeshPhysicalMaterial({
+    color: isBonus ? '#7deb88' : '#7dc0ff',
+    transparent: true,
+    opacity: isBonus ? 0.9 : 0.84,
+    depthWrite: false,
+    metalness: 0.08,
+    roughness: 0.2,
+    transmission: 0.4,
+    clearcoat: 1,
+    clearcoatRoughness: 0.07,
+    emissive: isBonus ? '#b6ff74' : '#84ccff',
+    emissiveIntensity: isBonus ? 0.38 : 0.25
+  });
+
   const jar = new Mesh(jarGeometry, material);
   jar.position.y = JAR_HEIGHT * 0.5;
+
+  const rim = new Mesh(jarRimGeometry, rimMaterial);
+  rim.rotation.x = Math.PI * 0.5;
+  rim.position.y = JAR_HEIGHT * 0.5;
+  jar.add(rim);
+
   return jar;
 };
