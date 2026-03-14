@@ -30,8 +30,6 @@ export interface SceneBallSettlement {
 const bonusJarIndices = new Set([0, 1]);
 
 const GRAVITY = 7.6;
-const FLOOR_RESTITUTION = 0.38;
-const FLOOR_FRICTION = 0.89;
 const AIR_DAMPING = 0.998;
 const JAR_AIR_DAMPING = 0.992;
 const RIM_BOUNCE = 0.46;
@@ -44,7 +42,7 @@ const CONTAINMENT_TOP_Y = JAR_HEIGHT + BALL_RADIUS * 0.55;
 const SETTLE_SPEED_EPSILON = 0.2;
 const SETTLE_FRAME_COUNT = 20;
 const MAX_BALL_AGE_SECONDS = 8;
-const MISSED_BALL_CLEANUP_Y = -1.5;
+const MISSED_BALL_CLEANUP_Y = -3.5;
 const BALL_COLLISION_RESTITUTION = 0.45;
 const BALL_COLLISION_MIN_DISTANCE = BALL_RADIUS * 2;
 
@@ -82,7 +80,7 @@ export class SceneRoot {
 
     addLighting(this.scene);
 
-    this.scene.add(createPlayfieldBase(jarCount));
+    this.scene.add(createPlayfieldBase());
 
     this.jarGroup = new Group();
     this.jars = Array.from({ length: jarCount }, (_, index) => {
@@ -141,8 +139,6 @@ export class SceneRoot {
       activeBall.mesh.position.x += activeBall.velocityX * dt;
       activeBall.mesh.position.y += activeBall.velocityY * dt;
       activeBall.mesh.position.z += activeBall.velocityZ * dt;
-
-      this.resolveFloorCollision(activeBall);
 
       if (activeBall.enteredJarIndex === null) {
         this.resolveRimBounce(activeBall);
@@ -206,20 +202,6 @@ export class SceneRoot {
     for (const jar of this.jars) {
       jar.lookAt(0, jar.position.y, 0);
     }
-  }
-
-  private resolveFloorCollision(activeBall: ActiveBallVisual): void {
-    if (activeBall.mesh.position.y > BALL_RADIUS) {
-      return;
-    }
-
-    activeBall.mesh.position.y = BALL_RADIUS;
-    if (activeBall.velocityY < 0) {
-      activeBall.velocityY = -activeBall.velocityY * FLOOR_RESTITUTION;
-    }
-
-    activeBall.velocityX *= FLOOR_FRICTION;
-    activeBall.velocityZ *= FLOOR_FRICTION;
   }
 
   private resolveRimBounce(activeBall: ActiveBallVisual): void {
@@ -382,10 +364,7 @@ export class SceneRoot {
   private stabilizeBallAfterCollision(activeBall: ActiveBallVisual): void {
     if (activeBall.isSettled) {
       this.updateSettledBallAttachment(activeBall);
-      return;
     }
-
-    this.resolveFloorCollision(activeBall);
   }
 
   private resolveEnteredJarPhysics(activeBall: ActiveBallVisual, dt: number): boolean {

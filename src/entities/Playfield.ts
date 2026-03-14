@@ -24,13 +24,7 @@ const petalMaterial = new MeshStandardMaterial({
   roughness: 0.42
 });
 
-const failAreaMaterial = new MeshStandardMaterial({
-  color: '#0a111a',
-  metalness: 0,
-  roughness: 1
-});
-
-export const createPlayfieldBase = (jarCount: number): Group => {
+export const createPlayfieldBase = (): Group => {
   const group = new Group();
 
   const centerBaseRadius = 1.15;
@@ -46,14 +40,6 @@ export const createPlayfieldBase = (jarCount: number): Group => {
   const mound = new Mesh(new ConeGeometry(0.92, 0.5, 48), centerMoundMaterial);
   mound.position.y = 0.22;
   group.add(mound);
-
-  const failAreaRadius = Math.max(2.4, 1.8 + jarCount * 0.33);
-  const failArea = new Mesh(
-    new CylinderGeometry(failAreaRadius, failAreaRadius, 0.08, 48),
-    failAreaMaterial
-  );
-  failArea.position.y = -0.54;
-  group.add(failArea);
 
   return group;
 };
