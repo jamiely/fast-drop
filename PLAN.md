@@ -4,6 +4,14 @@
 
 Active as of 2026-03-14.
 
+Progress snapshot (2026-03-14):
+
+- [x] Phase A — Electron packaging hardening
+- [x] Phase B — Windows offline artifacts
+- [x] Phase C — GitHub release automation
+- [ ] Phase D — Final polish pass
+- [x] Phase E — Documentation + artifacts (desktop/release docs)
+
 Previous completed plan archived at:
 
 - `docs/history/2026-03-14-plan-round-flow-summary-complete/PLAN.md`

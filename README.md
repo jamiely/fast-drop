@@ -49,8 +49,9 @@ Open http://localhost:5173.
 - `npm run test:e2e` — Playwright tests
 - `npm run check` — typecheck + lint + prettier check + coverage
 - `npm run electron:start` — run desktop app using built web assets
-- `npm run electron:smoke` — validate desktop packaging prerequisites
+- `npm run electron:smoke` — validate packaging inputs and perform a real Electron startup/load smoke check
 - `npm run build:electron:win` — package Windows desktop artifacts
+- `npm run release:electron:win` — run full quality gate, then package Windows artifacts
 
 ## Test timeout policy
 
@@ -81,7 +82,15 @@ To reduce flakiness in CI, Playwright also runs with `1` worker and `1` retry wh
 
 - Quality workflow: `.github/workflows/quality.yml`
 - GitHub Pages deployment: `.github/workflows/deploy-pages.yml`
-- Windows Electron release packaging: `.github/workflows/release-electron.yml`
+- Windows Electron release packaging: `.github/workflows/release-electron.yml` (runs on published releases or manual dispatch)
+
+Windows release workflow behavior:
+
+- installs Chromium for Playwright so `npm run check` can execute e2e in CI,
+- runs `npm run check`, `npm run build`, and `npm run electron:smoke`,
+- builds `nsis` + `portable` artifacts via `electron-builder`,
+- uploads artifacts to the GitHub Release and as a 14-day workflow artifact,
+- uploads diagnostics (`dist_electron/`, `test-results/`, `playwright-report/`) on failures.
 
 ## Current status
 

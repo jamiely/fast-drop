@@ -67,6 +67,18 @@ npm run build:electron:win
 ```
 
 Artifacts are written to `dist_electron/`.
+Typical outputs include:
+
+- `Fast Drop Setup <version>.exe` (NSIS installer)
+- `Fast Drop <version>.exe` (portable)
+
+For a local release-grade check:
+
+```bash
+npm run release:electron:win
+```
+
+This runs `npm run check` before packaging.
 
 ### Desktop smoke check
 
@@ -75,10 +87,10 @@ npm run build
 npm run electron:smoke
 ```
 
-This validates required packaging inputs (`dist/index.html`, `electron/main.mjs`, `electron/preload.mjs`).
+This validates required packaging inputs (`dist/index.html`, `electron/main.mjs`, `electron/preload.mjs`) and performs a real Electron boot/load check in smoke mode.
 
 ## GitHub Actions
 
 - `.github/workflows/quality.yml`: typecheck/lint/format/coverage gate.
 - `.github/workflows/deploy-pages.yml`: Pages deployment from `main` after quality + e2e.
-- `.github/workflows/release-electron.yml`: Windows Electron packaging for releases/workflow dispatch.
+- `.github/workflows/release-electron.yml`: Windows Electron packaging for published releases/workflow dispatch, with artifact upload and failure diagnostics retention.
