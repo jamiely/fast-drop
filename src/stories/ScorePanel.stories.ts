@@ -17,7 +17,7 @@ const meta: Meta<ScorePanelArgs> = {
     host.style.position = 'relative';
     host.style.width = '520px';
     host.style.maxWidth = '95vw';
-    host.style.height = '340px';
+    host.style.height = '420px';
     host.style.border = '1px solid rgba(255,255,255,0.14)';
     host.style.borderRadius = '14px';
     host.style.background = 'rgba(10, 14, 26, 0.9)';
@@ -31,6 +31,11 @@ const meta: Meta<ScorePanelArgs> = {
 
     hud.root.style.transform = `scale(${args.panelScale})`;
     hud.root.style.transformOrigin = 'top left';
+
+    const controls = hud.dropButton.closest<HTMLElement>('.controls');
+    if (controls) {
+      controls.style.bottom = '24px';
+    }
 
     const leds = host.querySelectorAll<HTMLElement>('.led');
     for (const led of leds) {
