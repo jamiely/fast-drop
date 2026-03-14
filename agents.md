@@ -11,3 +11,4 @@
 - `README.md` should always include a few representative screenshots of menu and gameplay.
 - Store feature screenshots (and related historical artifacts like old research/prompt files) in `docs/history/timestamp-x/`, where `x` describes the feature that was added.
 - After adding features, deploy updates to GitHub (when remote access is available).
+- For each major feature completed, add at least one focused end-to-end regression test to prevent regressions.

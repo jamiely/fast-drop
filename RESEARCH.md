@@ -11,17 +11,24 @@ Build a 3D timing-based arcade game (Quick Drop-like): the player drops balls fr
 - **Tests:** required
 - **Physics:** use a modern/popular option (Rapier approved)
 - **Platform:** desktop + mobile web
+- **Packaging target:** Electron desktop app with Windows build for offline arcade PC deployment
 - **Visual style:** realistic
+- **HUD/Scoreboard style:** physical panel with red 7-segment LED-style digits
+  - applies to score, timer, and balls remaining
 - **Gameplay:**
   - fixed amount of balls per round (start with **50**)
   - player can drop rapidly (no one-ball lock)
   - strict/real collisions in V1 (including rim bounces), not only simplified scoring volumes
+  - balls must visibly and realistically bounce in normal play, including inside-jar bounces
+  - bounce tuning should avoid exaggerated pop-outs (balls should not frequently bounce back out of jars after entry)
   - standard starting timer around **30s**
+  - expose tunable gameplay/physics toggles for iteration (bounciness, jar diameter/height, ring diameter, drop distance, related balancing knobs)
+  - expose tunable camera controls for iteration (distance/zoom, pitch, yaw, and framing/orientation)
   - bonus bucket mechanic: hitting a **BONUS** bucket adds about **+3s**
   - strong play should be able to extend rounds to roughly **40–60s** total
   - score increases with successful bucket landings (arcade high-score style)
   - no jackpot system in V1
-  - include a simple cabinet frame around the playfield (no full environment scene)
+  - render an arcade machine shell around the playfield inspired by `example.jpg` (still no full environment scene)
   - simple audio cue when a ball is dropped
 
 ## Visual Reference (`example.jpg`)
@@ -68,6 +75,8 @@ If we later need faster UI composition, we can still add a thin React HUD layer 
 - **Unit/integration tests:** Vitest
 - **E2E/browser tests:** Playwright
 - **Lint/format:** ESLint + Prettier
+- **Desktop packaging:** Electron + electron-builder (Windows target for offline arcade cabinets)
+- **Release automation:** GitHub Actions workflow to build/package Electron app and publish release artifacts
 
 ## Physics/Gameplay Model (V1)
 
@@ -76,7 +85,8 @@ If we later need faster UI composition, we can still add a thin React HUD layer 
 - Real rigid-body dynamics in Rapier
 - Balls are dynamic spheres
 - Jars have colliders representing walls/rim/bottom so rim bounces are physically plausible
-- Score event occurs when a ball settles within a jar capture volume (or passes a capture plane inside jar without escaping)
+- Score event occurs on clean jar entry (capture plane/volume crossing), while physics continues simulating realistic in-jar bounce behavior.
+- Bounce behavior priority: realism first; rim and bottom bounce visibility are equally important.
 
 ### Orbiting jars
 
@@ -155,6 +165,7 @@ If we later need faster UI composition, we can still add a thin React HUD layer 
 - BONUS bucket hit increases timer by expected amount
 - Round ends correctly on timer expiry
 - Mobile viewport smoke tests for controls/HUD
+- As each major feature lands, add at least one focused E2E regression test for that feature before marking it complete
 
 ### Real-time testing notes (important)
 
@@ -175,6 +186,8 @@ Expose guarded controls behind a `?debug=1` flag or `import.meta.env.DEV`:
 - force next bucket to BONUS hit path (or mark selected buckets as BONUS)
 - spawn test ball at configurable position/velocity
 - speed multiplier (0.5x / 1x / 2x)
+- live tuning sliders/toggles for bounciness, jar diameter, jar height, ring diameter, drop distance, and related physics/gameplay values
+- live camera tuning controls for distance/zoom, pitch, yaw, and orientation/framing offsets
 - show physics/debug overlays (colliders, bucket IDs, bonus markers)
 
 ## Milestone Plan
@@ -187,7 +200,10 @@ Expose guarded controls behind a `?debug=1` flag or `import.meta.env.DEV`:
 6. HUD + timer + ball counters + overlays
 7. Mobile control layout + responsive UI
 8. Tests (unit/integration/e2e) and CI script setup
-9. Tuning + polish (audio, particles, camera shake optional)
+9. Parameter tuning controls (debug/live sliders) for physics + gameplay balancing
+10. Arcade machine shell art pass around playfield (reference: `example.jpg`)
+11. Desktop packaging (Electron + Windows offline build)
+12. Tuning + polish (audio, particles, camera shake optional)
 
 ## File/Module Sketch
 
