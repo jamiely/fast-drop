@@ -52,6 +52,15 @@ Open http://localhost:5173.
 - `npm run electron:smoke` — validate desktop packaging prerequisites
 - `npm run build:electron:win` — package Windows desktop artifacts
 
+## Test timeout policy
+
+The project keeps test timeouts intentionally short to surface hangs quickly:
+
+- Playwright test timeout: `15s`
+- Playwright expect timeout: `3s`
+- Playwright web server startup timeout: `45s`
+- Vitest test/hook timeout: `10s`
+
 ## Git hooks (Husky)
 
 - Hooks are installed via `npm run prepare` (also runs during `npm install`).
