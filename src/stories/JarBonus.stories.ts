@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/html';
+import { useArgs } from '@storybook/preview-api';
 import { Color, Mesh, MeshPhysicalMaterial } from 'three';
 import { createJarMesh } from '../entities/Jar';
 import { renderThreePreview } from './threePreview';
@@ -20,9 +21,12 @@ interface JarStoryArgs {
   cameraFov: number;
 }
 
+const roundControlValue = (value: number) => Math.round(value * 1000) / 1000;
+
 const meta: Meta<JarStoryArgs> = {
   title: 'Components/Jar',
   render: (args) => {
+    const [, updateArgs] = useArgs<JarStoryArgs>();
     const jar = createJarMesh(args.isBonus);
 
     const bodyMaterial = jar.material as MeshPhysicalMaterial;
@@ -47,6 +51,34 @@ const meta: Meta<JarStoryArgs> = {
         targetY: args.targetY,
         targetZ: args.targetZ,
         fov: args.cameraFov
+      },
+      onCameraChange: (camera) => {
+        const nextCameraX = roundControlValue(camera.x);
+        const nextCameraY = roundControlValue(camera.y);
+        const nextCameraZ = roundControlValue(camera.z);
+        const nextTargetX = roundControlValue(camera.targetX);
+        const nextTargetY = roundControlValue(camera.targetY);
+        const nextTargetZ = roundControlValue(camera.targetZ);
+
+        if (
+          nextCameraX === args.cameraX &&
+          nextCameraY === args.cameraY &&
+          nextCameraZ === args.cameraZ &&
+          nextTargetX === args.targetX &&
+          nextTargetY === args.targetY &&
+          nextTargetZ === args.targetZ
+        ) {
+          return;
+        }
+
+        updateArgs({
+          cameraX: nextCameraX,
+          cameraY: nextCameraY,
+          cameraZ: nextCameraZ,
+          targetX: nextTargetX,
+          targetY: nextTargetY,
+          targetZ: nextTargetZ
+        });
       }
     });
   },

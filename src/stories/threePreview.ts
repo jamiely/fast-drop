@@ -8,6 +8,15 @@ import {
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { addLighting } from '../scene/lighting';
 
+interface OrbitCameraState {
+  x: number;
+  y: number;
+  z: number;
+  targetX: number;
+  targetY: number;
+  targetZ: number;
+}
+
 interface ThreePreviewOptions {
   camera?: {
     x?: number;
@@ -21,6 +30,7 @@ interface ThreePreviewOptions {
     maxDistance?: number;
   };
   showHint?: boolean;
+  onCameraChange?: (state: OrbitCameraState) => void;
 }
 
 export const renderThreePreview = (
@@ -93,6 +103,19 @@ export const renderThreePreview = (
   controls.maxDistance = cameraSettings.maxDistance ?? 8;
   controls.update();
 
+  const emitCameraChange = () => {
+    options.onCameraChange?.({
+      x: camera.position.x,
+      y: camera.position.y,
+      z: camera.position.z,
+      targetX: controls.target.x,
+      targetY: controls.target.y,
+      targetZ: controls.target.z
+    });
+  };
+
+  controls.addEventListener('end', emitCameraChange);
+
   renderer.setAnimationLoop(() => {
     controls.update();
     renderer.render(scene, camera);
@@ -104,6 +127,7 @@ export const renderThreePreview = (
     }
 
     renderer.setAnimationLoop(null);
+    controls.removeEventListener('end', emitCameraChange);
     controls.dispose();
     renderer.dispose();
     observer.disconnect();
