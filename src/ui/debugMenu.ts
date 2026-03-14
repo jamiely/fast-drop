@@ -1,4 +1,7 @@
-export const createDebugMenu = (host: HTMLElement, enabled: boolean): HTMLElement | null => {
+export const createDebugMenu = (
+  host: HTMLElement,
+  enabled: boolean
+): HTMLElement | null => {
   if (!enabled) {
     return null;
   }

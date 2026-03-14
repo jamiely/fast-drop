@@ -18,7 +18,10 @@ export const tickState = (state: GameState, dt: number): GameState => {
   };
 };
 
-export const dropBallState = (state: GameState, dropScore: number): GameState => {
+export const dropBallState = (
+  state: GameState,
+  dropScore: number
+): GameState => {
   if (state.timeRemaining <= 0 || state.ballsRemaining <= 0) {
     return state;
   }

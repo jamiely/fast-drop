@@ -5,7 +5,13 @@ import eslintConfigPrettier from 'eslint-config-prettier';
 
 export default [
   {
-    ignores: ['dist', 'coverage', 'playwright-report', 'test-results', 'node_modules']
+    ignores: [
+      'dist',
+      'coverage',
+      'playwright-report',
+      'test-results',
+      'node_modules'
+    ]
   },
   js.configs.recommended,
   {

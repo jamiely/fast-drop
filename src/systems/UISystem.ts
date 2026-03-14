@@ -16,6 +16,7 @@ export class UISystem {
     this.hud.scoreValue.textContent = String(state.score);
     this.hud.timeValue.textContent = state.timeRemaining.toFixed(1);
     this.hud.ballsValue.textContent = String(state.ballsRemaining);
-    this.hud.dropButton.disabled = state.timeRemaining <= 0 || state.ballsRemaining <= 0;
+    this.hud.dropButton.disabled =
+      state.timeRemaining <= 0 || state.ballsRemaining <= 0;
   }
 }

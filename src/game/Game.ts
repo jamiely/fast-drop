@@ -34,7 +34,8 @@ export class Game {
       gameConfig.orbitRadius,
       gameConfig.ringAngularSpeed
     );
-    this.debugEnabled = new URLSearchParams(window.location.search).get('debug') === '1';
+    this.debugEnabled =
+      new URLSearchParams(window.location.search).get('debug') === '1';
     createDebugMenu(host, this.debugEnabled);
   }
 
@@ -82,7 +83,10 @@ export class Game {
   }
 
   private dropBall(): void {
-    const nextState = dropBallState(this.state, this.scoringSystem.getDropScore());
+    const nextState = dropBallState(
+      this.state,
+      this.scoringSystem.getDropScore()
+    );
     if (nextState === this.state) {
       return;
     }

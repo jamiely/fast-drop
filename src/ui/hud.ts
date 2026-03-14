@@ -17,7 +17,8 @@ export const createHud = (host: HTMLElement): HudView => {
 
   const controls = document.createElement('div');
   controls.className = 'controls';
-  controls.innerHTML = '<button class="drop-btn" type="button">Drop Ball (Space)</button>';
+  controls.innerHTML =
+    '<button class="drop-btn" type="button">Drop Ball (Space)</button>';
 
   const scoreValue = root.querySelector<HTMLElement>('[data-role="score"]');
   const timeValue = root.querySelector<HTMLElement>('[data-role="time"]');

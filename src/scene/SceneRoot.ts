@@ -18,7 +18,10 @@ export class SceneRoot {
   public readonly jarGroup: Group;
   public readonly jars: Mesh[];
 
-  public constructor(private readonly host: HTMLElement, jarCount: number) {
+  public constructor(
+    private readonly host: HTMLElement,
+    jarCount: number
+  ) {
     this.scene = new Scene();
     this.scene.background = new Color('#101826');
 
@@ -31,7 +34,10 @@ export class SceneRoot {
       this.renderer.setSize(host.clientWidth, host.clientHeight);
       host.appendChild(this.renderer.domElement);
     } catch (error) {
-      console.warn('[SceneRoot] WebGL unavailable, continuing without renderer', error);
+      console.warn(
+        '[SceneRoot] WebGL unavailable, continuing without renderer',
+        error
+      );
       this.renderer = null;
     }
 
