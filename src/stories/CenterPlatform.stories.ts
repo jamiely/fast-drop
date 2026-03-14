@@ -56,6 +56,7 @@ const meta: Meta<PlatformStoryArgs> = {
 
     group.add(center, bridge, pad);
     return renderThreePreview(group, {
+      previewId: 'components-center-platform',
       camera: {
         x: args.cameraX,
         y: args.cameraY,

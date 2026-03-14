@@ -43,6 +43,7 @@ const meta: Meta<JarStoryArgs> = {
     }
 
     return renderThreePreview(jar, {
+      previewId: 'components-jar',
       camera: {
         x: args.cameraX,
         y: args.cameraY,

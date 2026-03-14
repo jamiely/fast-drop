@@ -46,6 +46,7 @@ const meta: Meta<BallStoryArgs> = {
     group.add(mesh);
 
     return renderThreePreview(group, {
+      previewId: 'components-ball',
       camera: {
         x: args.cameraX,
         y: args.cameraY,
