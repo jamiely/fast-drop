@@ -28,16 +28,20 @@ npm run dev
 - `npm run test:e2e` — Playwright smoke tests
 - `npm run check` — typecheck + lint + tests
 
+## Deployment
+- GitHub Pages deployment is automated via `.github/workflows/deploy-pages.yml`.
+- On each push to `main`, GitHub Actions builds and deploys `dist/`.
+
 ## Current status
-Phase 0 bootstrap and test/tooling setup complete. Phase 1 placeholder runtime is in progress.
+Phase 0 bootstrap and test/tooling setup complete. Phase 1 placeholder runtime is complete. Phase 2 testing foundation is in progress.
 
 ## Representative screenshots
 
 ### Gameplay (desktop)
-![Gameplay desktop](docs/history/2026-03-13-230127-phase1-placeholder-runtime/gameplay-desktop.png)
+![Gameplay desktop](docs/history/2026-03-13-230424-phase1-complete-gh-pages/gameplay-desktop.png)
 
 ### Debug menu (desktop)
-![Debug menu desktop](docs/history/2026-03-13-230127-phase1-placeholder-runtime/debug-menu-desktop.png)
+![Debug menu desktop](docs/history/2026-03-13-230424-phase1-complete-gh-pages/debug-desktop.png)
 
 ### Debug menu (mobile)
-![Debug menu mobile](docs/history/2026-03-13-230127-phase1-placeholder-runtime/debug-mobile.png)
+![Debug menu mobile](docs/history/2026-03-13-230424-phase1-complete-gh-pages/debug-mobile.png)
