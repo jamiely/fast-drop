@@ -29,7 +29,10 @@ Storybook stories currently included:
 - Ball (size/material/color controls)
 - Jar (bonus jar body/rim controls)
 - Center Platform (radius/bridge/material controls)
+- Outer Ring (diameter/material tuning)
+- Jar Spinner (orbit radius/spin speed tuning)
 - Score Panel (value/LED color/scale controls)
+- Round Complete Dialog (summary UI states)
 
 ## Debug / camera / gameplay tuning toggles
 
@@ -39,8 +42,9 @@ Storybook stories currently included:
   - pause/resume + step
   - score/time mutators
   - speed controls
-  - gameplay tuning (including drop cooldown, ball size, drop height)
+  - gameplay tuning (including jar spin speed, ring diameter, drop cooldown, ball size, drop height)
   - camera tuning
+  - live numeric values + copyable JSON snapshot for sharing tuned settings
   - preset save/load
 - Controls:
   - click/tap the page (outside UI controls) or press `Space` to drop
@@ -124,7 +128,8 @@ Implemented in this pass:
 - improved HUD/summary readability polish and mobile-safe-area spacing,
 - ball size updated to 1/8 jar diameter,
 - outer arcade enclosure removed,
-- added StorybookJS component stories for ball, bonus jar, center platform, and score panel, each with interactive controls for sizing/colors/material tuning.
+- added StorybookJS component stories for ball, bonus jar, center platform, outer ring, jar spinner, score panel, and round-complete dialog,
+- debug menu now shows live control values and a copyable JSON snapshot of current tuning for easy sharing.
 
 ## Representative screenshots
 

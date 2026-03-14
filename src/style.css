@@ -215,6 +215,26 @@ canvas {
   color: #cbd4de;
 }
 
+.debug-menu__value {
+  justify-self: end;
+  font-family: 'Courier New', monospace;
+  color: #9dd0ff;
+}
+
+.debug-menu__snapshot {
+  width: 100%;
+  min-height: 130px;
+  resize: vertical;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(5, 10, 18, 0.8);
+  color: #dfe8f8;
+  font-size: 11px;
+  line-height: 1.4;
+  font-family: 'Courier New', monospace;
+  padding: 8px;
+}
+
 .debug-menu button {
   font: inherit;
   font-size: 12px;

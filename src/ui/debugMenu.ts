@@ -18,6 +18,77 @@ const parseNumber = (value: string): number => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
+const formatControlValue = (value: string): string => {
+  const number = parseNumber(value);
+  if (Math.abs(number) >= 100) {
+    return number.toFixed(0);
+  }
+
+  if (Math.abs(number) >= 10) {
+    return number.toFixed(1);
+  }
+
+  return number.toFixed(2);
+};
+
+const readCurrentSettings = (menu: HTMLElement): Record<string, number> => {
+  const snapshot: Record<string, number> = {};
+
+  menu.querySelectorAll<HTMLInputElement>('input[data-gameplay]').forEach((input) => {
+    const key = input.dataset.gameplay;
+    if (!key) {
+      return;
+    }
+
+    snapshot[key] = parseNumber(input.value);
+  });
+
+  menu.querySelectorAll<HTMLInputElement>('input[data-camera]').forEach((input) => {
+    const key = input.dataset.camera;
+    if (!key) {
+      return;
+    }
+
+    snapshot[`camera.${key}`] = parseNumber(input.value);
+  });
+
+  if (Number.isFinite(snapshot.ringDiameter)) {
+    snapshot.ringRadius = snapshot.ringDiameter * 0.5;
+  }
+
+  return snapshot;
+};
+
+const updateControlBadges = (menu: HTMLElement): void => {
+  menu.querySelectorAll<HTMLInputElement>('input[type="range"]').forEach((input) => {
+    const gameplayKey = input.dataset.gameplay;
+    const cameraKey = input.dataset.camera;
+    const key = gameplayKey ? `gameplay:${gameplayKey}` : `camera:${cameraKey ?? ''}`;
+
+    const output = menu.querySelector<HTMLElement>(`[data-value-for="${key}"]`);
+    if (!output) {
+      return;
+    }
+
+    output.textContent = formatControlValue(input.value);
+  });
+};
+
+const updateSnapshotField = (menu: HTMLElement): void => {
+  const output = menu.querySelector<HTMLTextAreaElement>('[data-role="snapshot"]');
+  if (!output) {
+    return;
+  }
+
+  const snapshot = readCurrentSettings(menu);
+  output.value = JSON.stringify(snapshot, null, 2);
+};
+
+const refreshDebugMenuValues = (menu: HTMLElement): void => {
+  updateControlBadges(menu);
+  updateSnapshotField(menu);
+};
+
 export const createDebugMenu = (
   host: HTMLElement,
   enabled: boolean,
@@ -45,23 +116,29 @@ export const createDebugMenu = (
     </div>
     <div class="debug-menu__group">
       <h4>Gameplay tuning</h4>
-      <label>Ball bounce <input type="range" min="0.1" max="0.9" step="0.01" value="0.46" data-gameplay="ballBounciness" /></label>
-      <label>Wall bounce <input type="range" min="0.1" max="0.9" step="0.01" value="0.52" data-gameplay="wallBounciness" /></label>
-      <label>Floor bounce <input type="range" min="0.1" max="0.9" step="0.01" value="0.42" data-gameplay="floorBounciness" /></label>
-      <label>Jar diameter <input type="range" min="0.7" max="1.5" step="0.01" value="1" data-gameplay="jarDiameterScale" /></label>
-      <label>Jar height <input type="range" min="0.7" max="1.6" step="0.01" value="1" data-gameplay="jarHeightScale" /></label>
-      <label>Ball size <input type="range" min="0.6" max="1.8" step="0.01" value="1" data-gameplay="ballSizeScale" /></label>
-      <label>Ring diameter <input type="range" min="3" max="7" step="0.1" value="5.72" data-gameplay="ringDiameter" /></label>
-      <label>Drop distance <input type="range" min="1.2" max="3.2" step="0.05" value="2.86" data-gameplay="dropPointZ" /></label>
-      <label>Drop height <input type="range" min="1.2" max="4.2" step="0.05" value="2.6" data-gameplay="dropHeight" /></label>
-      <label>Drop cooldown (ms) <input type="range" min="0" max="100" step="5" value="80" data-gameplay="dropCooldownMs" /></label>
+      <label>Ball bounce <span class="debug-menu__value" data-value-for="gameplay:ballBounciness">0.46</span><input type="range" min="0.1" max="0.9" step="0.01" value="0.46" data-gameplay="ballBounciness" /></label>
+      <label>Wall bounce <span class="debug-menu__value" data-value-for="gameplay:wallBounciness">0.52</span><input type="range" min="0.1" max="0.9" step="0.01" value="0.52" data-gameplay="wallBounciness" /></label>
+      <label>Floor bounce <span class="debug-menu__value" data-value-for="gameplay:floorBounciness">0.42</span><input type="range" min="0.1" max="0.9" step="0.01" value="0.42" data-gameplay="floorBounciness" /></label>
+      <label>Jar diameter <span class="debug-menu__value" data-value-for="gameplay:jarDiameterScale">1.00</span><input type="range" min="0.7" max="1.5" step="0.01" value="1" data-gameplay="jarDiameterScale" /></label>
+      <label>Jar height <span class="debug-menu__value" data-value-for="gameplay:jarHeightScale">1.00</span><input type="range" min="0.7" max="1.6" step="0.01" value="1" data-gameplay="jarHeightScale" /></label>
+      <label>Jar spin speed <span class="debug-menu__value" data-value-for="gameplay:ringAngularSpeed">0.80</span><input type="range" min="0" max="2.2" step="0.01" value="0.8" data-gameplay="ringAngularSpeed" /></label>
+      <label>Ball size <span class="debug-menu__value" data-value-for="gameplay:ballSizeScale">1.00</span><input type="range" min="0.6" max="1.8" step="0.01" value="1" data-gameplay="ballSizeScale" /></label>
+      <label>Ring diameter <span class="debug-menu__value" data-value-for="gameplay:ringDiameter">5.72</span><input type="range" min="3" max="7" step="0.1" value="5.72" data-gameplay="ringDiameter" /></label>
+      <label>Drop distance <span class="debug-menu__value" data-value-for="gameplay:dropPointZ">2.86</span><input type="range" min="1.2" max="3.2" step="0.05" value="2.86" data-gameplay="dropPointZ" /></label>
+      <label>Drop height <span class="debug-menu__value" data-value-for="gameplay:dropHeight">2.60</span><input type="range" min="1.2" max="4.2" step="0.05" value="2.6" data-gameplay="dropHeight" /></label>
+      <label>Drop cooldown (ms) <span class="debug-menu__value" data-value-for="gameplay:dropCooldownMs">80</span><input type="range" min="0" max="100" step="5" value="80" data-gameplay="dropCooldownMs" /></label>
     </div>
     <div class="debug-menu__group">
       <h4>Camera tuning</h4>
-      <label>Distance <input type="range" min="4" max="10" step="0.1" value="6.8" data-camera="distance" /></label>
-      <label>Pitch <input type="range" min="2" max="6" step="0.1" value="3.8" data-camera="pitch" /></label>
-      <label>Yaw <input type="range" min="-2" max="2" step="0.1" value="0" data-camera="yaw" /></label>
-      <label>Target Y <input type="range" min="0" max="2" step="0.05" value="0.6" data-camera="targetY" /></label>
+      <label>Distance <span class="debug-menu__value" data-value-for="camera:distance">6.80</span><input type="range" min="4" max="10" step="0.1" value="6.8" data-camera="distance" /></label>
+      <label>Pitch <span class="debug-menu__value" data-value-for="camera:pitch">3.80</span><input type="range" min="2" max="6" step="0.1" value="3.8" data-camera="pitch" /></label>
+      <label>Yaw <span class="debug-menu__value" data-value-for="camera:yaw">0.00</span><input type="range" min="-2" max="2" step="0.1" value="0" data-camera="yaw" /></label>
+      <label>Target Y <span class="debug-menu__value" data-value-for="camera:targetY">0.60</span><input type="range" min="0" max="2" step="0.05" value="0.6" data-camera="targetY" /></label>
+    </div>
+    <div class="debug-menu__group">
+      <h4>Current values</h4>
+      <textarea class="debug-menu__snapshot" data-role="snapshot" readonly></textarea>
+      <button type="button" data-action="copy-values">Copy values</button>
     </div>
   `;
 
@@ -98,7 +175,21 @@ export const createDebugMenu = (
           break;
         case 'load':
           controls?.loadPreset();
+          refreshDebugMenuValues(menu);
           break;
+        case 'copy-values': {
+          const snapshot = menu.querySelector<HTMLTextAreaElement>(
+            '[data-role="snapshot"]'
+          );
+          if (!snapshot) {
+            return;
+          }
+
+          void navigator.clipboard.writeText(snapshot.value).catch((error) => {
+            console.warn('[DebugMenu] Unable to copy values to clipboard', error);
+          });
+          break;
+        }
         default:
           console.info('[DebugMenu] unknown action', action);
       }
@@ -119,6 +210,7 @@ export const createDebugMenu = (
             'ringRadius',
             parseNumber(input.value) * 0.5
           );
+          refreshDebugMenuValues(menu);
           return;
         }
 
@@ -126,6 +218,7 @@ export const createDebugMenu = (
           key as keyof GameplayTuning,
           parseNumber(input.value)
         );
+        refreshDebugMenuValues(menu);
       });
     });
 
@@ -142,9 +235,11 @@ export const createDebugMenu = (
           key as keyof CameraTuning,
           parseNumber(input.value)
         );
+        refreshDebugMenuValues(menu);
       });
     });
 
   host.appendChild(menu);
+  refreshDebugMenuValues(menu);
   return menu;
 };
