@@ -23,7 +23,7 @@ const meta: Meta<BallStoryArgs> = {
 
     const mesh = createBallMesh();
     mesh.scale.setScalar(args.radius / BALL_RADIUS);
-    mesh.position.y = 0.85 + args.radius;
+    mesh.position.y = 1.05 + args.radius;
 
     const material = mesh.material as MeshPhysicalMaterial;
     material.color = new Color(args.color);
