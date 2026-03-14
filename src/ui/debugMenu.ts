@@ -51,8 +51,8 @@ export const createDebugMenu = (
       <label>Jar diameter <input type="range" min="0.7" max="1.5" step="0.01" value="1" data-gameplay="jarDiameterScale" /></label>
       <label>Jar height <input type="range" min="0.7" max="1.6" step="0.01" value="1" data-gameplay="jarHeightScale" /></label>
       <label>Ball size <input type="range" min="0.6" max="1.8" step="0.01" value="1" data-gameplay="ballSizeScale" /></label>
-      <label>Ring diameter <input type="range" min="3" max="7" step="0.1" value="4.4" data-gameplay="ringDiameter" /></label>
-      <label>Drop distance <input type="range" min="1.2" max="3.2" step="0.05" value="2.2" data-gameplay="dropPointZ" /></label>
+      <label>Ring diameter <input type="range" min="3" max="7" step="0.1" value="5.72" data-gameplay="ringDiameter" /></label>
+      <label>Drop distance <input type="range" min="1.2" max="3.2" step="0.05" value="2.86" data-gameplay="dropPointZ" /></label>
       <label>Drop height <input type="range" min="1.2" max="4.2" step="0.05" value="2.6" data-gameplay="dropHeight" /></label>
       <label>Drop cooldown (ms) <input type="range" min="0" max="100" step="5" value="80" data-gameplay="dropCooldownMs" /></label>
     </div>

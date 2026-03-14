@@ -31,6 +31,8 @@ export interface RuntimeConfig {
   camera: CameraTuning;
 }
 
+const DEFAULT_JAR_DIAMETER = 0.66;
+
 export const gameConfig: RuntimeConfig = {
   ballsTotal: 50,
   timeStartSeconds: 30,
@@ -40,9 +42,9 @@ export const gameConfig: RuntimeConfig = {
   dropScore: 10,
   tuning: {
     ringAngularSpeed: 0.8,
-    ringRadius: 2.2,
+    ringRadius: 2.2 + DEFAULT_JAR_DIAMETER,
     dropPointX: 0,
-    dropPointZ: 2.2,
+    dropPointZ: 2.2 + DEFAULT_JAR_DIAMETER,
     dropHeight: 2.6,
     dropCooldownMs: 80,
     jarDiameterScale: 1,

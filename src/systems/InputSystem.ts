@@ -18,7 +18,7 @@ const isInteractiveTarget = (target: EventTarget | null): boolean => {
 
 export class InputSystem {
   public constructor(options: InputSystemOptions) {
-    window.addEventListener('keydown', (event) => {
+    window.addEventListener('keyup', (event) => {
       const isEnded = options.isRoundEnded?.() ?? false;
       const isSpace = event.code === 'Space';
       const isEnter = event.code === 'Enter';
@@ -37,7 +37,7 @@ export class InputSystem {
       options.onDrop();
     });
 
-    window.addEventListener('pointerdown', (event) => {
+    window.addEventListener('pointerup', (event) => {
       if (event.button !== 0) {
         return;
       }

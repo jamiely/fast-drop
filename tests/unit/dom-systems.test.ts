@@ -44,7 +44,7 @@ describe('DOM systems and UI helpers', () => {
     expect(controls.togglePause).toHaveBeenCalled();
   });
 
-  it('wires keyboard and pointer events in InputSystem', () => {
+  it('wires keyup and pointerup events in InputSystem', () => {
     let drops = 0;
     let playAgain = 0;
     let ended = false;
@@ -59,21 +59,21 @@ describe('DOM systems and UI helpers', () => {
       isRoundEnded: () => ended
     });
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyA' }));
-    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space' }));
-    window.dispatchEvent(new MouseEvent('pointerdown', { button: 0 }));
-    window.dispatchEvent(new MouseEvent('pointerdown', { button: 1 }));
+    window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyA' }));
+    window.dispatchEvent(new KeyboardEvent('keyup', { code: 'Space' }));
+    window.dispatchEvent(new MouseEvent('pointerup', { button: 0 }));
+    window.dispatchEvent(new MouseEvent('pointerup', { button: 1 }));
 
     const button = document.createElement('button');
     document.body.appendChild(button);
     button.dispatchEvent(
-      new MouseEvent('pointerdown', { button: 0, bubbles: true })
+      new MouseEvent('pointerup', { button: 0, bubbles: true })
     );
 
     ended = true;
-    window.dispatchEvent(new MouseEvent('pointerdown', { button: 0 }));
-    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Enter' }));
-    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space' }));
+    window.dispatchEvent(new MouseEvent('pointerup', { button: 0 }));
+    window.dispatchEvent(new KeyboardEvent('keyup', { code: 'Enter' }));
+    window.dispatchEvent(new KeyboardEvent('keyup', { code: 'Space' }));
 
     expect(drops).toBe(2);
     expect(playAgain).toBe(2);
@@ -88,7 +88,7 @@ describe('DOM systems and UI helpers', () => {
       isRoundEnded: () => true
     });
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space' }));
+    window.dispatchEvent(new KeyboardEvent('keyup', { code: 'Space' }));
 
     expect(drops).toBe(0);
   });
