@@ -45,7 +45,7 @@ export const gameConfig: RuntimeConfig = {
     ringRadius: 2.2 + DEFAULT_JAR_DIAMETER,
     dropPointX: 0,
     dropPointZ: 2.2 + DEFAULT_JAR_DIAMETER,
-    dropHeight: 2.6,
+    dropHeight: 2.3,
     dropCooldownMs: 80,
     jarDiameterScale: 1,
     jarHeightScale: 1,

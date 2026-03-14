@@ -65,7 +65,7 @@ export class SceneRoot {
   private readonly bonusJarIndices: Set<number>;
   private missedBallCountSinceLastUpdate = 0;
 
-  private dropPoint = { x: 0, z: 2.2, y: 2.6 };
+  private dropPoint = { x: 0, z: 2.2, y: 2.3 };
   private jarDiameterScale = 1;
   private jarHeightScale = 1;
   private ballSizeScale = 1;
