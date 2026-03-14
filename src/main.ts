@@ -1,14 +1,11 @@
 import './style.css';
+import { App } from './app/App';
 
-const app = document.querySelector<HTMLDivElement>('#app');
+const appRoot = document.querySelector<HTMLDivElement>('#app');
 
-if (!app) {
+if (!appRoot) {
   throw new Error('Missing #app root element');
 }
 
-app.innerHTML = `
-  <main class="shell">
-    <h1>Fast Drop</h1>
-    <p>Bootstrap build is ready. Gameplay systems are added in later phases.</p>
-  </main>
-`;
+const app = new App(appRoot);
+await app.start();

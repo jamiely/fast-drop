@@ -29,4 +29,4 @@ npm run dev
 - `npm run check` — typecheck + lint + tests
 
 ## Current status
-Phase 0 bootstrap and test/tooling setup in progress. Gameplay systems are intentionally minimal at this stage.
+Phase 0 bootstrap and test/tooling setup complete. Phase 1 placeholder runtime is in progress.

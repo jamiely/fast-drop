@@ -3,6 +3,10 @@
 ## Objective
 Bootstrap a production-ready TypeScript game project with strong dev workflow and testing foundations first, while using placeholders for gameplay systems.
 
+## Status
+- ✅ Phase 0 — Repository Initialization (completed)
+- 🚧 Phase 1 — Project Skeleton (in progress)
+
 ---
 
 ## Phase 0 — Repository Initialization
