@@ -9,9 +9,12 @@ import { addLighting } from '../scene/lighting';
 
 export const renderThreePreview = (object: Object3D): HTMLElement => {
   const host = document.createElement('div');
-  host.style.width = '520px';
+  const previewWidth = 520;
+  const previewHeight = 320;
+
+  host.style.width = `${previewWidth}px`;
   host.style.maxWidth = '90vw';
-  host.style.height = '320px';
+  host.style.height = `${previewHeight}px`;
   host.style.borderRadius = '14px';
   host.style.overflow = 'hidden';
   host.style.border = '1px solid rgba(255,255,255,0.16)';
@@ -19,7 +22,7 @@ export const renderThreePreview = (object: Object3D): HTMLElement => {
 
   const renderer = new WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setSize(host.clientWidth, host.clientHeight);
+  renderer.setSize(previewWidth, previewHeight);
   host.append(renderer.domElement);
 
   const scene = new Scene();
@@ -27,7 +30,7 @@ export const renderThreePreview = (object: Object3D): HTMLElement => {
   addLighting(scene);
   scene.add(object);
 
-  const camera = new PerspectiveCamera(50, host.clientWidth / host.clientHeight, 0.1, 100);
+  const camera = new PerspectiveCamera(50, previewWidth / previewHeight, 0.1, 100);
   camera.position.set(0, 1.2, 3.1);
   camera.lookAt(0, 0.35, 0);
 
