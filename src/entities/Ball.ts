@@ -5,8 +5,13 @@ export interface Ball {
   id: number;
 }
 
-// Ball diameter should be 1/8 jar diameter -> ball radius = jar radius / 8
-export const BALL_RADIUS = JAR_RADIUS / 8;
+const REFERENCE_JAR_DIAMETER = 0.66;
+const REFERENCE_BALL_DIAMETER = 0.082;
+export const BALL_DIAMETER_TO_JAR_DIAMETER =
+  REFERENCE_BALL_DIAMETER / REFERENCE_JAR_DIAMETER;
+
+export const BALL_RADIUS = JAR_RADIUS * BALL_DIAMETER_TO_JAR_DIAMETER;
+export const BALL_DIAMETER = BALL_RADIUS * 2;
 
 const ballGeometry = new SphereGeometry(BALL_RADIUS, 20, 20);
 

@@ -126,7 +126,7 @@ Implemented in this pass:
 - material/lighting polish pass (metallic center, glass jars, red rubber balls),
 - audio polish pass with dynamic-range compression and event throttling to reduce clipping/stacking,
 - improved HUD/summary readability polish and mobile-safe-area spacing,
-- ball size updated to 1/8 jar diameter,
+- ball size updated to 0.082 (relative to jar diameter),
 - outer arcade enclosure removed,
 - added StorybookJS component stories for ball, bonus jar, center platform, outer ring, jar spinner, score panel, and round-complete dialog,
 - debug menu now shows live control values and a copyable JSON snapshot of current tuning for easy sharing.

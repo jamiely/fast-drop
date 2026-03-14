@@ -1,12 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/html';
 import { useArgs } from '@storybook/preview-api';
 import { Color, Group, MeshPhysicalMaterial } from 'three';
-import { BALL_RADIUS, createBallMesh } from '../entities/Ball';
+import { BALL_DIAMETER, createBallMesh } from '../entities/Ball';
 import { createJarMesh } from '../entities/Jar';
 import { renderThreePreview } from './threePreview';
 
 interface BallStoryArgs {
-  radius: number;
+  diameter: number;
   color: string;
   emissiveColor: string;
   emissiveIntensity: number;
@@ -33,8 +33,8 @@ const meta: Meta<BallStoryArgs> = {
     group.add(jar);
 
     const mesh = createBallMesh();
-    mesh.scale.setScalar(args.radius / BALL_RADIUS);
-    mesh.position.y = 1.05 + args.radius;
+    mesh.scale.setScalar(args.diameter / BALL_DIAMETER);
+    mesh.position.y = 1.05 + args.diameter * 0.5;
 
     const material = mesh.material as MeshPhysicalMaterial;
     material.color = new Color(args.color);
@@ -87,7 +87,7 @@ const meta: Meta<BallStoryArgs> = {
     });
   },
   args: {
-    radius: BALL_RADIUS,
+    diameter: 0.082,
     color: '#f7fbff',
     emissiveColor: '#6cd6ff',
     emissiveIntensity: 0.15,
@@ -102,7 +102,9 @@ const meta: Meta<BallStoryArgs> = {
     cameraFov: 50
   },
   argTypes: {
-    radius: { control: { type: 'range', min: 0.015, max: 0.12, step: 0.001 } },
+    diameter: {
+      control: { type: 'range', min: 0.03, max: 0.24, step: 0.001 }
+    },
     color: { control: 'color' },
     emissiveColor: { control: 'color' },
     emissiveIntensity: {
