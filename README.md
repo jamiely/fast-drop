@@ -20,6 +20,20 @@ npm install
 npm run dev
 ```
 
+Open http://localhost:5173.
+
+## Debug / camera / gameplay tuning toggles
+
+- Use `?debug=1` in the URL to open the debug panel:
+  - `http://localhost:5173/?debug=1`
+- Debug panel includes:
+  - pause/resume + step
+  - score/time mutators
+  - speed controls
+  - gameplay tuning (including drop cooldown)
+  - camera tuning
+  - preset save/load
+
 ## Scripts
 
 - `npm run dev` — start dev server
@@ -56,23 +70,28 @@ npm run dev
 
 ## Current status
 
-Gameplay plan phases 6–13 are complete:
+Implemented in this pass:
 
-- physics clean-entry scoring events,
-- real scoring rules (jar values, center weighting, streak bonuses),
-- pause/speed orbit controls,
-- audio event mapping with mobile unlock,
-- LED scoreboard HUD + live debug controls,
-- runtime gameplay/camera tuning + preset save/load,
-- arcade cabinet shell framing,
-- Electron packaging path for Windows offline deployment.
+- deterministic round lifecycle (`playing`/`ended`) + restart flow,
+- hit/miss/balls-dropped stats + derived accuracy,
+- deterministic round-end conditions (timer expiry and no balls + resolved scene),
+- end-of-round summary overlay with Play Again,
+- e2e regressions for summary/round-end behavior,
+- configurable drop cooldown (default 80ms, debug-tunable),
+- visual style refresh inspired by the neon reference image,
+- ball size updated to 1/8 jar diameter,
+- outer arcade enclosure removed.
 
 ## Representative screenshots
 
-### Gameplay + debug controls (desktop)
+### Neon gameplay (desktop)
 
-![Gameplay debug desktop](docs/history/2026-03-14-phase7-13-complete/gameplay-debug-desktop.png)
+![Neon gameplay desktop](docs/history/2026-03-14-round-summary-neon-style/gameplay-desktop-neon.png)
 
-### Gameplay (mobile)
+### Round summary overlay
 
-![Gameplay mobile](docs/history/2026-03-14-phase7-13-complete/gameplay-mobile.png)
+![Round summary desktop](docs/history/2026-03-14-round-summary-neon-style/round-summary-desktop.png)
+
+### Neon gameplay (mobile)
+
+![Neon gameplay mobile](docs/history/2026-03-14-round-summary-neon-style/gameplay-mobile-neon.png)

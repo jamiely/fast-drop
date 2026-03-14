@@ -19,6 +19,13 @@ npm run check
 npm run test:e2e
 ```
 
+## Debug menu and tuning controls
+
+- Open with `?debug=1`:
+  - `http://localhost:5173/?debug=1`
+- Includes controls for pause/step, score/time mutation, spawn ball, speed, gameplay tuning (including drop cooldown), and camera tuning.
+- This menu is URL-gated and should stay hidden in normal mode.
+
 ## Git hooks
 
 ```bash

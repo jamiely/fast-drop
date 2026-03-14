@@ -3,7 +3,7 @@ import {
   ConeGeometry,
   Group,
   Mesh,
-  MeshStandardMaterial
+  MeshPhysicalMaterial
 } from 'three';
 
 export interface PlayfieldDimensions {
@@ -18,16 +18,24 @@ export interface PlayfieldDimensions {
   petalTopY: number;
 }
 
-const moundMaterial = new MeshStandardMaterial({
-  color: '#4f74a0',
-  metalness: 0.08,
-  roughness: 0.42
+const moundMaterial = new MeshPhysicalMaterial({
+  color: '#4f87ff',
+  metalness: 0.14,
+  roughness: 0.16,
+  clearcoat: 1,
+  clearcoatRoughness: 0.08,
+  emissive: '#2e4fff',
+  emissiveIntensity: 0.18
 });
 
-const petalMaterial = new MeshStandardMaterial({
-  color: '#426182',
-  metalness: 0.07,
-  roughness: 0.42
+const petalMaterial = new MeshPhysicalMaterial({
+  color: '#69a8ff',
+  metalness: 0.12,
+  roughness: 0.2,
+  clearcoat: 1,
+  clearcoatRoughness: 0.1,
+  emissive: '#355eff',
+  emissiveIntensity: 0.14
 });
 
 export const createPlayfieldDimensions = (

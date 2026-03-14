@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
+import { BALL_RADIUS } from '../../src/entities/Ball';
 import { SceneRoot } from '../../src/scene/SceneRoot';
 
 describe('SceneRoot', () => {
@@ -97,7 +98,7 @@ describe('SceneRoot', () => {
     const dy = secondBall.mesh.position.y - firstBall.mesh.position.y;
     const dz = secondBall.mesh.position.z - firstBall.mesh.position.z;
 
-    expect(Math.hypot(dx, dy, dz)).toBeGreaterThanOrEqual(0.235);
+    expect(Math.hypot(dx, dy, dz)).toBeGreaterThanOrEqual(BALL_RADIUS * 2);
   });
 
   it('handles settled-ball collision branches (settled+settled and settled+moving)', () => {
@@ -132,7 +133,7 @@ describe('SceneRoot', () => {
     firstBall.mesh.position.x = 0;
     firstBall.mesh.position.y = 1.0;
     firstBall.mesh.position.z = 1.6;
-    secondBall.mesh.position.x = 0.05;
+    secondBall.mesh.position.x = BALL_RADIUS * 1.3;
     secondBall.mesh.position.y = 1.0;
     secondBall.mesh.position.z = 1.6;
 
@@ -142,7 +143,7 @@ describe('SceneRoot', () => {
     secondBall.velocityX = -0.6;
     secondBall.velocityY = 0;
     secondBall.velocityZ = 0;
-    secondBall.mesh.position.x = 0.1;
+    secondBall.mesh.position.x = BALL_RADIUS * 1.2;
 
     root.update(1 / 60);
 
@@ -185,7 +186,7 @@ describe('SceneRoot', () => {
     leftBall.mesh.position.z = 1.6;
 
     rightBall.isSettled = true;
-    rightBall.mesh.position.x = 0.1;
+    rightBall.mesh.position.x = BALL_RADIUS * 1.2;
     rightBall.mesh.position.y = 1.0;
     rightBall.mesh.position.z = 1.6;
 

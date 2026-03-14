@@ -1,54 +1,193 @@
-# PLAN — Post-Completion Follow-ups
+# PLAN — Round Flow, Summary Overlay, and Remaining Research Items
 
-Previous gameplay delivery plan was archived to:
+## Status
+
+Completed on 2026-03-14:
+
+- Phase A ✅
+- Phase B ✅
+- Phase C ✅
+- Phase D ✅
+- Phase E ✅
+- Phase F ✅ (drop cooldown implemented + debug tuning)
+
+Previous completed gameplay plan is archived at:
 
 - `docs/history/2026-03-14-plan-phase6-13-complete/PLAN.md`
 
-## Goal
+## Objective
 
-Track remaining items that are still called out in `RESEARCH.md` but are not fully implemented yet.
+Complete the remaining requirements from `RESEARCH.md` by adding deterministic round lifecycle handling, end-of-round summary UI, hit/miss/accuracy accounting, and regression coverage.
 
-## Remaining items from RESEARCH
+## Scope
 
-### 1) Round flow + end-of-round overlay
+In scope:
 
-Status: ⏳ Not started
+- round lifecycle state and transitions
+- round-end conditions
+- hit/miss/accuracy counters
+- end-of-round overlay UI
+- unit + integration + e2e coverage
+- optional drop throttle (if it improves stability without harming feel)
 
-- Add explicit round/game phase model (`idle | countdown | playing | ended`).
-- End round when:
-  - `timeRemaining <= 0`, or
-  - `ballsRemaining === 0` and all active balls resolve.
-- Add end-of-round summary overlay with:
-  - final score,
-  - hits,
-  - misses,
-  - accuracy.
+Out of scope:
 
-### 2) State accounting for hits/misses/accuracy
+- major physics rewrites
+- visual art overhauls outside the new round summary UI
 
-Status: ⏳ Not started
+---
 
-- Extend runtime state with deterministic counters for landed/missed balls.
-- Use settlement + miss cleanup events to update stats.
-- Add unit tests for round accounting.
+## Phase A — Round lifecycle model
 
-### 3) E2E for round completion and summary
+### Tasks
 
-Status: ⏳ Not started
+1. Extend game state to include round phase:
+   - `idle | countdown | playing | ended`
+2. Add round transition reducers/selectors:
+   - `startRound`
+   - `endRound`
+   - `canDropBall`
+3. Ensure deterministic transitions in fixed-step flow.
+4. Keep existing public contracts stable where possible:
+   - `OrbitSystem.update(dt)`
+   - `ScoringSystem.onBallSettled(event)`
+   - `AudioSystem.play(event)`
+   - `testBridge.stepFrames(n)`
 
-- Add Playwright regression that validates round-end conditions.
-- Add Playwright regression that validates summary overlay content.
+### Acceptance
 
-### 4) Optional gameplay throttle (from TODO)
+- Round starts in a known phase and transitions predictably.
+- Drops only happen in valid phases.
+- Existing tests remain green.
 
-Status: ⏳ Not started
+---
 
-- Evaluate short drop cooldown (50–100ms) to avoid unbounded burst spawning.
-- Keep rapid play feel; apply only if needed for stability/tuning.
+## Phase B — Hit/miss/accuracy accounting
 
-## Definition of done for this follow-up plan
+### Tasks
 
-- Round can start, play, and end deterministically.
-- End-of-round summary overlay is shown and test-covered.
-- Hit/miss/accuracy counters are correct and reflected in UI.
-- `npm run check` and `npm run test:e2e` remain green.
+1. Extend runtime state with counters:
+   - `hits`
+   - `misses`
+   - `ballsDropped`
+2. Add deterministic event plumbing for:
+   - clean-entry settlement => `hits +1`
+   - unresolved/cleanup miss => `misses +1`
+3. Add derived `accuracy` selector:
+   - `hits / max(1, hits + misses)`
+4. Add unit tests for all branches:
+   - no attempts
+   - only misses
+   - mixed outcomes
+   - late round edge cases
+
+### Acceptance
+
+- Counters are correct and deterministic.
+- Accuracy value is stable and matches expected math.
+- Coverage remains at/above project threshold.
+
+---
+
+## Phase C — Round-end conditions
+
+### Tasks
+
+1. End round on timer expiry (`timeRemaining <= 0`).
+2. End round when:
+   - `ballsRemaining === 0`
+   - and all active balls are resolved (hit/miss/frozen/cleaned).
+3. Expose read-only “round ended” state for UI and tests.
+4. Add integration tests for both end paths.
+
+### Acceptance
+
+- Both end conditions are deterministic and test-covered.
+- No premature round ends while active balls remain unresolved.
+
+---
+
+## Phase D — End-of-round summary overlay
+
+### Tasks
+
+1. Add overlay UI rendered only when round phase is `ended`.
+2. Show:
+   - final score
+   - hits
+   - misses
+   - accuracy (%)
+3. Add “Play Again” action to reset round deterministically.
+4. Ensure HUD/overlay coexist cleanly on desktop and mobile layouts.
+
+### Acceptance
+
+- Overlay appears exactly at round end.
+- Values match state.
+- Restart begins a fresh round with reset counters.
+
+---
+
+## Phase E — E2E regression expansion
+
+### Tasks
+
+1. Add Playwright test: round ends on timer expiry and summary appears.
+2. Add Playwright test: round ends after balls exhausted + resolution.
+3. Add Playwright test: summary values are non-empty and internally consistent.
+4. Keep debug-gated controls only under `?debug=1`.
+
+### Acceptance
+
+- New e2e tests are stable locally and in CI.
+- Existing smoke tests remain green.
+
+---
+
+## Phase F — Optional drop throttle (TODO)
+
+### Tasks
+
+1. Add configurable drop cooldown (`0–100ms`, default tuned from playtest).
+2. Keep space/click/tap responsiveness high.
+3. Add deterministic tests for cooldown behavior.
+4. Add debug control for cooldown tuning (dev/debug mode only).
+
+### Acceptance
+
+- Ball spam is bounded when cooldown is enabled.
+- Gameplay still feels fast; no perceived input lag at chosen default.
+
+---
+
+## File-level implementation map
+
+- `src/game/types.ts` — round phase + stats types
+- `src/game/state.ts` — reducers/selectors for phase and stats
+- `src/game/Game.ts` — round-end orchestration + transitions
+- `src/scene/SceneRoot.ts` — miss-resolution event signal if needed
+- `src/systems/UISystem.ts` + `src/ui/*` — summary overlay wiring
+- `tests/unit/state.test.ts` — phase/stats reducer tests
+- `tests/unit/game.test.ts` — orchestration and end-condition tests
+- `tests/e2e/*.spec.ts` — round-end and summary assertions
+- `README.md` / `docs/dev-setup.md` — behavior and test updates
+
+---
+
+## Execution order
+
+1. Phase A
+2. Phase B
+3. Phase C
+4. Phase D
+5. Phase E
+6. Phase F (optional, based on feel/stability)
+
+---
+
+## Definition of Done
+
+- Remaining research requirements are implemented and documented.
+- Round lifecycle and summary overlay are deterministic and test-covered.
+- Hit/miss/accuracy counters are accurate and visible.
+- `npm run check` and `npm run test:e2e` pass.
