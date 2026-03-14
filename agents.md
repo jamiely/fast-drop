@@ -1,6 +1,8 @@
 # Agents Notes
 
 - Commit after each change.
+- Commit often in small, logical checkpoints (prefer multiple small commits over one large commit).
+- If work spans multiple tasks, commit at least after each completed sub-task before moving on.
 - Before each commit, consider whether `README.md` or `docs/` should be updated.
 - Use `RESEARCH.md` for project context.
 - Use `PLAN.md` for implementation planning and execution order.
