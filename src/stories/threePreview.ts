@@ -5,6 +5,7 @@ import {
   WebGLRenderer,
   type Object3D
 } from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { addLighting } from '../scene/lighting';
 
 export const renderThreePreview = (object: Object3D): HTMLElement => {
@@ -32,8 +33,31 @@ export const renderThreePreview = (object: Object3D): HTMLElement => {
 
   const camera = new PerspectiveCamera(50, previewWidth / previewHeight, 0.1, 100);
   camera.position.set(0, 1.2, 3.1);
-  camera.lookAt(0, 0.35, 0);
 
-  renderer.render(scene, camera);
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.target.set(0, 0.35, 0);
+  controls.minDistance = 1.2;
+  controls.maxDistance = 8;
+  controls.update();
+
+  renderer.setAnimationLoop(() => {
+    controls.update();
+    renderer.render(scene, camera);
+  });
+
+  const observer = new MutationObserver(() => {
+    if (host.isConnected) {
+      return;
+    }
+
+    renderer.setAnimationLoop(null);
+    controls.dispose();
+    renderer.dispose();
+    observer.disconnect();
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+
   return host;
 };
