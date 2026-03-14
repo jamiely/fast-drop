@@ -20,6 +20,6 @@ Completed in 2026-03-14 pass:
 - [x] End the game as soon as balls run out
 - [x] Add a ball size selector and drop height control to the debug panel
 - [x] add ball throttler (drop cooldown)
-- [x] set ball diameter to 0.082 (relative to jar diameter)
+- [x] set ball diameter to 0.157 reference (relative to jar diameter scaling)
 - [x] remove outer arcade enclosure
 - [x] add instructions for camera/debug toggles (`?debug=1`)

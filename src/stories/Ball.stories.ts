@@ -87,7 +87,7 @@ const meta: Meta<BallStoryArgs> = {
     });
   },
   args: {
-    diameter: 0.082,
+    diameter: 0.157,
     color: '#f7fbff',
     emissiveColor: '#6cd6ff',
     emissiveIntensity: 0.15,
