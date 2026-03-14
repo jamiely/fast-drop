@@ -45,6 +45,12 @@ describe('SceneRoot', () => {
       jarIndex: 0,
       isBonusJar: true
     });
+
+    const settledBalls = (root as unknown as {
+      activeBalls: Array<{ isSettled: boolean }>;
+    }).activeBalls;
+    expect(settledBalls).toHaveLength(1);
+    expect(settledBalls[0]?.isSettled).toBe(true);
   });
 
   it('does not emit clean-entry events for rim grazes outside clean radius', () => {

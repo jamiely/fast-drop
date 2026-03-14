@@ -22,6 +22,10 @@ interface ActiveBallVisual {
   hasScoredEntry: boolean;
   ageSeconds: number;
   settledFrames: number;
+  isSettled: boolean;
+  settledOffsetX: number;
+  settledOffsetY: number;
+  settledOffsetZ: number;
 }
 
 export interface SceneBallSettlement {
@@ -47,6 +51,7 @@ const CONTAINMENT_TOP_Y = JAR_HEIGHT + BALL_RADIUS * 0.55;
 const SETTLE_SPEED_EPSILON = 0.2;
 const SETTLE_FRAME_COUNT = 20;
 const MAX_BALL_AGE_SECONDS = 8;
+const MISSED_BALL_CLEANUP_Y = -1.5;
 
 export class SceneRoot {
   public readonly renderer: WebGLRenderer | null;
@@ -117,7 +122,11 @@ export class SceneRoot {
       enteredJarIndex: null,
       hasScoredEntry: false,
       ageSeconds: 0,
-      settledFrames: 0
+      settledFrames: 0,
+      isSettled: false,
+      settledOffsetX: 0,
+      settledOffsetY: 0,
+      settledOffsetZ: 0
     });
   }
 
@@ -126,6 +135,11 @@ export class SceneRoot {
 
     for (let index = this.activeBalls.length - 1; index >= 0; index -= 1) {
       const activeBall = this.activeBalls[index];
+
+      if (activeBall.isSettled) {
+        this.updateSettledBallAttachment(activeBall);
+        continue;
+      }
 
       activeBall.ageSeconds += dt;
       const previousY = activeBall.mesh.position.y;
@@ -153,7 +167,26 @@ export class SceneRoot {
       }
 
       const settled = this.resolveEnteredJarPhysics(activeBall, dt);
-      if (settled || activeBall.ageSeconds >= MAX_BALL_AGE_SECONDS) {
+      if (settled) {
+        if (activeBall.enteredJarIndex === null) {
+          this.ballGroup.remove(activeBall.mesh);
+          this.activeBalls.splice(index, 1);
+          continue;
+        }
+
+        const frozen = this.freezeBallInJar(activeBall);
+        if (!frozen) {
+          this.ballGroup.remove(activeBall.mesh);
+          this.activeBalls.splice(index, 1);
+        }
+        continue;
+      }
+
+      if (
+        activeBall.enteredJarIndex === null &&
+        (activeBall.ageSeconds >= MAX_BALL_AGE_SECONDS ||
+          activeBall.mesh.position.y <= MISSED_BALL_CLEANUP_Y)
+      ) {
         this.ballGroup.remove(activeBall.mesh);
         this.activeBalls.splice(index, 1);
       }
@@ -317,5 +350,44 @@ export class SceneRoot {
     }
 
     return activeBall.settledFrames >= SETTLE_FRAME_COUNT;
+  }
+
+  private freezeBallInJar(activeBall: ActiveBallVisual): boolean {
+    const jarIndex = activeBall.enteredJarIndex;
+    if (jarIndex === null) {
+      return false;
+    }
+
+    const jar = this.jars[jarIndex];
+    if (!jar) {
+      return false;
+    }
+
+    activeBall.isSettled = true;
+    activeBall.velocityX = 0;
+    activeBall.velocityY = 0;
+    activeBall.velocityZ = 0;
+    activeBall.settledOffsetX = activeBall.mesh.position.x - jar.position.x;
+    activeBall.settledOffsetY = Math.max(BALL_RADIUS + 0.01, activeBall.mesh.position.y);
+    activeBall.settledOffsetZ = activeBall.mesh.position.z - jar.position.z;
+
+    this.updateSettledBallAttachment(activeBall);
+    return true;
+  }
+
+  private updateSettledBallAttachment(activeBall: ActiveBallVisual): void {
+    const jarIndex = activeBall.enteredJarIndex;
+    if (jarIndex === null) {
+      return;
+    }
+
+    const jar = this.jars[jarIndex];
+    if (!jar) {
+      return;
+    }
+
+    activeBall.mesh.position.x = jar.position.x + activeBall.settledOffsetX;
+    activeBall.mesh.position.y = activeBall.settledOffsetY;
+    activeBall.mesh.position.z = jar.position.z + activeBall.settledOffsetZ;
   }
 }
