@@ -10,7 +10,9 @@ export default [
       'coverage',
       'playwright-report',
       'test-results',
-      'node_modules'
+      'node_modules',
+      '.storybook',
+      'storybook-static'
     ]
   },
   js.configs.recommended,

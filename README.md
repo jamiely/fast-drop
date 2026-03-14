@@ -22,7 +22,14 @@ npm run dev
 
 Open http://localhost:5173.
 
-For the component storybook site, open http://localhost:5173/storybook.html.
+For the component StorybookJS site, run `npm run storybook` and open http://localhost:6006.
+
+Storybook stories currently included:
+
+- Ball (size/material/color controls)
+- Jar (bonus jar body/rim controls)
+- Center Platform (radius/bridge/material controls)
+- Score Panel (value/LED color/scale controls)
 
 ## Debug / camera / gameplay tuning toggles
 
@@ -39,8 +46,9 @@ For the component storybook site, open http://localhost:5173/storybook.html.
 ## Scripts
 
 - `npm run dev` — start dev server
-- `npm run storybook:dev` — start dev server and open the component storybook page
-- `npm run build` — typecheck + production build (includes `index.html` + `storybook.html`)
+- `npm run storybook` — run StorybookJS locally on port 6006
+- `npm run build-storybook` — build static StorybookJS output
+- `npm run build` — typecheck + production build
 - `npm run preview` — preview production build
 - `npm run typecheck` — TypeScript checks
 - `npm run lint` — ESLint
@@ -79,7 +87,7 @@ To reduce flakiness in CI, Playwright also runs with `1` worker and `1` retry wh
   - `npm run test`
   - `npm run coverage` (enforces global 90% minimum for statements/branches/functions/lines)
   - `npm run test:e2e`
-- Coverage excludes runtime-heavy orchestration/render/audio UI files (`Game.ts`, `SceneRoot.ts`, `ui/debugMenu.ts`, `systems/AudioSystem.ts`, `systems/OrbitSystem.ts`, `ui/hud.ts`, `storybook/**`) and pure type-only modules from threshold accounting so the 90% gate targets deterministic unit-testable logic.
+- Coverage excludes runtime-heavy orchestration/render/audio UI files (`Game.ts`, `SceneRoot.ts`, `ui/debugMenu.ts`, `systems/AudioSystem.ts`, `systems/OrbitSystem.ts`, `ui/hud.ts`, `stories/**`) and pure type-only modules from threshold accounting so the 90% gate targets deterministic unit-testable logic.
 
 ## CI/CD
 
@@ -110,7 +118,7 @@ Implemented in this pass:
 - improved HUD/summary readability polish and mobile-safe-area spacing,
 - ball size updated to 1/8 jar diameter,
 - outer arcade enclosure removed,
-- added a lightweight component storybook page with isolated stories for ball, bonus jar, center platform, and score panel, with per-story feedback capture.
+- added StorybookJS component stories for ball, bonus jar, center platform, and score panel, each with interactive controls for sizing/colors/material tuning.
 
 ## Representative screenshots
 
@@ -125,3 +133,7 @@ Implemented in this pass:
 ### Neon gameplay (mobile)
 
 ![Neon gameplay mobile](docs/history/2026-03-14-final-polish-audio-ui/gameplay-mobile-polish.png)
+
+### StorybookJS controls (component isolation)
+
+![StorybookJS ball controls](docs/history/2026-03-14-storybookjs-controls/storybookjs-ball-controls.png)
