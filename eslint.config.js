@@ -31,5 +31,17 @@ export default [
       '@typescript-eslint/no-floating-promises': 'error'
     }
   },
+  {
+    files: ['**/*.mjs'],
+    languageOptions: {
+      globals: {
+        process: 'readonly',
+        console: 'readonly'
+      }
+    },
+    rules: {
+      'no-undef': 'off'
+    }
+  },
   eslintConfigPrettier
 ];

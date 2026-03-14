@@ -4,7 +4,10 @@ import { AudioSystem } from '../../src/systems/AudioSystem';
 
 interface FakeOscillator {
   type: OscillatorType;
-  frequency: { setValueAtTime: ReturnType<typeof vi.fn> };
+  frequency: {
+    setValueAtTime: ReturnType<typeof vi.fn>;
+    exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
+  };
   connect: ReturnType<typeof vi.fn>;
   start: ReturnType<typeof vi.fn>;
   stop: ReturnType<typeof vi.fn>;
@@ -21,7 +24,10 @@ interface FakeGain {
 const installFakeAudioContext = (state: AudioContextState = 'running') => {
   const oscillator: FakeOscillator = {
     type: 'sine',
-    frequency: { setValueAtTime: vi.fn() },
+    frequency: {
+      setValueAtTime: vi.fn(),
+      exponentialRampToValueAtTime: vi.fn()
+    },
     connect: vi.fn(),
     start: vi.fn(),
     stop: vi.fn()
@@ -97,28 +103,29 @@ describe('AudioSystem', () => {
     expect(infoSpy).toHaveBeenCalledWith('[AudioSystem] drop (placeholder)');
   });
 
-  it('plays synthesized sounds and reuses one audio context instance', () => {
+  it('queues until first interaction and then plays queued sounds', async () => {
     const fake = installFakeAudioContext('suspended');
 
     const system = new AudioSystem();
     system.play('drop');
     system.play('ball-settled');
-    system.play('bonus-awarded');
-    system.play('time-warning');
-    system.play('game-over');
-    system.play('not-a-real-event' as never);
+
+    expect(fake.createOscillator).toHaveBeenCalledTimes(0);
+
+    window.dispatchEvent(new PointerEvent('pointerdown'));
+    await Promise.resolve();
 
     expect(fake.FakeAudioContext.instanceCount).toBe(1);
     expect(fake.resume).toHaveBeenCalled();
-    expect(fake.createOscillator).toHaveBeenCalledTimes(6);
-    expect(fake.createGain).toHaveBeenCalledTimes(6);
+    expect(fake.createOscillator).toHaveBeenCalledTimes(2);
+    expect(fake.createGain).toHaveBeenCalledTimes(2);
     expect(fake.oscillator.frequency.setValueAtTime).toHaveBeenCalled();
     expect(fake.gain.gain.exponentialRampToValueAtTime).toHaveBeenCalled();
     expect(fake.oscillator.start).toHaveBeenCalled();
     expect(fake.oscillator.stop).toHaveBeenCalled();
   });
 
-  it('supports webkit audio context fallback', () => {
+  it('supports webkit audio context fallback', async () => {
     const fake = installFakeAudioContext('running');
 
     Object.defineProperty(window, 'AudioContext', {
@@ -129,11 +136,13 @@ describe('AudioSystem', () => {
     Object.defineProperty(window, 'webkitAudioContext', {
       configurable: true,
       writable: true,
-      value: window.AudioContext ?? fake.FakeAudioContext
+      value: fake.FakeAudioContext
     });
 
     const system = new AudioSystem();
     system.play('drop');
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space' }));
+    await Promise.resolve();
 
     expect(fake.createOscillator).toHaveBeenCalledTimes(1);
   });

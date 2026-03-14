@@ -1,4 +1,13 @@
-import { Color, Group, Mesh, Scene, WebGLRenderer } from 'three';
+import {
+  BoxGeometry,
+  Color,
+  Group,
+  Mesh,
+  MeshStandardMaterial,
+  Scene,
+  WebGLRenderer
+} from 'three';
+import type { CameraTuning, GameplayTuning } from '../game/config';
 import { BALL_RADIUS, createBallMesh } from '../entities/Ball';
 import {
   type PlayfieldDimensions,
@@ -7,7 +16,7 @@ import {
   createPlayfieldDimensions
 } from '../entities/Playfield';
 import { JAR_HEIGHT, JAR_RADIUS, createJarMesh } from '../entities/Jar';
-import { createCamera } from './camera';
+import { applyCameraTuning, createCamera } from './camera';
 import { addLighting } from './lighting';
 
 interface ActiveBallVisual {
@@ -30,9 +39,8 @@ export interface SceneBallSettlement {
   ballId: number | null;
   jarIndex: number;
   isBonusJar: boolean;
+  centerOffsetNormalized: number;
 }
-
-const bonusJarIndices = new Set([0, 1]);
 
 const GRAVITY = 7.6;
 const AIR_DAMPING = 0.998;
@@ -40,13 +48,7 @@ const PLAYFIELD_RESTITUTION = 0.22;
 const PLAYFIELD_FRICTION = 0.92;
 const MOUND_OUTWARD_ACCELERATION = 2.8;
 const JAR_AIR_DAMPING = 0.992;
-const RIM_BOUNCE = 0.46;
-const JAR_WALL_RESTITUTION = 0.52;
-const JAR_BOTTOM_RESTITUTION = 0.42;
-const ENTRY_PLANE_Y = JAR_HEIGHT + BALL_RADIUS;
-const CLEAN_ENTRY_RADIUS = JAR_RADIUS - BALL_RADIUS * 0.25;
-const JAR_INNER_RADIUS = JAR_RADIUS - BALL_RADIUS;
-const CONTAINMENT_TOP_Y = JAR_HEIGHT + BALL_RADIUS * 0.55;
+const CONTAINMENT_TOP_FACTOR = 0.55;
 const SETTLE_SPEED_EPSILON = 0.2;
 const SETTLE_FRAME_COUNT = 20;
 const MAX_BALL_AGE_SECONDS = 8;
@@ -62,14 +64,24 @@ export class SceneRoot {
   public readonly jars: Mesh[];
   private readonly petalGroup: Group;
   private readonly petals: Mesh[];
-  private readonly playfieldDimensions: PlayfieldDimensions;
+  private playfieldDimensions: PlayfieldDimensions;
   private readonly ballGroup: Group;
   private readonly activeBalls: ActiveBallVisual[] = [];
+  private readonly playfieldMesh: Group;
+  private readonly bonusJarIndices: Set<number>;
+
+  private dropPoint = { x: 0, z: 2.2, y: 2.6 };
+  private jarDiameterScale = 1;
+  private jarHeightScale = 1;
+  private rimBounce = 0.46;
+  private wallRestitution = 0.52;
+  private floorRestitution = 0.42;
 
   public constructor(
     private readonly host: HTMLElement,
     jarCount: number,
-    jarOrbitRadius = 2.2
+    jarOrbitRadius = 2.2,
+    bonusBucketCount = 2
   ) {
     this.scene = new Scene();
     this.scene.background = new Color('#0f1724');
@@ -92,16 +104,24 @@ export class SceneRoot {
 
     addLighting(this.scene);
 
-    this.playfieldDimensions = createPlayfieldDimensions(jarOrbitRadius, JAR_RADIUS);
-    this.scene.add(createPlayfieldBase(this.playfieldDimensions));
+    this.playfieldDimensions = createPlayfieldDimensions(
+      jarOrbitRadius,
+      JAR_RADIUS
+    );
+    this.playfieldMesh = createPlayfieldBase(this.playfieldDimensions);
+    this.scene.add(this.playfieldMesh);
 
     this.jarGroup = new Group();
     this.jars = Array.from({ length: jarCount }, (_, index) => {
-      const jar = createJarMesh(index < 2);
+      const jar = createJarMesh(index < bonusBucketCount);
       this.jarGroup.add(jar);
       return jar;
     });
     this.scene.add(this.jarGroup);
+
+    this.bonusJarIndices = new Set(
+      Array.from({ length: Math.max(0, bonusBucketCount) }, (_, index) => index)
+    );
 
     this.petalGroup = new Group();
     this.petals = Array.from({ length: jarCount }, () => {
@@ -113,11 +133,68 @@ export class SceneRoot {
 
     this.ballGroup = new Group();
     this.scene.add(this.ballGroup);
+
+    this.scene.add(this.createCabinetShell());
   }
 
-  public spawnDropBall(dropX = 0, dropZ = 2.2, ballId: number | null = null): void {
+  public applyGameplayTuning(key: keyof GameplayTuning, value: number): void {
+    if (!Number.isFinite(value)) {
+      return;
+    }
+
+    if (key === 'dropPointX') {
+      this.dropPoint.x = value;
+      return;
+    }
+
+    if (key === 'dropPointZ') {
+      this.dropPoint.z = value;
+      return;
+    }
+
+    if (key === 'dropHeight') {
+      this.dropPoint.y = value;
+      return;
+    }
+
+    if (key === 'jarDiameterScale') {
+      this.jarDiameterScale = Math.max(0.6, value);
+      this.syncJarScale();
+      return;
+    }
+
+    if (key === 'jarHeightScale') {
+      this.jarHeightScale = Math.max(0.6, value);
+      this.syncJarScale();
+      return;
+    }
+
+    if (key === 'ballBounciness') {
+      this.rimBounce = Math.max(0.05, Math.min(0.95, value));
+      return;
+    }
+
+    if (key === 'wallBounciness') {
+      this.wallRestitution = Math.max(0.05, Math.min(0.95, value));
+      return;
+    }
+
+    if (key === 'floorBounciness') {
+      this.floorRestitution = Math.max(0.05, Math.min(0.95, value));
+    }
+  }
+
+  public applyCameraTuning(tuning: CameraTuning): void {
+    applyCameraTuning(this.camera, tuning);
+  }
+
+  public spawnDropBall(
+    dropX = this.dropPoint.x,
+    dropZ = this.dropPoint.z,
+    ballId: number | null = null
+  ): void {
     const ball = createBallMesh();
-    ball.position.set(dropX, 2.6, dropZ);
+    ball.position.set(dropX, this.dropPoint.y, dropZ);
     this.ballGroup.add(ball);
 
     const horizontalSeed = ((ballId ?? this.activeBalls.length) % 7) - 3;
@@ -219,6 +296,32 @@ export class SceneRoot {
     this.renderer?.render(this.scene, this.camera);
   }
 
+  private syncJarScale(): void {
+    for (const jar of this.jars) {
+      jar.scale.set(
+        this.jarDiameterScale,
+        this.jarHeightScale,
+        this.jarDiameterScale
+      );
+    }
+  }
+
+  private getJarRadius(): number {
+    return JAR_RADIUS * this.jarDiameterScale;
+  }
+
+  private getJarHeight(): number {
+    return JAR_HEIGHT * this.jarHeightScale;
+  }
+
+  private getEntryPlaneY(): number {
+    return this.getJarHeight() + BALL_RADIUS;
+  }
+
+  private getContainmentTopY(): number {
+    return this.getJarHeight() + BALL_RADIUS * CONTAINMENT_TOP_FACTOR;
+  }
+
   private syncPlayfieldVisuals(): void {
     const { petalCenterRadius } = this.playfieldDimensions;
 
@@ -237,7 +340,10 @@ export class SceneRoot {
     }
   }
 
-  private resolvePlayfieldCollision(activeBall: ActiveBallVisual, dt: number): void {
+  private resolvePlayfieldCollision(
+    activeBall: ActiveBallVisual,
+    dt: number
+  ): void {
     const supportHeight = this.getSupportHeightAt(
       activeBall.mesh.position.x,
       activeBall.mesh.position.z
@@ -261,7 +367,10 @@ export class SceneRoot {
     activeBall.velocityX *= PLAYFIELD_FRICTION;
     activeBall.velocityZ *= PLAYFIELD_FRICTION;
 
-    const radiusFromCenter = Math.hypot(activeBall.mesh.position.x, activeBall.mesh.position.z);
+    const radiusFromCenter = Math.hypot(
+      activeBall.mesh.position.x,
+      activeBall.mesh.position.z
+    );
     const { moundRadius, moundHeight } = this.playfieldDimensions;
     if (radiusFromCenter >= moundRadius) {
       return;
@@ -293,8 +402,10 @@ export class SceneRoot {
     for (const petal of this.petals) {
       const cosY = Math.cos(petal.rotation.y);
       const sinY = Math.sin(petal.rotation.y);
-      const localX = (x - petal.position.x) * cosY - (z - petal.position.z) * sinY;
-      const localZ = (x - petal.position.x) * sinY + (z - petal.position.z) * cosY;
+      const localX =
+        (x - petal.position.x) * cosY - (z - petal.position.z) * sinY;
+      const localZ =
+        (x - petal.position.x) * sinY + (z - petal.position.z) * cosY;
 
       if (Math.abs(localX) <= halfWidth && Math.abs(localZ) <= halfLength) {
         petalHeightAtPoint = Math.max(petalHeightAtPoint, petalTopY);
@@ -306,8 +417,11 @@ export class SceneRoot {
 
   private resolveRimBounce(activeBall: ActiveBallVisual): void {
     const y = activeBall.mesh.position.y;
-    const rimMinY = JAR_HEIGHT - BALL_RADIUS * 0.5;
-    const rimMaxY = JAR_HEIGHT + BALL_RADIUS * 1.1;
+    const jarHeight = this.getJarHeight();
+    const jarRadius = this.getJarRadius();
+    const cleanEntryRadius = jarRadius - BALL_RADIUS * 0.25;
+    const rimMinY = jarHeight - BALL_RADIUS * 0.5;
+    const rimMaxY = jarHeight + BALL_RADIUS * 1.1;
 
     if (y < rimMinY || y > rimMaxY || activeBall.velocityY >= 0) {
       return;
@@ -318,20 +432,23 @@ export class SceneRoot {
       const dz = activeBall.mesh.position.z - jar.position.z;
       const distanceXZ = Math.hypot(dx, dz);
 
-      if (distanceXZ < CLEAN_ENTRY_RADIUS || distanceXZ > JAR_RADIUS + BALL_RADIUS) {
+      if (
+        distanceXZ < cleanEntryRadius ||
+        distanceXZ > jarRadius + BALL_RADIUS
+      ) {
         continue;
       }
 
       const nx = dx / Math.max(0.0001, distanceXZ);
       const nz = dz / Math.max(0.0001, distanceXZ);
-      const targetDistance = JAR_RADIUS + BALL_RADIUS;
+      const targetDistance = jarRadius + BALL_RADIUS;
       const correction = targetDistance - distanceXZ;
 
       activeBall.mesh.position.x += nx * correction;
       activeBall.mesh.position.z += nz * correction;
 
       activeBall.velocityY = Math.max(
-        Math.abs(activeBall.velocityY) * RIM_BOUNCE,
+        Math.abs(activeBall.velocityY) * this.rimBounce,
         0.9
       );
       activeBall.velocityX += nx * 0.28;
@@ -349,20 +466,28 @@ export class SceneRoot {
       return null;
     }
 
-    if (!(previousY > ENTRY_PLANE_Y && nextY <= ENTRY_PLANE_Y)) {
+    if (
+      !(previousY > this.getEntryPlaneY() && nextY <= this.getEntryPlaneY())
+    ) {
       return null;
     }
+
+    const cleanEntryRadius = this.getJarRadius() - BALL_RADIUS * 0.25;
 
     for (const [jarIndex, jar] of this.jars.entries()) {
       const dx = activeBall.mesh.position.x - jar.position.x;
       const dz = activeBall.mesh.position.z - jar.position.z;
       const distanceXZ = Math.hypot(dx, dz);
 
-      if (distanceXZ <= CLEAN_ENTRY_RADIUS) {
+      if (distanceXZ <= cleanEntryRadius) {
         return {
           ballId: activeBall.id,
           jarIndex,
-          isBonusJar: bonusJarIndices.has(jarIndex)
+          isBonusJar: this.bonusJarIndices.has(jarIndex),
+          centerOffsetNormalized: Math.min(
+            1,
+            distanceXZ / Math.max(0.001, cleanEntryRadius)
+          )
         };
       }
     }
@@ -371,7 +496,11 @@ export class SceneRoot {
   }
 
   private resolveBallPairCollisions(): void {
-    for (let leftIndex = 0; leftIndex < this.activeBalls.length; leftIndex += 1) {
+    for (
+      let leftIndex = 0;
+      leftIndex < this.activeBalls.length;
+      leftIndex += 1
+    ) {
       const leftBall = this.activeBalls[leftIndex];
 
       for (
@@ -405,7 +534,13 @@ export class SceneRoot {
         }
 
         if (rightBall.isSettled) {
-          this.separateAndBounceMovingBall(leftBall, -nx, -ny, -nz, penetration);
+          this.separateAndBounceMovingBall(
+            leftBall,
+            -nx,
+            -ny,
+            -nz,
+            penetration
+          );
           continue;
         }
 
@@ -420,7 +555,9 @@ export class SceneRoot {
         const relativeVelocityY = rightBall.velocityY - leftBall.velocityY;
         const relativeVelocityZ = rightBall.velocityZ - leftBall.velocityZ;
         const normalSpeed =
-          relativeVelocityX * nx + relativeVelocityY * ny + relativeVelocityZ * nz;
+          relativeVelocityX * nx +
+          relativeVelocityY * ny +
+          relativeVelocityZ * nz;
 
         if (normalSpeed < 0) {
           const impulse = (-(1 + BALL_COLLISION_RESTITUTION) * normalSpeed) / 2;
@@ -450,12 +587,17 @@ export class SceneRoot {
     movingBall.mesh.position.z += nz * penetration;
 
     const normalSpeed =
-      movingBall.velocityX * nx + movingBall.velocityY * ny + movingBall.velocityZ * nz;
+      movingBall.velocityX * nx +
+      movingBall.velocityY * ny +
+      movingBall.velocityZ * nz;
 
     if (normalSpeed < 0) {
-      movingBall.velocityX -= (1 + BALL_COLLISION_RESTITUTION) * normalSpeed * nx;
-      movingBall.velocityY -= (1 + BALL_COLLISION_RESTITUTION) * normalSpeed * ny;
-      movingBall.velocityZ -= (1 + BALL_COLLISION_RESTITUTION) * normalSpeed * nz;
+      movingBall.velocityX -=
+        (1 + BALL_COLLISION_RESTITUTION) * normalSpeed * nx;
+      movingBall.velocityY -=
+        (1 + BALL_COLLISION_RESTITUTION) * normalSpeed * ny;
+      movingBall.velocityZ -=
+        (1 + BALL_COLLISION_RESTITUTION) * normalSpeed * nz;
     }
 
     this.stabilizeBallAfterCollision(movingBall);
@@ -467,7 +609,10 @@ export class SceneRoot {
     }
   }
 
-  private resolveEnteredJarPhysics(activeBall: ActiveBallVisual, dt: number): boolean {
+  private resolveEnteredJarPhysics(
+    activeBall: ActiveBallVisual,
+    dt: number
+  ): boolean {
     if (activeBall.enteredJarIndex === null) {
       activeBall.velocityX *= AIR_DAMPING;
       activeBall.velocityZ *= AIR_DAMPING;
@@ -479,32 +624,43 @@ export class SceneRoot {
       return true;
     }
 
+    const jarInnerRadius = this.getJarRadius() - BALL_RADIUS;
+
     const dx = activeBall.mesh.position.x - jar.position.x;
     const dz = activeBall.mesh.position.z - jar.position.z;
     const distanceXZ = Math.hypot(dx, dz);
 
-    if (distanceXZ > JAR_INNER_RADIUS) {
+    if (distanceXZ > jarInnerRadius) {
       const nx = dx / Math.max(0.0001, distanceXZ);
       const nz = dz / Math.max(0.0001, distanceXZ);
-      const penetration = distanceXZ - JAR_INNER_RADIUS;
+      const penetration = distanceXZ - jarInnerRadius;
 
       activeBall.mesh.position.x -= nx * penetration;
       activeBall.mesh.position.z -= nz * penetration;
 
-      const radialVelocity = activeBall.velocityX * nx + activeBall.velocityZ * nz;
+      const radialVelocity =
+        activeBall.velocityX * nx + activeBall.velocityZ * nz;
       if (radialVelocity > 0) {
-        activeBall.velocityX -= radialVelocity * (1 + JAR_WALL_RESTITUTION) * nx;
-        activeBall.velocityZ -= radialVelocity * (1 + JAR_WALL_RESTITUTION) * nz;
+        activeBall.velocityX -=
+          radialVelocity * (1 + this.wallRestitution) * nx;
+        activeBall.velocityZ -=
+          radialVelocity * (1 + this.wallRestitution) * nz;
       }
     }
 
-    if (activeBall.mesh.position.y <= BALL_RADIUS + 0.01 && activeBall.velocityY < 0) {
+    if (
+      activeBall.mesh.position.y <= BALL_RADIUS + 0.01 &&
+      activeBall.velocityY < 0
+    ) {
       activeBall.mesh.position.y = BALL_RADIUS + 0.01;
-      activeBall.velocityY = -activeBall.velocityY * JAR_BOTTOM_RESTITUTION;
+      activeBall.velocityY = -activeBall.velocityY * this.floorRestitution;
     }
 
-    if (activeBall.mesh.position.y > CONTAINMENT_TOP_Y && activeBall.velocityY > 0) {
-      activeBall.mesh.position.y = CONTAINMENT_TOP_Y;
+    if (
+      activeBall.mesh.position.y > this.getContainmentTopY() &&
+      activeBall.velocityY > 0
+    ) {
+      activeBall.mesh.position.y = this.getContainmentTopY();
       activeBall.velocityY = -activeBall.velocityY * 0.24;
       activeBall.velocityX *= 0.9;
       activeBall.velocityZ *= 0.9;
@@ -523,7 +679,10 @@ export class SceneRoot {
       activeBall.velocityZ
     );
 
-    if (activeBall.mesh.position.y <= BALL_RADIUS + 0.03 && speed <= SETTLE_SPEED_EPSILON) {
+    if (
+      activeBall.mesh.position.y <= BALL_RADIUS + 0.03 &&
+      speed <= SETTLE_SPEED_EPSILON
+    ) {
       activeBall.settledFrames += 1;
     } else {
       activeBall.settledFrames = 0;
@@ -548,7 +707,10 @@ export class SceneRoot {
     activeBall.velocityY = 0;
     activeBall.velocityZ = 0;
     activeBall.settledOffsetX = activeBall.mesh.position.x - jar.position.x;
-    activeBall.settledOffsetY = Math.max(BALL_RADIUS + 0.01, activeBall.mesh.position.y);
+    activeBall.settledOffsetY = Math.max(
+      BALL_RADIUS + 0.01,
+      activeBall.mesh.position.y
+    );
     activeBall.settledOffsetZ = activeBall.mesh.position.z - jar.position.z;
 
     this.updateSettledBallAttachment(activeBall);
@@ -569,5 +731,39 @@ export class SceneRoot {
     activeBall.mesh.position.x = jar.position.x + activeBall.settledOffsetX;
     activeBall.mesh.position.y = activeBall.settledOffsetY;
     activeBall.mesh.position.z = jar.position.z + activeBall.settledOffsetZ;
+  }
+
+  private createCabinetShell(): Group {
+    const shell = new Group();
+
+    const frameMaterial = new MeshStandardMaterial({
+      color: '#2f5f8f',
+      metalness: 0.12,
+      roughness: 0.48
+    });
+    const trimMaterial = new MeshStandardMaterial({
+      color: '#f59e0b',
+      metalness: 0.2,
+      roughness: 0.35,
+      emissive: '#7a4200',
+      emissiveIntensity: 0.3
+    });
+
+    const left = new Mesh(new BoxGeometry(0.35, 3.4, 5.1), frameMaterial);
+    left.position.set(-2.45, 1.6, 0);
+    const right = left.clone();
+    right.position.x = 2.45;
+
+    const top = new Mesh(new BoxGeometry(5.25, 0.35, 5.1), frameMaterial);
+    top.position.set(0, 3.1, 0);
+
+    const bottom = new Mesh(new BoxGeometry(5.3, 0.4, 5.2), frameMaterial);
+    bottom.position.set(0, -0.25, 0);
+
+    const marquee = new Mesh(new BoxGeometry(2.6, 0.22, 0.35), trimMaterial);
+    marquee.position.set(0, 2.75, 2.35);
+
+    shell.add(left, right, top, bottom, marquee);
+    return shell;
   }
 }

@@ -8,8 +8,6 @@ declare global {
   }
 }
 
-// TODO(phase5-gameplay): Expand bridge controls for deterministic physics probes
-// (e.g. spawn ball with trajectory) while keeping existing methods stable.
 export const normalizeStepFrameCount = (n: number): number => {
   if (!Number.isFinite(n) || n <= 0) {
     return 0;

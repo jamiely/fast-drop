@@ -1,6 +1,6 @@
 # Fast Drop
 
-Bootstrap project for a browser-based 3D timing arcade game.
+Browser-first 3D timing arcade game with physics-driven ball drops into rotating jars.
 
 ## Tech stack
 
@@ -11,6 +11,7 @@ Bootstrap project for a browser-based 3D timing arcade game.
 - Vitest + coverage
 - Playwright
 - ESLint + Prettier
+- Electron + electron-builder (desktop packaging)
 
 ## Getting started
 
@@ -31,8 +32,11 @@ npm run dev
 - `npm run format:check` — Prettier formatting validation
 - `npm run test` — Vitest tests
 - `npm run coverage` — Vitest with coverage metrics (`text`, `json-summary`, `html`, `lcov`)
-- `npm run test:e2e` — Playwright smoke tests
+- `npm run test:e2e` — Playwright tests
 - `npm run check` — typecheck + lint + prettier check + coverage
+- `npm run electron:start` — run desktop app using built web assets
+- `npm run electron:smoke` — validate desktop packaging prerequisites
+- `npm run build:electron:win` — package Windows desktop artifacts
 
 ## Git hooks (Husky)
 
@@ -42,30 +46,33 @@ npm run dev
   - `npm run test`
   - `npm run coverage` (enforces global 90% minimum for statements/branches/functions/lines)
   - `npm run test:e2e`
+- Coverage excludes runtime-heavy orchestration/render/audio UI files (`Game.ts`, `SceneRoot.ts`, `ui/debugMenu.ts`, `systems/AudioSystem.ts`, `systems/OrbitSystem.ts`, `ui/hud.ts`) and pure type-only modules from threshold accounting so the 90% gate targets deterministic unit-testable logic.
 
-## Deployment
+## CI/CD
 
-- GitHub Pages deployment is automated via `.github/workflows/deploy-pages.yml`.
-- On each push to `main`, GitHub Actions builds and deploys `dist/`.
+- Quality workflow: `.github/workflows/quality.yml`
+- GitHub Pages deployment: `.github/workflows/deploy-pages.yml`
+- Windows Electron release packaging: `.github/workflows/release-electron.yml`
 
 ## Current status
 
-Phase 0–4 bootstrap/handoff plan is complete (tooling, placeholder runtime, testing/CI gates, and stable gameplay hand-off interfaces). Next implementation order is documented in `docs/gameplay-implementation-order.md`.
+Gameplay plan phases 6–13 are complete:
+
+- physics clean-entry scoring events,
+- real scoring rules (jar values, center weighting, streak bonuses),
+- pause/speed orbit controls,
+- audio event mapping with mobile unlock,
+- LED scoreboard HUD + live debug controls,
+- runtime gameplay/camera tuning + preset save/load,
+- arcade cabinet shell framing,
+- Electron packaging path for Windows offline deployment.
 
 ## Representative screenshots
 
-### Gameplay (Quick Drop style playfield, desktop)
+### Gameplay + debug controls (desktop)
 
-![Gameplay desktop Quick Drop style](docs/history/2026-03-14-quick-drop-playfield/playfield-desktop.png)
+![Gameplay debug desktop](docs/history/2026-03-14-phase7-13-complete/gameplay-debug-desktop.png)
 
-### Gameplay (Quick Drop style playfield, mobile)
+### Gameplay (mobile)
 
-![Gameplay mobile Quick Drop style](docs/history/2026-03-14-quick-drop-playfield/playfield-mobile.png)
-
-### Debug menu (desktop)
-
-![Debug menu desktop](docs/history/2026-03-13-230424-phase1-complete-gh-pages/debug-desktop.png)
-
-### Debug menu (mobile)
-
-![Debug menu mobile](docs/history/2026-03-13-230424-phase1-complete-gh-pages/debug-mobile.png)
+![Gameplay mobile](docs/history/2026-03-14-phase7-13-complete/gameplay-mobile.png)

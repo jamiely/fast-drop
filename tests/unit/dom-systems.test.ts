@@ -18,18 +18,30 @@ describe('DOM systems and UI helpers', () => {
     expect(hud.dropButton.textContent).toContain('Drop Ball');
   });
 
-  it('creates debug menu only when enabled and handles click stubs', () => {
+  it('creates debug menu only when enabled and dispatches actions', () => {
     const host = document.createElement('div');
-    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+    const controls = {
+      togglePause: vi.fn(),
+      stepFrame: vi.fn(),
+      addTime: vi.fn(),
+      addScore: vi.fn(),
+      spawnBall: vi.fn(),
+      setSpeedMultiplier: vi.fn(),
+      applyGameplayTuning: vi.fn(),
+      applyCameraTuning: vi.fn(),
+      savePreset: vi.fn(),
+      loadPreset: vi.fn()
+    };
 
     expect(createDebugMenu(host, false)).toBeNull();
 
-    const menu = createDebugMenu(host, true);
+    const menu = createDebugMenu(host, true, controls);
     expect(menu).not.toBeNull();
-    menu?.querySelector<HTMLButtonElement>('button')?.click();
+    menu
+      ?.querySelector<HTMLButtonElement>('button[data-action="pause"]')
+      ?.click();
 
-    expect(infoSpy).toHaveBeenCalled();
-    infoSpy.mockRestore();
+    expect(controls.togglePause).toHaveBeenCalled();
   });
 
   it('wires space key drop in InputSystem', () => {
@@ -57,9 +69,9 @@ describe('DOM systems and UI helpers', () => {
     const balls = host.querySelector('[data-role="balls"]');
     const button = host.querySelector<HTMLButtonElement>('button');
 
-    expect(score?.textContent).toBe('25');
-    expect(time?.textContent).toBe('9.9');
-    expect(balls?.textContent).toBe('3');
+    expect(score?.textContent).toBe('000025');
+    expect(time?.textContent).toBe('09.9');
+    expect(balls?.textContent).toBe('03');
     expect(button?.disabled).toBe(false);
 
     button?.click();

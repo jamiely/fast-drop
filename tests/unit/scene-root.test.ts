@@ -32,6 +32,7 @@ describe('SceneRoot', () => {
       ballId: number | null;
       jarIndex: number;
       isBonusJar: boolean;
+      centerOffsetNormalized: number;
     }> = [];
 
     for (let index = 0; index < 240; index += 1) {
@@ -40,15 +41,19 @@ describe('SceneRoot', () => {
     }
 
     expect(allSettlements).toHaveLength(1);
-    expect(allSettlements[0]).toEqual({
+    expect(allSettlements[0]).toMatchObject({
       ballId: 99,
       jarIndex: 0,
       isBonusJar: true
     });
+    expect(allSettlements[0]?.centerOffsetNormalized).toBeGreaterThanOrEqual(0);
+    expect(allSettlements[0]?.centerOffsetNormalized).toBeLessThanOrEqual(1);
 
-    const settledBalls = (root as unknown as {
-      activeBalls: Array<{ isSettled: boolean }>;
-    }).activeBalls;
+    const settledBalls = (
+      root as unknown as {
+        activeBalls: Array<{ isSettled: boolean }>;
+      }
+    ).activeBalls;
     expect(settledBalls).toHaveLength(1);
     expect(settledBalls[0]?.isSettled).toBe(true);
   });
@@ -62,9 +67,13 @@ describe('SceneRoot', () => {
     root.spawnDropBall(0, 1.6, 30);
     root.spawnDropBall(0, 1.6, 31);
 
-    const balls = (root as unknown as {
-      activeBalls: Array<{ mesh: { position: { x: number; y: number; z: number } } }>;
-    }).activeBalls;
+    const balls = (
+      root as unknown as {
+        activeBalls: Array<{
+          mesh: { position: { x: number; y: number; z: number } };
+        }>;
+      }
+    ).activeBalls;
 
     const firstBall = balls[0];
     const secondBall = balls[1];
@@ -100,15 +109,17 @@ describe('SceneRoot', () => {
     root.spawnDropBall(0, 1.6, 40);
     root.spawnDropBall(0, 1.6, 41);
 
-    const balls = (root as unknown as {
-      activeBalls: Array<{
-        mesh: { position: { x: number; y: number; z: number } };
-        velocityX: number;
-        velocityY: number;
-        velocityZ: number;
-        isSettled: boolean;
-      }>;
-    }).activeBalls;
+    const balls = (
+      root as unknown as {
+        activeBalls: Array<{
+          mesh: { position: { x: number; y: number; z: number } };
+          velocityX: number;
+          velocityY: number;
+          velocityZ: number;
+          isSettled: boolean;
+        }>;
+      }
+    ).activeBalls;
 
     const firstBall = balls[0];
     const secondBall = balls[1];
@@ -147,15 +158,17 @@ describe('SceneRoot', () => {
     root.spawnDropBall(0, 1.6, 42);
     root.spawnDropBall(0, 1.6, 43);
 
-    const balls = (root as unknown as {
-      activeBalls: Array<{
-        mesh: { position: { x: number; y: number; z: number } };
-        velocityX: number;
-        velocityY: number;
-        velocityZ: number;
-        isSettled: boolean;
-      }>;
-    }).activeBalls;
+    const balls = (
+      root as unknown as {
+        activeBalls: Array<{
+          mesh: { position: { x: number; y: number; z: number } };
+          velocityX: number;
+          velocityY: number;
+          velocityZ: number;
+          isSettled: boolean;
+        }>;
+      }
+    ).activeBalls;
 
     const leftBall = balls[0];
     const rightBall = balls[1];
@@ -205,14 +218,16 @@ describe('SceneRoot', () => {
     const root = new SceneRoot(host, 1);
 
     root.spawnDropBall(0, 0, 20);
-    const containedBall = (root as unknown as {
-      activeBalls: Array<{
-        enteredJarIndex: number | null;
-        hasScoredEntry: boolean;
-        mesh: { position: { y: number } };
-        velocityY: number;
-      }>;
-    }).activeBalls[0];
+    const containedBall = (
+      root as unknown as {
+        activeBalls: Array<{
+          enteredJarIndex: number | null;
+          hasScoredEntry: boolean;
+          mesh: { position: { y: number } };
+          velocityY: number;
+        }>;
+      }
+    ).activeBalls[0];
 
     containedBall.enteredJarIndex = 0;
     containedBall.hasScoredEntry = true;
@@ -223,12 +238,14 @@ describe('SceneRoot', () => {
     expect(containedBall.velocityY).toBeLessThan(0);
 
     root.spawnDropBall(0, 0, 21);
-    const invalidBall = (root as unknown as {
-      activeBalls: Array<{
-        enteredJarIndex: number | null;
-        hasScoredEntry: boolean;
-      }>;
-    }).activeBalls.at(-1);
+    const invalidBall = (
+      root as unknown as {
+        activeBalls: Array<{
+          enteredJarIndex: number | null;
+          hasScoredEntry: boolean;
+        }>;
+      }
+    ).activeBalls.at(-1);
 
     if (!invalidBall) {
       throw new Error('Expected spawned ball');
@@ -239,7 +256,8 @@ describe('SceneRoot', () => {
 
     root.update(1 / 60);
 
-    const remainingBalls = (root as unknown as { activeBalls: unknown[] }).activeBalls;
+    const remainingBalls = (root as unknown as { activeBalls: unknown[] })
+      .activeBalls;
     expect(remainingBalls.length).toBe(1);
   });
 });

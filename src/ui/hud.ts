@@ -10,9 +10,19 @@ export const createHud = (host: HTMLElement): HudView => {
   const root = document.createElement('section');
   root.className = 'hud';
   root.innerHTML = `
-    <div class="hud__row"><span>Score</span><strong data-role="score">0</strong></div>
-    <div class="hud__row"><span>Time</span><strong data-role="time">0.0</strong></div>
-    <div class="hud__row"><span>Balls</span><strong data-role="balls">0</strong></div>
+    <div class="hud__title">SCORE PANEL</div>
+    <div class="hud__row">
+      <span>Score</span>
+      <strong class="led" data-role="score">000000</strong>
+    </div>
+    <div class="hud__row">
+      <span>Time</span>
+      <strong class="led" data-role="time">00.0</strong>
+    </div>
+    <div class="hud__row">
+      <span>Balls</span>
+      <strong class="led" data-role="balls">00</strong>
+    </div>
   `;
 
   const controls = document.createElement('div');

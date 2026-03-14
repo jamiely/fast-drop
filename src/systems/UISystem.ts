@@ -13,9 +13,16 @@ export class UISystem {
   }
 
   public render(state: GameState): void {
-    this.hud.scoreValue.textContent = String(state.score);
-    this.hud.timeValue.textContent = state.timeRemaining.toFixed(1);
-    this.hud.ballsValue.textContent = String(state.ballsRemaining);
+    this.hud.scoreValue.textContent = String(Math.max(0, state.score)).padStart(
+      6,
+      '0'
+    );
+    this.hud.timeValue.textContent = state.timeRemaining
+      .toFixed(1)
+      .padStart(4, '0');
+    this.hud.ballsValue.textContent = String(
+      Math.max(0, state.ballsRemaining)
+    ).padStart(2, '0');
     this.hud.dropButton.disabled =
       state.timeRemaining <= 0 || state.ballsRemaining <= 0;
   }

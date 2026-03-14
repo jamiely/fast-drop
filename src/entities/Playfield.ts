@@ -46,7 +46,10 @@ export const createPlayfieldDimensions = (
   const petalTopY = 0;
   const petalInnerRadius = moundRadius * 0.995;
   const petalOuterRadius = jarOrbitRadius + jarRadius * 0.65;
-  const petalLength = Math.max(jarRadius * 1.4, petalOuterRadius - petalInnerRadius);
+  const petalLength = Math.max(
+    jarRadius * 1.4,
+    petalOuterRadius - petalInnerRadius
+  );
   const petalCenterRadius = petalInnerRadius + petalLength * 0.5;
 
   return {
@@ -65,7 +68,10 @@ export const createPlayfieldDimensions = (
 export const createPlayfieldBase = (dimensions: PlayfieldDimensions): Group => {
   const group = new Group();
 
-  const mound = new Mesh(new ConeGeometry(dimensions.moundRadius, dimensions.moundHeight, 64), moundMaterial);
+  const mound = new Mesh(
+    new ConeGeometry(dimensions.moundRadius, dimensions.moundHeight, 64),
+    moundMaterial
+  );
   mound.position.y = dimensions.moundHeight * 0.5;
   group.add(mound);
 
@@ -74,7 +80,11 @@ export const createPlayfieldBase = (dimensions: PlayfieldDimensions): Group => {
 
 export const createJarPetalMesh = (dimensions: PlayfieldDimensions): Mesh => {
   const petal = new Mesh(
-    new BoxGeometry(dimensions.petalWidth, dimensions.petalThickness, dimensions.petalLength),
+    new BoxGeometry(
+      dimensions.petalWidth,
+      dimensions.petalThickness,
+      dimensions.petalLength
+    ),
     petalMaterial
   );
   petal.position.y = dimensions.petalTopY - dimensions.petalThickness * 0.5;

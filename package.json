@@ -18,7 +18,11 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "check": "npm-run-all -s typecheck lint format:check coverage",
-    "prepare": "husky"
+    "prepare": "husky",
+    "electron:start": "npm run build && electron electron/main.mjs",
+    "electron:smoke": "node scripts/electron-smoke.mjs",
+    "build:electron:win": "npm run build && electron-builder --win portable nsis",
+    "release:electron:win": "npm run check && npm run build:electron:win"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "^0.19.3",
@@ -40,6 +44,30 @@
     "prettier": "^3.6.2",
     "typescript": "^5.9.2",
     "vite": "^7.1.3",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "electron": "^37.2.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.fastdrop.arcade",
+    "productName": "Fast Drop",
+    "directories": {
+      "buildResources": "electron/resources",
+      "output": "dist_electron"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "extraMetadata": {
+      "main": "electron/main.mjs"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    }
   }
 }

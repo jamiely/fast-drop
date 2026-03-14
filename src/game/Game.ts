@@ -1,11 +1,16 @@
-import { gameConfig } from './config';
+import {
+  createRuntimeConfig,
+  gameConfig,
+  type CameraTuning,
+  type GameplayTuning
+} from './config';
 import {
   applyBallSettledState,
   createInitialState,
   dropBallState,
   tickState
 } from './state';
-import type { BallSettledEvent, GameState } from './types';
+import type { BallSettledEvent, GameState, TestBridgeContract } from './types';
 import { PhysicsWorld } from '../physics/PhysicsWorld';
 import type { SceneBallSettlement } from '../scene/SceneRoot';
 import { SceneRoot } from '../scene/SceneRoot';
@@ -20,6 +25,8 @@ import {
 } from '../testhooks/testBridge';
 import { createDebugMenu } from '../ui/debugMenu';
 
+const DEV_PRESET_STORAGE_KEY = 'fast-drop-debug-preset';
+
 export class Game {
   private readonly sceneRoot: SceneRoot;
   private readonly uiSystem: UISystem;
@@ -32,25 +39,54 @@ export class Game {
   private rafId = 0;
   private lastTime = 0;
   private nextBallId = 1;
+  private speedMultiplier = 1;
+  private paused = false;
+  private hasPlayedGameOver = false;
+  private hasPlayedWarning = false;
+  private readonly runtimeConfig = createRuntimeConfig();
 
   public constructor(host: HTMLElement) {
     this.state = createInitialState();
-    this.sceneRoot = new SceneRoot(host, gameConfig.jarCount, gameConfig.orbitRadius);
+    this.sceneRoot = new SceneRoot(
+      host,
+      this.runtimeConfig.jarCount,
+      this.runtimeConfig.tuning.ringRadius,
+      this.runtimeConfig.bonusBucketCount
+    );
     this.uiSystem = new UISystem(host);
     this.scoringSystem = new ScoringSystem();
     this.audioSystem = new AudioSystem();
     this.orbitSystem = new OrbitSystem(
       this.sceneRoot.jars,
-      gameConfig.orbitRadius,
-      gameConfig.ringAngularSpeed
+      this.runtimeConfig.tuning.ringRadius,
+      this.runtimeConfig.tuning.ringAngularSpeed
     );
     this.debugEnabled =
       new URLSearchParams(window.location.search).get('debug') === '1';
-    createDebugMenu(host, this.debugEnabled);
+
+    createDebugMenu(host, this.debugEnabled, {
+      togglePause: () => {
+        this.paused = this.orbitSystem.togglePause();
+      },
+      stepFrame: () => this.step(1 / 60),
+      addTime: () => this.setTimeRemaining(this.state.timeRemaining + 3),
+      addScore: () => this.setScore(this.state.score + 100),
+      spawnBall: () => this.spawnBall(),
+      setSpeedMultiplier: (multiplier) => this.setSpeedMultiplier(multiplier),
+      applyGameplayTuning: (key, value) => this.applyGameplayTuning(key, value),
+      applyCameraTuning: (key, value) => {
+        this.runtimeConfig.camera[key] = value;
+        this.sceneRoot.applyCameraTuning(this.runtimeConfig.camera);
+      },
+      savePreset: () => this.savePreset(),
+      loadPreset: () => this.loadPreset()
+    });
   }
 
   public async init(): Promise<void> {
     this.physicsWorld = await PhysicsWorld.create();
+
+    this.sceneRoot.applyCameraTuning(this.runtimeConfig.camera);
 
     this.uiSystem.onDrop(() => {
       this.dropBall();
@@ -63,17 +99,7 @@ export class Game {
       this.sceneRoot.resize();
     });
 
-    installTestBridge({
-      dropBall: () => this.dropBall(),
-      stepFrames: (n: number) => {
-        const dt = 1 / 60;
-        const frameCount = normalizeStepFrameCount(n);
-
-        for (let index = 0; index < frameCount; index += 1) {
-          this.step(dt);
-        }
-      }
-    });
+    installTestBridge(this.createTestBridge());
 
     this.uiSystem.render(this.state);
   }
@@ -94,13 +120,88 @@ export class Game {
     cancelAnimationFrame(this.rafId);
   }
 
-  private toBallSettledEvent(settlement: SceneBallSettlement): BallSettledEvent {
+  private createTestBridge(): TestBridgeContract {
+    return {
+      dropBall: () => this.dropBall(),
+      stepFrames: (n: number) => {
+        const dt = 1 / 60;
+        const frameCount = normalizeStepFrameCount(n);
+
+        for (let index = 0; index < frameCount; index += 1) {
+          this.step(dt);
+        }
+      },
+      setTimeRemaining: (seconds: number) => this.setTimeRemaining(seconds),
+      setScore: (score: number) => this.setScore(score),
+      setBallsRemaining: (remaining: number) =>
+        this.setBallsRemaining(remaining),
+      setSpeedMultiplier: (multiplier: number) =>
+        this.setSpeedMultiplier(multiplier),
+      togglePause: () => {
+        this.paused = this.orbitSystem.togglePause();
+      },
+      spawnBall: () => this.spawnBall()
+    };
+  }
+
+  private toBallSettledEvent(
+    settlement: SceneBallSettlement
+  ): BallSettledEvent {
     return {
       jarIndex: settlement.jarIndex,
       isBonusJar: settlement.isBonusJar,
       ballId: settlement.ballId,
-      settledAtSeconds: gameConfig.timeStartSeconds - this.state.timeRemaining
+      settledAtSeconds: gameConfig.timeStartSeconds - this.state.timeRemaining,
+      centerOffsetNormalized: settlement.centerOffsetNormalized
     };
+  }
+
+  private applyGameplayTuning(key: keyof GameplayTuning, value: number): void {
+    this.runtimeConfig.tuning[key] = value;
+    this.sceneRoot.applyGameplayTuning(key, value);
+
+    if (key === 'ringAngularSpeed') {
+      this.orbitSystem.setBaseSpeed(value);
+    }
+
+    if (key === 'ringRadius') {
+      this.orbitSystem.setRadius(value);
+    }
+  }
+
+  private savePreset(): void {
+    if (!this.debugEnabled) {
+      return;
+    }
+
+    const payload = JSON.stringify({
+      tuning: this.runtimeConfig.tuning,
+      camera: this.runtimeConfig.camera
+    });
+    localStorage.setItem(DEV_PRESET_STORAGE_KEY, payload);
+  }
+
+  private loadPreset(): void {
+    if (!this.debugEnabled) {
+      return;
+    }
+
+    const payload = localStorage.getItem(DEV_PRESET_STORAGE_KEY);
+    if (!payload) {
+      return;
+    }
+
+    const parsed = JSON.parse(payload) as {
+      tuning?: Partial<GameplayTuning>;
+      camera?: Partial<CameraTuning>;
+    };
+
+    for (const [key, value] of Object.entries(parsed.tuning ?? {})) {
+      this.applyGameplayTuning(key as keyof GameplayTuning, Number(value));
+    }
+
+    Object.assign(this.runtimeConfig.camera, parsed.camera ?? {});
+    this.sceneRoot.applyCameraTuning(this.runtimeConfig.camera);
   }
 
   private dropBall(): void {
@@ -111,23 +212,57 @@ export class Game {
     }
 
     this.state = nextState;
-    console.info('[Game] drop ball', {
-      ballsRemaining: this.state.ballsRemaining,
-      score: this.state.score,
-      timeRemaining: this.state.timeRemaining
-    });
 
     this.audioSystem.play('drop');
-    this.sceneRoot.spawnDropBall(0, gameConfig.orbitRadius, this.nextBallId);
-    this.nextBallId += 1;
+    this.spawnBall();
     this.uiSystem.render(this.state);
   }
 
-  private step(dt: number): void {
-    this.state = tickState(this.state, dt);
-    this.orbitSystem.update(dt);
+  private spawnBall(): void {
+    this.sceneRoot.spawnDropBall(
+      this.runtimeConfig.tuning.dropPointX,
+      this.runtimeConfig.tuning.dropPointZ,
+      this.nextBallId
+    );
+    this.nextBallId += 1;
+  }
 
-    const settlements = this.sceneRoot.update(dt);
+  private setTimeRemaining(seconds: number): void {
+    this.state = {
+      ...this.state,
+      timeRemaining: Math.max(0, seconds)
+    };
+    this.uiSystem.render(this.state);
+  }
+
+  private setScore(score: number): void {
+    this.state = {
+      ...this.state,
+      score: Math.max(0, Math.floor(score))
+    };
+    this.uiSystem.render(this.state);
+  }
+
+  private setBallsRemaining(remaining: number): void {
+    this.state = {
+      ...this.state,
+      ballsRemaining: Math.max(0, Math.floor(remaining))
+    };
+    this.uiSystem.render(this.state);
+  }
+
+  private setSpeedMultiplier(multiplier: number): void {
+    this.speedMultiplier = Math.max(0, multiplier);
+    this.orbitSystem.setSpeedMultiplier(this.speedMultiplier);
+  }
+
+  private step(dt: number): void {
+    if (!this.paused) {
+      this.state = tickState(this.state, dt * this.speedMultiplier);
+      this.orbitSystem.update(dt);
+    }
+
+    const settlements = this.sceneRoot.update(dt * this.speedMultiplier);
     for (const settlement of settlements) {
       const scoringResult = this.scoringSystem.onBallSettled(
         this.toBallSettledEvent(settlement)
@@ -143,6 +278,16 @@ export class Game {
       if (scoringResult.bonusTimeDelta > 0) {
         this.audioSystem.play('bonus-awarded');
       }
+    }
+
+    if (this.state.timeRemaining <= 8 && !this.hasPlayedWarning) {
+      this.audioSystem.play('time-warning');
+      this.hasPlayedWarning = true;
+    }
+
+    if (this.state.timeRemaining <= 0 && !this.hasPlayedGameOver) {
+      this.audioSystem.play('game-over');
+      this.hasPlayedGameOver = true;
     }
 
     this.physicsWorld?.step();

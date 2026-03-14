@@ -1,23 +1,28 @@
 import type { Object3D } from 'three';
 import type { OrbitSystemContract } from '../game/types';
 
-// TODO(phase5-gameplay): Drive angular speed from gameplay state (pause, slow-mo,
-// and bonus states) while preserving deterministic `update(dt)` stepping.
 export class OrbitSystem implements OrbitSystemContract {
   private angle = 0;
+  private paused = false;
+  private speedMultiplier = 1;
+  private radius: number;
+  private speed: number;
 
   public constructor(
     private readonly targets: Object3D[],
-    private readonly radius: number,
-    private readonly speed: number
-  ) {}
+    radius: number,
+    speed: number
+  ) {
+    this.radius = radius;
+    this.speed = speed;
+  }
 
   public update(dt: number): void {
-    if (this.targets.length === 0) {
+    if (this.targets.length === 0 || this.paused) {
       return;
     }
 
-    this.angle += dt * this.speed;
+    this.angle += dt * this.speed * this.speedMultiplier;
     const spacing = (Math.PI * 2) / this.targets.length;
 
     this.targets.forEach((target, index) => {
@@ -25,5 +30,32 @@ export class OrbitSystem implements OrbitSystemContract {
       target.position.x = Math.cos(angle) * this.radius;
       target.position.z = Math.sin(angle) * this.radius;
     });
+  }
+
+  public setPaused(paused: boolean): void {
+    this.paused = paused;
+  }
+
+  public togglePause(): boolean {
+    this.paused = !this.paused;
+    return this.paused;
+  }
+
+  public setSpeedMultiplier(multiplier: number): void {
+    this.speedMultiplier = Number.isFinite(multiplier)
+      ? Math.max(0, multiplier)
+      : 1;
+  }
+
+  public setBaseSpeed(speed: number): void {
+    if (Number.isFinite(speed)) {
+      this.speed = speed;
+    }
+  }
+
+  public setRadius(radius: number): void {
+    if (Number.isFinite(radius)) {
+      this.radius = Math.max(0.5, radius);
+    }
   }
 }

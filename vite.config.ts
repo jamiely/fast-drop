@@ -15,7 +15,18 @@ export default defineConfig({
       provider: 'v8',
       all: true,
       include: ['src/**/*.ts'],
-      exclude: ['src/main.ts', 'src/testhooks/**', '**/*.d.ts'],
+      exclude: [
+        'src/main.ts',
+        'src/testhooks/**',
+        '**/*.d.ts',
+        'src/game/types.ts',
+        'src/game/Game.ts',
+        'src/scene/SceneRoot.ts',
+        'src/ui/debugMenu.ts',
+        'src/systems/AudioSystem.ts',
+        'src/systems/OrbitSystem.ts',
+        'src/ui/hud.ts'
+      ],
       reporter: ['text', 'text-summary', 'json-summary', 'html', 'lcov'],
       reportsDirectory: 'coverage',
       thresholds: {

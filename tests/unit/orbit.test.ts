@@ -23,4 +23,22 @@ describe('OrbitSystem', () => {
 
     radii.forEach((radius) => expect(radius).toBeCloseTo(2, 5));
   });
+
+  it('supports pause and speed multipliers without changing update contract', () => {
+    const targets: OrbitTarget[] = [{ position: { x: 0, z: 0 } }];
+    const orbit = new OrbitSystem(targets as never, 2, 1);
+
+    orbit.update(1);
+    const firstX = targets[0]?.position.x ?? 0;
+
+    orbit.setPaused(true);
+    orbit.update(1);
+    expect(targets[0]?.position.x).toBeCloseTo(firstX, 6);
+
+    orbit.setPaused(false);
+    orbit.setSpeedMultiplier(2);
+    orbit.update(1);
+
+    expect((targets[0]?.position.x ?? 0) - firstX).toBeLessThan(-0.4);
+  });
 });

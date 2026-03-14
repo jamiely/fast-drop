@@ -9,8 +9,15 @@ const gameMocks = vi.hoisted(() => {
   const sceneResize = vi.fn();
   const sceneRender = vi.fn();
   const sceneSpawnDropBall = vi.fn();
+  const sceneApplyCameraTuning = vi.fn();
+  const sceneApplyGameplayTuning = vi.fn();
   const sceneUpdate = vi.fn<
-    () => Array<{ ballId: number | null; jarIndex: number; isBonusJar: boolean }>
+    () => Array<{
+      ballId: number | null;
+      jarIndex: number;
+      isBonusJar: boolean;
+      centerOffsetNormalized?: number;
+    }>
   >(() => []);
   const physicsStep = vi.fn();
   const createDebugMenu = vi.fn();
@@ -32,6 +39,8 @@ const gameMocks = vi.hoisted(() => {
     sceneResize,
     sceneRender,
     sceneSpawnDropBall,
+    sceneApplyCameraTuning,
+    sceneApplyGameplayTuning,
     sceneUpdate,
     physicsStep,
     createDebugMenu,
@@ -82,6 +91,8 @@ vi.mock('../../src/scene/SceneRoot', () => ({
     public readonly resize = gameMocks.sceneResize;
     public readonly render = gameMocks.sceneRender;
     public readonly spawnDropBall = gameMocks.sceneSpawnDropBall;
+    public readonly applyCameraTuning = gameMocks.sceneApplyCameraTuning;
+    public readonly applyGameplayTuning = gameMocks.sceneApplyGameplayTuning;
     public readonly update = gameMocks.sceneUpdate;
   }
 }));
@@ -166,7 +177,11 @@ describe('Game', () => {
     const host = document.createElement('div');
     new Game(host);
 
-    expect(gameMocks.createDebugMenu).toHaveBeenCalledWith(host, true);
+    expect(gameMocks.createDebugMenu).toHaveBeenCalledWith(
+      host,
+      true,
+      expect.any(Object)
+    );
   });
 
   it('initializes systems and reacts to drops and step bridge calls', async () => {

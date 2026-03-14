@@ -9,6 +9,7 @@ export interface BallSettledEvent {
   isBonusJar: boolean;
   ballId: number | null;
   settledAtSeconds: number;
+  centerOffsetNormalized?: number;
 }
 
 export interface BallSettlementResult {
@@ -38,4 +39,10 @@ export interface AudioSystemContract {
 export interface TestBridgeContract {
   dropBall: () => void;
   stepFrames: (n: number) => void;
+  setTimeRemaining?: (seconds: number) => void;
+  setScore?: (score: number) => void;
+  setBallsRemaining?: (remaining: number) => void;
+  setSpeedMultiplier?: (multiplier: number) => void;
+  togglePause?: () => void;
+  spawnBall?: () => void;
 }
