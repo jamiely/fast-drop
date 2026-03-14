@@ -34,34 +34,31 @@ export const createPlayfieldDimensions = (
   jarOrbitRadius: number,
   jarRadius: number
 ): PlayfieldDimensions => {
-  const moundRadius = jarOrbitRadius * 0.35;
-  const moundHeight = jarOrbitRadius * 0.1;
+  const moundRadius = Math.max(
+    jarOrbitRadius * 0.82,
+    jarOrbitRadius - jarRadius * 1.15
+  );
+  const moundHeight = jarOrbitRadius * 0.11;
 
-  const suggestedPetalLength = jarOrbitRadius * 0.6;
-  const suggestedPetalWidth = jarRadius * 2 * 1.8;
+  const petalWidth = jarRadius * 2 * 1.8;
   const petalThickness = jarRadius * 2 * 0.25;
 
-  const petalInnerRadius = moundRadius * 0.98;
-  const targetJarOffsetFromInner = suggestedPetalLength * 0.82;
-  const adjustedPetalLength = Math.max(
-    suggestedPetalLength,
-    jarOrbitRadius - petalInnerRadius + jarRadius * 0.55
-  );
-
-  const petalLength = Math.max(adjustedPetalLength, targetJarOffsetFromInner + jarRadius * 0.55);
-  const petalOuterRadius = petalInnerRadius + petalLength;
+  const petalTopY = 0;
+  const petalInnerRadius = moundRadius * 0.995;
+  const petalOuterRadius = jarOrbitRadius + jarRadius * 0.65;
+  const petalLength = Math.max(jarRadius * 1.4, petalOuterRadius - petalInnerRadius);
   const petalCenterRadius = petalInnerRadius + petalLength * 0.5;
 
   return {
     moundRadius,
     moundHeight,
     petalLength,
-    petalWidth: suggestedPetalWidth,
+    petalWidth,
     petalThickness,
     petalInnerRadius,
     petalOuterRadius,
     petalCenterRadius,
-    petalTopY: 0
+    petalTopY
   };
 };
 

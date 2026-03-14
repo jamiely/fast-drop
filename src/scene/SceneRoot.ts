@@ -226,19 +226,10 @@ export class SceneRoot {
       jar.lookAt(0, jar.position.y, 0);
 
       const petal = this.petals[index];
-      if (!petal) {
-        continue;
-      }
-
       const distanceFromCenter = Math.hypot(jar.position.x, jar.position.z);
-      if (distanceFromCenter < 0.0001) {
-        petal.position.set(0, petal.position.y, petalCenterRadius);
-        petal.rotation.y = 0;
-        continue;
-      }
-
-      const dirX = jar.position.x / distanceFromCenter;
-      const dirZ = jar.position.z / distanceFromCenter;
+      const safeDistance = Math.max(0.0001, distanceFromCenter);
+      const dirX = jar.position.x / safeDistance;
+      const dirZ = jar.position.z / safeDistance;
 
       petal.position.x = dirX * petalCenterRadius;
       petal.position.z = dirZ * petalCenterRadius;
@@ -272,12 +263,13 @@ export class SceneRoot {
 
     const radiusFromCenter = Math.hypot(activeBall.mesh.position.x, activeBall.mesh.position.z);
     const { moundRadius, moundHeight } = this.playfieldDimensions;
-    if (radiusFromCenter <= 0.0001 || radiusFromCenter >= moundRadius) {
+    if (radiusFromCenter >= moundRadius) {
       return;
     }
 
-    const outwardX = activeBall.mesh.position.x / radiusFromCenter;
-    const outwardZ = activeBall.mesh.position.z / radiusFromCenter;
+    const safeRadius = Math.max(0.0001, radiusFromCenter);
+    const outwardX = activeBall.mesh.position.x / safeRadius;
+    const outwardZ = activeBall.mesh.position.z / safeRadius;
     const slopeStrength = moundHeight / moundRadius;
     const outwardAcceleration = MOUND_OUTWARD_ACCELERATION * slopeStrength;
 
