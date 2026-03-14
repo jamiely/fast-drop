@@ -34,6 +34,15 @@ npm run dev
 - `npm run test:e2e` — Playwright smoke tests
 - `npm run check` — typecheck + lint + prettier check + coverage
 
+## Git hooks (Husky)
+
+- Hooks are installed via `npm run prepare` (also runs during `npm install`).
+- Pre-commit runs:
+  - `npm run lint`
+  - `npm run test`
+  - `npm run coverage` (enforces global 80% minimum for statements/branches/functions/lines)
+  - `npm run test:e2e`
+
 ## Deployment
 
 - GitHub Pages deployment is automated via `.github/workflows/deploy-pages.yml`.
