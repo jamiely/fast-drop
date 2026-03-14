@@ -11,6 +11,13 @@ interface JarStoryArgs {
   rimOpacity: number;
   emissiveIntensity: number;
   rimScale: number;
+  cameraX: number;
+  cameraY: number;
+  cameraZ: number;
+  targetX: number;
+  targetY: number;
+  targetZ: number;
+  cameraFov: number;
 }
 
 const meta: Meta<JarStoryArgs> = {
@@ -31,7 +38,17 @@ const meta: Meta<JarStoryArgs> = {
       rim.scale.setScalar(args.rimScale);
     }
 
-    return renderThreePreview(jar);
+    return renderThreePreview(jar, {
+      camera: {
+        x: args.cameraX,
+        y: args.cameraY,
+        z: args.cameraZ,
+        targetX: args.targetX,
+        targetY: args.targetY,
+        targetZ: args.targetZ,
+        fov: args.cameraFov
+      }
+    });
   },
   args: {
     isBonus: true,
@@ -40,7 +57,14 @@ const meta: Meta<JarStoryArgs> = {
     bodyOpacity: 0.56,
     rimOpacity: 0.9,
     emissiveIntensity: 0.45,
-    rimScale: 1
+    rimScale: 1,
+    cameraX: 0,
+    cameraY: 1.2,
+    cameraZ: 3.1,
+    targetX: 0,
+    targetY: 0.35,
+    targetZ: 0,
+    cameraFov: 50
   },
   argTypes: {
     isBonus: { control: 'boolean' },
@@ -51,7 +75,14 @@ const meta: Meta<JarStoryArgs> = {
     emissiveIntensity: {
       control: { type: 'range', min: 0, max: 1.2, step: 0.01 }
     },
-    rimScale: { control: { type: 'range', min: 0.8, max: 1.3, step: 0.01 } }
+    rimScale: { control: { type: 'range', min: 0.8, max: 1.3, step: 0.01 } },
+    cameraX: { control: { type: 'range', min: -5, max: 5, step: 0.01 } },
+    cameraY: { control: { type: 'range', min: -1, max: 5, step: 0.01 } },
+    cameraZ: { control: { type: 'range', min: 0.5, max: 8, step: 0.01 } },
+    targetX: { control: { type: 'range', min: -3, max: 3, step: 0.01 } },
+    targetY: { control: { type: 'range', min: -1, max: 3, step: 0.01 } },
+    targetZ: { control: { type: 'range', min: -3, max: 3, step: 0.01 } },
+    cameraFov: { control: { type: 'range', min: 20, max: 90, step: 1 } }
   }
 };
 

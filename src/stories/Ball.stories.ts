@@ -11,6 +11,13 @@ interface BallStoryArgs {
   emissiveIntensity: number;
   roughness: number;
   metalness: number;
+  cameraX: number;
+  cameraY: number;
+  cameraZ: number;
+  targetX: number;
+  targetY: number;
+  targetZ: number;
+  cameraFov: number;
 }
 
 const meta: Meta<BallStoryArgs> = {
@@ -34,7 +41,17 @@ const meta: Meta<BallStoryArgs> = {
 
     group.add(mesh);
 
-    return renderThreePreview(group);
+    return renderThreePreview(group, {
+      camera: {
+        x: args.cameraX,
+        y: args.cameraY,
+        z: args.cameraZ,
+        targetX: args.targetX,
+        targetY: args.targetY,
+        targetZ: args.targetZ,
+        fov: args.cameraFov
+      }
+    });
   },
   args: {
     radius: BALL_RADIUS,
@@ -42,7 +59,14 @@ const meta: Meta<BallStoryArgs> = {
     emissiveColor: '#6cd6ff',
     emissiveIntensity: 0.15,
     roughness: 0.08,
-    metalness: 0.18
+    metalness: 0.18,
+    cameraX: 0,
+    cameraY: 1.2,
+    cameraZ: 3.1,
+    targetX: 0,
+    targetY: 0.35,
+    targetZ: 0,
+    cameraFov: 50
   },
   argTypes: {
     radius: { control: { type: 'range', min: 0.015, max: 0.12, step: 0.001 } },
@@ -52,7 +76,14 @@ const meta: Meta<BallStoryArgs> = {
       control: { type: 'range', min: 0, max: 1.2, step: 0.01 }
     },
     roughness: { control: { type: 'range', min: 0, max: 1, step: 0.01 } },
-    metalness: { control: { type: 'range', min: 0, max: 1, step: 0.01 } }
+    metalness: { control: { type: 'range', min: 0, max: 1, step: 0.01 } },
+    cameraX: { control: { type: 'range', min: -5, max: 5, step: 0.01 } },
+    cameraY: { control: { type: 'range', min: -1, max: 5, step: 0.01 } },
+    cameraZ: { control: { type: 'range', min: 0.5, max: 8, step: 0.01 } },
+    targetX: { control: { type: 'range', min: -3, max: 3, step: 0.01 } },
+    targetY: { control: { type: 'range', min: -1, max: 3, step: 0.01 } },
+    targetZ: { control: { type: 'range', min: -3, max: 3, step: 0.01 } },
+    cameraFov: { control: { type: 'range', min: 20, max: 90, step: 1 } }
   }
 };
 
