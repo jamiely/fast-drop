@@ -65,6 +65,8 @@ Local defaults:
 
 GitHub Actions automatically uses a `2x` multiplier for these timeouts.
 
+To reduce flakiness in CI, Playwright also runs with `1` worker and `1` retry when `CI=true`.
+
 ## Git hooks (Husky)
 
 - Hooks are installed via `npm run prepare` (also runs during `npm install`).

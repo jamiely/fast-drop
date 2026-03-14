@@ -46,6 +46,7 @@ npm run prepare
   - Playwright web server startup timeout: `45s`
   - Vitest `testTimeout`/`hookTimeout`: `10s`
 - In GitHub Actions (`GITHUB_ACTIONS=true`), these test timeouts are scaled to `2x` automatically.
+- In CI, Playwright runs with `1` worker and `1` retry for stability.
 - Coverage output is written to `coverage/`.
 - Coverage thresholds are enforced in `vite.config.ts`.
 - Threshold accounting intentionally excludes runtime-heavy render/orchestration/audio UI files (`src/game/Game.ts`, `src/scene/SceneRoot.ts`, `src/ui/debugMenu.ts`, `src/systems/AudioSystem.ts`, `src/systems/OrbitSystem.ts`, `src/ui/hud.ts`) and type-only modules, so the global 90% gate applies to deterministic unit-testable code paths.
