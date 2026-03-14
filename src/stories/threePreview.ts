@@ -103,6 +103,7 @@ export const renderThreePreview = (
   controls.maxDistance = cameraSettings.maxDistance ?? 8;
   controls.update();
 
+  let pendingCameraFrame: number | null = null;
   const emitCameraChange = () => {
     options.onCameraChange?.({
       x: camera.position.x,
@@ -114,7 +115,18 @@ export const renderThreePreview = (
     });
   };
 
-  controls.addEventListener('end', emitCameraChange);
+  const queueCameraChange = () => {
+    if (pendingCameraFrame !== null) {
+      return;
+    }
+
+    pendingCameraFrame = window.requestAnimationFrame(() => {
+      pendingCameraFrame = null;
+      emitCameraChange();
+    });
+  };
+
+  controls.addEventListener('change', queueCameraChange);
 
   renderer.setAnimationLoop(() => {
     controls.update();
@@ -127,7 +139,11 @@ export const renderThreePreview = (
     }
 
     renderer.setAnimationLoop(null);
-    controls.removeEventListener('end', emitCameraChange);
+    controls.removeEventListener('change', queueCameraChange);
+    if (pendingCameraFrame !== null) {
+      window.cancelAnimationFrame(pendingCameraFrame);
+      pendingCameraFrame = null;
+    }
     controls.dispose();
     renderer.dispose();
     observer.disconnect();
