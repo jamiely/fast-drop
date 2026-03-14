@@ -1,0 +1,184 @@
+:root {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: #e6edf3;
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  background:
+    radial-gradient(
+      120% 90% at 20% 8%,
+      rgba(255, 76, 211, 0.18) 0%,
+      rgba(255, 76, 211, 0) 52%
+    ),
+    radial-gradient(
+      130% 100% at 82% 12%,
+      rgba(44, 161, 255, 0.24) 0%,
+      rgba(44, 161, 255, 0) 55%
+    ),
+    linear-gradient(180deg, #151029 0%, #0d0a1f 56%, #070514 100%);
+}
+
+#storybook-app {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 240px 1fr;
+}
+
+.storybook-nav {
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 16px 12px;
+  background: rgba(8, 12, 24, 0.62);
+  backdrop-filter: blur(6px);
+}
+
+.storybook-nav h1 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #a9bee8;
+}
+
+.storybook-nav button {
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 10px;
+  text-align: left;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: #dce6fa;
+  cursor: pointer;
+}
+
+.storybook-nav button[aria-current='true'] {
+  border-color: rgba(87, 173, 255, 0.8);
+  background: rgba(57, 130, 255, 0.24);
+}
+
+.storybook-main {
+  padding: 20px;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 14px;
+}
+
+.storybook-title h2 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.storybook-title p {
+  margin: 6px 0 0;
+  color: #abbbde;
+}
+
+.storybook-stage {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  background: rgba(7, 10, 20, 0.75);
+  min-height: 400px;
+  position: relative;
+  overflow: hidden;
+}
+
+.storybook-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.storybook-feedback {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: rgba(9, 13, 28, 0.75);
+  padding: 12px;
+}
+
+.storybook-feedback h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: #d7e5ff;
+}
+
+.storybook-feedback textarea {
+  width: 100%;
+  min-height: 84px;
+  resize: vertical;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(2, 4, 8, 0.55);
+  color: #f1f6ff;
+  padding: 10px;
+  font: inherit;
+}
+
+.storybook-feedback__actions {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+}
+
+.storybook-feedback button {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #edf4ff;
+  cursor: pointer;
+}
+
+.storybook-feedback__status {
+  margin-top: 6px;
+  color: #8ec2ff;
+  font-size: 12px;
+}
+
+.score-story-host {
+  position: relative;
+  width: min(94%, 560px);
+  height: 330px;
+  margin: 16px auto;
+}
+
+.storybook-fallback {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  color: #b8c8ea;
+}
+
+@media (max-width: 860px) {
+  #storybook-app {
+    grid-template-columns: 1fr;
+  }
+
+  .storybook-nav {
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .storybook-nav h1 {
+    grid-column: 1 / -1;
+    margin-bottom: 4px;
+  }
+
+  .storybook-nav button {
+    margin: 0;
+  }
+
+  .storybook-stage {
+    min-height: 320px;
+  }
+}

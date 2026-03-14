@@ -22,6 +22,8 @@ npm run dev
 
 Open http://localhost:5173.
 
+For the component storybook site, open http://localhost:5173/storybook.html.
+
 ## Debug / camera / gameplay tuning toggles
 
 - Use `?debug=1` in the URL to open the debug panel:
@@ -37,7 +39,8 @@ Open http://localhost:5173.
 ## Scripts
 
 - `npm run dev` — start dev server
-- `npm run build` — typecheck + production build
+- `npm run storybook:dev` — start dev server and open the component storybook page
+- `npm run build` — typecheck + production build (includes `index.html` + `storybook.html`)
 - `npm run preview` — preview production build
 - `npm run typecheck` — TypeScript checks
 - `npm run lint` — ESLint
@@ -76,7 +79,7 @@ To reduce flakiness in CI, Playwright also runs with `1` worker and `1` retry wh
   - `npm run test`
   - `npm run coverage` (enforces global 90% minimum for statements/branches/functions/lines)
   - `npm run test:e2e`
-- Coverage excludes runtime-heavy orchestration/render/audio UI files (`Game.ts`, `SceneRoot.ts`, `ui/debugMenu.ts`, `systems/AudioSystem.ts`, `systems/OrbitSystem.ts`, `ui/hud.ts`) and pure type-only modules from threshold accounting so the 90% gate targets deterministic unit-testable logic.
+- Coverage excludes runtime-heavy orchestration/render/audio UI files (`Game.ts`, `SceneRoot.ts`, `ui/debugMenu.ts`, `systems/AudioSystem.ts`, `systems/OrbitSystem.ts`, `ui/hud.ts`, `storybook/**`) and pure type-only modules from threshold accounting so the 90% gate targets deterministic unit-testable logic.
 
 ## CI/CD
 
@@ -106,7 +109,8 @@ Implemented in this pass:
 - audio polish pass with dynamic-range compression and event throttling to reduce clipping/stacking,
 - improved HUD/summary readability polish and mobile-safe-area spacing,
 - ball size updated to 1/8 jar diameter,
-- outer arcade enclosure removed.
+- outer arcade enclosure removed,
+- added a lightweight component storybook page with isolated stories for ball, bonus jar, center platform, and score panel, with per-story feedback capture.
 
 ## Representative screenshots
 

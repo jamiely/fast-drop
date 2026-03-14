@@ -4,6 +4,13 @@
 
 Completed as of 2026-03-14.
 
+Addendum (2026-03-14, completed):
+
+- [x] Add component storybook page (`/storybook.html`) with isolated stories.
+- [x] Include stories for ball, bonus jar, center platform, and score panel.
+- [x] Add per-story feedback capture/export.
+- [x] Update README usage docs.
+
 Progress snapshot (2026-03-14):
 
 - [x] Phase A — Electron packaging hardening

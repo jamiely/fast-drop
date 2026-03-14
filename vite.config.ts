@@ -1,4 +1,5 @@
 /// <reference types="vitest/config" />
+import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 
 const repositoryName = process.env.GITHUB_REPOSITORY?.split('/')[1];
@@ -9,6 +10,14 @@ const testTimeoutMs = isGitHubCI ? 20_000 : 10_000;
 
 export default defineConfig({
   base: pagesBase,
+  build: {
+    rollupOptions: {
+      input: {
+        app: resolve(__dirname, 'index.html'),
+        storybook: resolve(__dirname, 'storybook.html')
+      }
+    }
+  },
   test: {
     environment: 'node',
     globals: true,
@@ -29,7 +38,8 @@ export default defineConfig({
         'src/ui/debugMenu.ts',
         'src/systems/AudioSystem.ts',
         'src/systems/OrbitSystem.ts',
-        'src/ui/hud.ts'
+        'src/ui/hud.ts',
+        'src/storybook/**'
       ],
       reporter: ['text', 'text-summary', 'json-summary', 'html', 'lcov'],
       reportsDirectory: 'coverage',
