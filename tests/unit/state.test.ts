@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { gameConfig } from '../../src/game/config';
 import {
+  applyBallSettledState,
   createInitialState,
   dropBallState,
   tickState
@@ -26,11 +27,20 @@ describe('game state helpers', () => {
     expect(tickState(ended, 1)).toEqual({ ...ended, timeRemaining: 0 });
   });
 
-  it('drops a ball and updates score during active play', () => {
+  it('drops a ball by decrementing remaining balls', () => {
     const state = { score: 10, timeRemaining: 5, ballsRemaining: 2 };
-    expect(dropBallState(state, 7)).toEqual({
-      score: 17,
+    expect(dropBallState(state)).toEqual({
+      score: 10,
       timeRemaining: 5,
+      ballsRemaining: 1
+    });
+  });
+
+  it('applies settled scoring and bonus time after collision', () => {
+    const state = { score: 10, timeRemaining: 5, ballsRemaining: 1 };
+    expect(applyBallSettledState(state, 7, 3)).toEqual({
+      score: 17,
+      timeRemaining: 8,
       ballsRemaining: 1
     });
   });
@@ -39,7 +49,7 @@ describe('game state helpers', () => {
     const outOfTime = { score: 10, timeRemaining: 0, ballsRemaining: 2 };
     const outOfBalls = { score: 10, timeRemaining: 5, ballsRemaining: 0 };
 
-    expect(dropBallState(outOfTime, 7)).toBe(outOfTime);
-    expect(dropBallState(outOfBalls, 7)).toBe(outOfBalls);
+    expect(dropBallState(outOfTime)).toBe(outOfTime);
+    expect(dropBallState(outOfBalls)).toBe(outOfBalls);
   });
 });

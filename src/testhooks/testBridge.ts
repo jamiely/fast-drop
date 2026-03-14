@@ -1,13 +1,22 @@
-export interface TestBridge {
-  dropBall: () => void;
-  stepFrames: (frames: number) => void;
-}
+import type { TestBridgeContract } from '../game/types';
+
+export type TestBridge = TestBridgeContract;
 
 declare global {
   interface Window {
     __FAST_DROP_TEST_BRIDGE__?: TestBridge;
   }
 }
+
+// TODO(phase5-gameplay): Expand bridge controls for deterministic physics probes
+// (e.g. spawn ball with trajectory) while keeping existing methods stable.
+export const normalizeStepFrameCount = (n: number): number => {
+  if (!Number.isFinite(n) || n <= 0) {
+    return 0;
+  }
+
+  return Math.floor(n);
+};
 
 export const installTestBridge = (bridge: TestBridge): void => {
   window.__FAST_DROP_TEST_BRIDGE__ = bridge;

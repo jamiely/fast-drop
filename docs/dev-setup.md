@@ -26,7 +26,7 @@ npm run prepare
 ```
 
 - Installs Husky hooks at `.husky/`.
-- Pre-commit enforces lint, tests, coverage (>=80%), and e2e before allowing commit.
+- Pre-commit enforces lint, tests, coverage (>=90%), and e2e before allowing commit.
 
 ## Notes
 

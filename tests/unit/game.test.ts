@@ -8,10 +8,14 @@ const gameMocks = vi.hoisted(() => {
   const orbitUpdate = vi.fn();
   const sceneResize = vi.fn();
   const sceneRender = vi.fn();
+  const sceneSpawnDropBall = vi.fn();
+  const sceneUpdate = vi.fn<
+    () => Array<{ ballId: number | null; jarIndex: number; isBonusJar: boolean }>
+  >(() => []);
   const physicsStep = vi.fn();
   const createDebugMenu = vi.fn();
   const installTestBridge = vi.fn();
-  const scoring = vi.fn(() => 7);
+  const scoring = vi.fn(() => ({ scoreDelta: 7, bonusTimeDelta: 0 }));
 
   let dropHandler: (() => void) | null = null;
   let inputHandler: (() => void) | null = null;
@@ -27,6 +31,8 @@ const gameMocks = vi.hoisted(() => {
     orbitUpdate,
     sceneResize,
     sceneRender,
+    sceneSpawnDropBall,
+    sceneUpdate,
     physicsStep,
     createDebugMenu,
     installTestBridge,
@@ -75,6 +81,8 @@ vi.mock('../../src/scene/SceneRoot', () => ({
     ];
     public readonly resize = gameMocks.sceneResize;
     public readonly render = gameMocks.sceneRender;
+    public readonly spawnDropBall = gameMocks.sceneSpawnDropBall;
+    public readonly update = gameMocks.sceneUpdate;
   }
 }));
 
@@ -93,7 +101,7 @@ vi.mock('../../src/systems/UISystem', () => ({
 
 vi.mock('../../src/systems/ScoringSystem', () => ({
   ScoringSystem: class {
-    public getDropScore(): number {
+    public onBallSettled(): { scoreDelta: number; bonusTimeDelta: number } {
       return gameMocks.scoring();
     }
   }
@@ -101,7 +109,7 @@ vi.mock('../../src/systems/ScoringSystem', () => ({
 
 vi.mock('../../src/systems/AudioSystem', () => ({
   AudioSystem: class {
-    public playDrop = gameMocks.audioPlay;
+    public play = gameMocks.audioPlay;
   }
 }));
 
@@ -140,7 +148,8 @@ vi.mock('../../src/testhooks/testBridge', () => ({
   }) => {
     gameMocks.installTestBridge(bridge);
     gameMocks.setBridge(bridge);
-  }
+  },
+  normalizeStepFrameCount: (n: number) => Math.floor(n)
 }));
 
 describe('Game', () => {
@@ -170,12 +179,13 @@ describe('Game', () => {
 
     gameMocks.getDropHandler()();
     expect(gameMocks.audioPlay).toHaveBeenCalledTimes(1);
+    expect(gameMocks.sceneSpawnDropBall).toHaveBeenCalledTimes(1);
 
     const latestState = gameMocks.uiRender.mock.calls.at(-1)?.[0] as {
       score: number;
       ballsRemaining: number;
     };
-    expect(latestState.score).toBe(7);
+    expect(latestState.score).toBe(0);
     expect(latestState.ballsRemaining).toBe(49);
 
     gameMocks.getInputHandler()();
@@ -183,8 +193,37 @@ describe('Game', () => {
 
     gameMocks.getBridge().stepFrames(3);
     expect(gameMocks.orbitUpdate).toHaveBeenCalledTimes(3);
+    expect(gameMocks.sceneUpdate).toHaveBeenCalledTimes(3);
     expect(gameMocks.physicsStep).toHaveBeenCalledTimes(3);
     expect(gameMocks.sceneRender).toHaveBeenCalledTimes(3);
+  });
+
+  it('applies scoring when a ball settles into a jar', async () => {
+    const { Game } = await import('../../src/game/Game');
+    const game = new Game(document.createElement('div'));
+
+    await game.init();
+    gameMocks.getDropHandler()();
+
+    gameMocks.sceneUpdate.mockImplementationOnce(() => [
+      {
+        ballId: 1,
+        jarIndex: 0,
+        isBonusJar: true
+      }
+    ]);
+    gameMocks.scoring.mockReturnValueOnce({ scoreDelta: 7, bonusTimeDelta: 3 });
+
+    gameMocks.getBridge().stepFrames(1);
+
+    const latestState = gameMocks.uiRender.mock.calls.at(-1)?.[0] as {
+      score: number;
+      timeRemaining: number;
+    };
+    expect(latestState.score).toBe(7);
+    expect(latestState.timeRemaining).toBeGreaterThan(30);
+    expect(gameMocks.audioPlay).toHaveBeenCalledWith('ball-settled');
+    expect(gameMocks.audioPlay).toHaveBeenCalledWith('bonus-awarded');
   });
 
   it('starts and destroys animation loop', async () => {

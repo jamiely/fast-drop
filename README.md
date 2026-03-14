@@ -40,7 +40,7 @@ npm run dev
 - Pre-commit runs:
   - `npm run lint`
   - `npm run test`
-  - `npm run coverage` (enforces global 80% minimum for statements/branches/functions/lines)
+  - `npm run coverage` (enforces global 90% minimum for statements/branches/functions/lines)
   - `npm run test:e2e`
 
 ## Deployment
@@ -50,7 +50,7 @@ npm run dev
 
 ## Current status
 
-Phase 0 bootstrap and test/tooling setup complete. Phase 1 placeholder runtime is complete. Phase 2 testing foundation is in progress.
+Phase 0–4 bootstrap/handoff plan is complete (tooling, placeholder runtime, testing/CI gates, and stable gameplay hand-off interfaces). Next implementation order is documented in `docs/gameplay-implementation-order.md`.
 
 ## Representative screenshots
 
