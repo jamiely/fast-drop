@@ -1,176 +1,141 @@
-# PLAN — Round Flow, Summary Overlay, and Remaining Research Items
+# PLAN — Electron Packaging, Release Automation, and Final Polish
 
 ## Status
 
-Completed on 2026-03-14:
+Active as of 2026-03-14.
 
-- Phase A ✅
-- Phase B ✅
-- Phase C ✅
-- Phase D ✅
-- Phase E ✅
-- Phase F ✅ (drop cooldown implemented + debug tuning)
+Previous completed plan archived at:
 
-Previous completed gameplay plan is archived at:
-
-- `docs/history/2026-03-14-plan-phase6-13-complete/PLAN.md`
+- `docs/history/2026-03-14-plan-round-flow-summary-complete/PLAN.md`
 
 ## Objective
 
-Complete the remaining requirements from `RESEARCH.md` by adding deterministic round lifecycle handling, end-of-round summary UI, hit/miss/accuracy accounting, and regression coverage.
+Complete the remaining `RESEARCH.md` milestones:
 
-## Scope
+- Milestone 11: Desktop packaging (Electron + Windows offline build)
+- Milestone 12: Tuning + polish (audio/visual quality and UX cleanup)
+
+## Remaining Scope (from research)
 
 In scope:
 
-- round lifecycle state and transitions
-- round-end conditions
-- hit/miss/accuracy counters
-- end-of-round overlay UI
-- unit + integration + e2e coverage
-- optional drop throttle (if it improves stability without harming feel)
+- Electron app packaging for offline play
+- Windows build artifacts (portable + installer)
+- GitHub Actions release automation for desktop artifacts
+- Final gameplay/audio/visual polish tasks
+- Documentation for build, release, and offline deployment
 
 Out of scope:
 
-- major physics rewrites
-- visual art overhauls outside the new round summary UI
+- New gameplay mechanics beyond existing round flow
+- Large art-direction pivot or engine migration
 
 ---
 
-## Phase A — Round lifecycle model
+## Phase A — Electron packaging hardening
 
 ### Tasks
 
-1. Extend game state to include round phase:
-   - `idle | countdown | playing | ended`
-2. Add round transition reducers/selectors:
-   - `startRound`
-   - `endRound`
-   - `canDropBall`
-3. Ensure deterministic transitions in fixed-step flow.
-4. Keep existing public contracts stable where possible:
-   - `OrbitSystem.update(dt)`
-   - `ScoringSystem.onBallSettled(event)`
-   - `AudioSystem.play(event)`
-   - `testBridge.stepFrames(n)`
+1. Audit current Electron entry/build wiring (`electron/`, `package.json` build config).
+2. Validate production app boot path from packaged assets (`dist/` loading and routing).
+3. Ensure app behavior parity with web build:
+   - controls
+   - debug flag behavior
+   - round flow and overlay behavior
+4. Add/refresh smoke checks for Electron launch/startup.
 
 ### Acceptance
 
-- Round starts in a known phase and transitions predictably.
-- Drops only happen in valid phases.
+- Electron app boots from packaged assets without manual dev server.
+- Core gameplay loop works in Electron the same as web.
 - Existing tests remain green.
 
 ---
 
-## Phase B — Hit/miss/accuracy accounting
+## Phase B — Windows offline artifacts
 
 ### Tasks
 
-1. Extend runtime state with counters:
-   - `hits`
-   - `misses`
-   - `ballsDropped`
-2. Add deterministic event plumbing for:
-   - clean-entry settlement => `hits +1`
-   - unresolved/cleanup miss => `misses +1`
-3. Add derived `accuracy` selector:
-   - `hits / max(1, hits + misses)`
-4. Add unit tests for all branches:
-   - no attempts
-   - only misses
-   - mixed outcomes
-   - late round edge cases
+1. Produce Windows artifacts via `electron-builder`:
+   - portable executable
+   - installer artifact
+2. Verify output naming/versioning conventions.
+3. Validate artifact startup expectations for offline arcade PCs.
+4. Document artifact locations and manual verification steps.
 
 ### Acceptance
 
-- Counters are correct and deterministic.
-- Accuracy value is stable and matches expected math.
-- Coverage remains at/above project threshold.
+- Windows artifacts build reproducibly from CI-compatible commands.
+- Artifacts are suitable for offline deployment.
 
 ---
 
-## Phase C — Round-end conditions
+## Phase C — GitHub release automation
 
 ### Tasks
 
-1. End round on timer expiry (`timeRemaining <= 0`).
-2. End round when:
-   - `ballsRemaining === 0`
-   - and all active balls are resolved (hit/miss/frozen/cleaned).
-3. Expose read-only “round ended” state for UI and tests.
-4. Add integration tests for both end paths.
+1. Add GitHub Actions workflow to build Electron Windows artifacts on tags/releases.
+2. Upload artifacts to GitHub Releases.
+3. Keep quality gates in workflow path (lint/tests/coverage as appropriate).
+4. Add clear failure diagnostics and artifact retention settings.
 
 ### Acceptance
 
-- Both end conditions are deterministic and test-covered.
-- No premature round ends while active balls remain unresolved.
+- Tag/release trigger generates downloadable Windows desktop artifacts.
+- Release workflow is documented and repeatable.
 
 ---
 
-## Phase D — End-of-round summary overlay
+## Phase D — Final polish pass
 
 ### Tasks
 
-1. Add overlay UI rendered only when round phase is `ended`.
-2. Show:
-   - final score
-   - hits
-   - misses
-   - accuracy (%)
-3. Add “Play Again” action to reset round deterministically.
-4. Ensure HUD/overlay coexist cleanly on desktop and mobile layouts.
+1. Audio polish:
+   - verify drop/hit/bonus/game-over cues are distinct and balanced
+   - prevent clipping/stacking artifacts
+2. Gameplay feel polish:
+   - validate drop cadence/cooldown and bonus pacing remain fun
+   - spot-check long rounds (40–60s target with strong play)
+3. Visual/UI polish:
+   - verify HUD readability on desktop/mobile
+   - verify summary overlay readability and spacing
+4. Stability polish:
+   - rerun flaky-sensitive e2e paths and keep deterministic hooks reliable
 
 ### Acceptance
 
-- Overlay appears exactly at round end.
-- Values match state.
-- Restart begins a fresh round with reset counters.
+- Audio, gameplay feel, and UI are coherent and stable.
+- No regressions in quality checks and e2e.
 
 ---
 
-## Phase E — E2E regression expansion
+## Phase E — Documentation + artifacts
 
 ### Tasks
 
-1. Add Playwright test: round ends on timer expiry and summary appears.
-2. Add Playwright test: round ends after balls exhausted + resolution.
-3. Add Playwright test: summary values are non-empty and internally consistent.
-4. Keep debug-gated controls only under `?debug=1`.
+1. Update `README.md` with:
+   - Electron run/build instructions
+   - Windows artifact/release usage notes
+   - representative screenshots (menu/gameplay/summary)
+2. Add/update `docs/dev-setup.md` for desktop packaging + release workflow.
+3. Store new screenshots/historical artifacts under `docs/history/timestamp-x/`.
 
 ### Acceptance
 
-- New e2e tests are stable locally and in CI.
-- Existing smoke tests remain green.
-
----
-
-## Phase F — Optional drop throttle (TODO)
-
-### Tasks
-
-1. Add configurable drop cooldown (`0–100ms`, default tuned from playtest).
-2. Keep space/click/tap responsiveness high.
-3. Add deterministic tests for cooldown behavior.
-4. Add debug control for cooldown tuning (dev/debug mode only).
-
-### Acceptance
-
-- Ball spam is bounded when cooldown is enabled.
-- Gameplay still feels fast; no perceived input lag at chosen default.
+- README and docs reflect current desktop release workflow.
+- Screenshot/history requirements are satisfied.
 
 ---
 
 ## File-level implementation map
 
-- `src/game/types.ts` — round phase + stats types
-- `src/game/state.ts` — reducers/selectors for phase and stats
-- `src/game/Game.ts` — round-end orchestration + transitions
-- `src/scene/SceneRoot.ts` — miss-resolution event signal if needed
-- `src/systems/UISystem.ts` + `src/ui/*` — summary overlay wiring
-- `tests/unit/state.test.ts` — phase/stats reducer tests
-- `tests/unit/game.test.ts` — orchestration and end-condition tests
-- `tests/e2e/*.spec.ts` — round-end and summary assertions
-- `README.md` / `docs/dev-setup.md` — behavior and test updates
+- `electron/main.mjs` — desktop boot behavior
+- `electron/preload.*` (if present) — desktop bridge/security
+- `package.json` — electron-builder config/scripts
+- `.github/workflows/*` — release pipeline for Electron artifacts
+- `scripts/electron-smoke.mjs` — startup verification
+- `README.md` — usage + release docs + screenshots
+- `docs/dev-setup.md` — developer packaging/release instructions
 
 ---
 
@@ -181,13 +146,12 @@ Out of scope:
 3. Phase C
 4. Phase D
 5. Phase E
-6. Phase F (optional, based on feel/stability)
 
 ---
 
 ## Definition of Done
 
-- Remaining research requirements are implemented and documented.
-- Round lifecycle and summary overlay are deterministic and test-covered.
-- Hit/miss/accuracy counters are accurate and visible.
-- `npm run check` and `npm run test:e2e` pass.
+- Electron desktop packaging is production-ready.
+- Windows artifacts are built and published through GitHub Releases.
+- Final polish tasks are complete with no quality regressions.
+- Documentation and screenshots are updated for developers and users.
