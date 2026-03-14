@@ -254,7 +254,7 @@ describe('Game', () => {
     expect(gameMocks.orbitUpdate).toHaveBeenCalledTimes(3);
     expect(gameMocks.sceneUpdate).toHaveBeenCalledTimes(3);
     expect(gameMocks.physicsStep).toHaveBeenCalledTimes(3);
-    expect(gameMocks.sceneRender).toHaveBeenCalledTimes(3);
+    expect(gameMocks.sceneRender).toHaveBeenCalledTimes(1);
   });
 
   it('applies scoring and misses while round is playing', async () => {

@@ -137,8 +137,11 @@ export class Game {
         const frameCount = normalizeStepFrameCount(n);
 
         for (let index = 0; index < frameCount; index += 1) {
-          this.step(dt);
+          this.step(dt, false);
         }
+
+        this.uiSystem.render(this.state);
+        this.sceneRoot.render();
       },
       restartRound: () => this.startRound(),
       setTimeRemaining: (seconds: number) => this.setTimeRemaining(seconds),
@@ -298,7 +301,7 @@ export class Game {
     this.orbitSystem.setSpeedMultiplier(this.speedMultiplier);
   }
 
-  private step(dt: number): void {
+  private step(dt: number, renderFrame = true): void {
     const simDt = this.paused ? 0 : dt * this.speedMultiplier;
 
     if (!this.paused) {
@@ -349,7 +352,10 @@ export class Game {
     }
 
     this.physicsWorld?.step();
-    this.uiSystem.render(this.state);
-    this.sceneRoot.render();
+
+    if (renderFrame) {
+      this.uiSystem.render(this.state);
+      this.sceneRoot.render();
+    }
   }
 }
