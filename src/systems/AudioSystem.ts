@@ -6,6 +6,7 @@ interface AudioProfile {
   gain: number;
   type: OscillatorType;
   slideTo?: number;
+  minIntervalMs?: number;
 }
 
 export class AudioSystem implements AudioSystemContract {
@@ -13,6 +14,10 @@ export class AudioSystem implements AudioSystemContract {
   private unlocked = false;
   private unlockHandlersInstalled = false;
   private queuedEvents: AudioEvent[] = [];
+  private outputNode: AudioNode | null = null;
+  private activeVoices = 0;
+  private readonly maxConcurrentVoices = 8;
+  private readonly lastPlayedAt = new Map<AudioEvent, number>();
 
   public play(event: AudioEvent): void {
     const context = this.getContext();
@@ -76,6 +81,25 @@ export class AudioSystem implements AudioSystemContract {
   private playNow(context: AudioContext, event: AudioEvent): void {
     const profile = this.getProfile(event);
     const now = context.currentTime;
+    const nowMs = now * 1000;
+
+    const lastPlayedAtMs = this.lastPlayedAt.get(event);
+    if (
+      profile.minIntervalMs !== undefined &&
+      lastPlayedAtMs !== undefined &&
+      nowMs - lastPlayedAtMs < profile.minIntervalMs
+    ) {
+      return;
+    }
+
+    if (
+      this.activeVoices >= this.maxConcurrentVoices &&
+      (event === 'drop' || event === 'ball-settled')
+    ) {
+      return;
+    }
+
+    this.lastPlayedAt.set(event, nowMs);
 
     const oscillator = context.createOscillator();
     oscillator.type = profile.type;
@@ -93,10 +117,41 @@ export class AudioSystem implements AudioSystemContract {
     gainNode.gain.exponentialRampToValueAtTime(0.0001, now + profile.duration);
 
     oscillator.connect(gainNode);
-    gainNode.connect(context.destination);
+    gainNode.connect(this.getOutputNode(context));
+
+    this.activeVoices += 1;
+    oscillator.onended = () => {
+      this.activeVoices = Math.max(0, this.activeVoices - 1);
+    };
 
     oscillator.start(now);
     oscillator.stop(now + profile.duration + 0.02);
+  }
+
+  private getOutputNode(context: AudioContext): AudioNode {
+    if (this.outputNode) {
+      return this.outputNode;
+    }
+
+    if (typeof context.createDynamicsCompressor === 'function') {
+      const compressor = context.createDynamicsCompressor();
+      compressor.threshold.value = -18;
+      compressor.knee.value = 24;
+      compressor.ratio.value = 10;
+      compressor.attack.value = 0.003;
+      compressor.release.value = 0.2;
+
+      const masterGain = context.createGain();
+      masterGain.gain.value = 0.72;
+
+      compressor.connect(masterGain);
+      masterGain.connect(context.destination);
+      this.outputNode = compressor;
+      return this.outputNode;
+    }
+
+    this.outputNode = context.destination;
+    return this.outputNode;
   }
 
   private getContext(): AudioContext | null {
@@ -127,44 +182,49 @@ export class AudioSystem implements AudioSystemContract {
       case 'drop':
         return {
           frequency: 530,
-          duration: 0.11,
-          gain: 0.04,
+          duration: 0.1,
+          gain: 0.032,
           type: 'triangle',
-          slideTo: 410
+          slideTo: 410,
+          minIntervalMs: 45
         };
       case 'ball-settled':
         return {
           frequency: 420,
           duration: 0.12,
-          gain: 0.05,
+          gain: 0.04,
           type: 'square',
-          slideTo: 520
+          slideTo: 520,
+          minIntervalMs: 70
         };
       case 'bonus-awarded':
         return {
           frequency: 620,
-          duration: 0.24,
-          gain: 0.06,
+          duration: 0.22,
+          gain: 0.048,
           type: 'sine',
-          slideTo: 920
+          slideTo: 920,
+          minIntervalMs: 150
         };
       case 'time-warning':
         return {
           frequency: 260,
           duration: 0.16,
-          gain: 0.05,
-          type: 'sawtooth'
+          gain: 0.038,
+          type: 'sawtooth',
+          minIntervalMs: 800
         };
       case 'game-over':
         return {
           frequency: 300,
           duration: 0.3,
-          gain: 0.055,
+          gain: 0.045,
           type: 'triangle',
-          slideTo: 150
+          slideTo: 150,
+          minIntervalMs: 1200
         };
       default:
-        return { frequency: 440, duration: 0.12, gain: 0.04, type: 'sine' };
+        return { frequency: 440, duration: 0.12, gain: 0.03, type: 'sine' };
     }
   }
 }

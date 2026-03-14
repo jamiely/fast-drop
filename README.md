@@ -103,6 +103,8 @@ Implemented in this pass:
 - e2e regressions for summary/round-end behavior,
 - configurable drop cooldown (default 80ms, debug-tunable),
 - visual style refresh inspired by the neon reference image,
+- audio polish pass with dynamic-range compression and event throttling to reduce clipping/stacking,
+- improved HUD/summary readability polish and mobile-safe-area spacing,
 - ball size updated to 1/8 jar diameter,
 - outer arcade enclosure removed.
 
@@ -110,12 +112,12 @@ Implemented in this pass:
 
 ### Neon gameplay (desktop)
 
-![Neon gameplay desktop](docs/history/2026-03-14-round-summary-neon-style/gameplay-desktop-neon.png)
+![Neon gameplay desktop](docs/history/2026-03-14-final-polish-audio-ui/gameplay-desktop-polish.png)
 
 ### Round summary overlay
 
-![Round summary desktop](docs/history/2026-03-14-round-summary-neon-style/round-summary-desktop.png)
+![Round summary desktop](docs/history/2026-03-14-final-polish-audio-ui/round-summary-polish.png)
 
 ### Neon gameplay (mobile)
 
-![Neon gameplay mobile](docs/history/2026-03-14-round-summary-neon-style/gameplay-mobile-neon.png)
+![Neon gameplay mobile](docs/history/2026-03-14-final-polish-audio-ui/gameplay-mobile-polish.png)

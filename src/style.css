@@ -44,8 +44,8 @@ canvas {
 
 .hud {
   position: absolute;
-  top: 14px;
-  left: 14px;
+  top: max(14px, env(safe-area-inset-top));
+  left: max(14px, env(safe-area-inset-left));
   display: grid;
   gap: 8px;
   padding: 12px;
@@ -94,7 +94,7 @@ canvas {
 
 .controls {
   position: absolute;
-  bottom: 20px;
+  bottom: max(20px, env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%);
 }
@@ -103,8 +103,10 @@ canvas {
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 999px;
   padding: 12px 22px;
+  min-height: 52px;
   font-weight: 700;
   font-size: 16px;
+  letter-spacing: 0.01em;
   background: linear-gradient(180deg, #2cc1ff, #1675ff);
   color: white;
   cursor: pointer;
@@ -155,6 +157,7 @@ canvas {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
+  padding: 3px 0;
   color: #d6ddf0;
 }
 
@@ -221,4 +224,36 @@ canvas {
   color: white;
   border-radius: 6px;
   cursor: pointer;
+}
+
+@media (max-width: 700px) {
+  .hud {
+    min-width: 200px;
+    padding: 10px;
+    gap: 6px;
+  }
+
+  .hud__row {
+    font-size: 12px;
+  }
+
+  .led {
+    font-size: 22px;
+  }
+
+  .summary-overlay {
+    width: min(94vw, 360px);
+    padding: 16px;
+  }
+
+  .summary-overlay__title {
+    margin-bottom: 12px;
+    font-size: 15px;
+  }
+
+  .drop-btn {
+    min-width: min(90vw, 360px);
+    min-height: 56px;
+    font-size: 17px;
+  }
 }

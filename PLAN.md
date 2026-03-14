@@ -2,14 +2,14 @@
 
 ## Status
 
-Active as of 2026-03-14.
+Completed as of 2026-03-14.
 
 Progress snapshot (2026-03-14):
 
 - [x] Phase A — Electron packaging hardening
 - [x] Phase B — Windows offline artifacts
 - [x] Phase C — GitHub release automation
-- [ ] Phase D — Final polish pass
+- [x] Phase D — Final polish pass
 - [x] Phase E — Documentation + artifacts (desktop/release docs)
 
 Previous completed plan archived at:
@@ -114,6 +114,12 @@ Out of scope:
 
 - Audio, gameplay feel, and UI are coherent and stable.
 - No regressions in quality checks and e2e.
+
+### Completed implementation notes (2026-03-14)
+
+- Audio mix stability: added compressor + master gain chain and per-event playback throttling to reduce clipping/stacking artifacts.
+- UI readability: improved HUD/drop button safe-area spacing and mobile readability sizing.
+- Stability: added e2e regression for summary → Play Again restart reset behavior.
 
 ---
 

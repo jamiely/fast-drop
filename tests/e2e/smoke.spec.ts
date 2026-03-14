@@ -111,3 +111,28 @@ test('summary values are non-empty and internally consistent', async ({
   const expectedAccuracy = Math.round((hits / Math.max(1, attempts)) * 100);
   expect(accuracy).toBe(expectedAccuracy);
 });
+
+test('play again resets round state after summary is shown', async ({
+  page
+}) => {
+  await page.goto('/?debug=1');
+
+  await page.evaluate(() => {
+    window.__FAST_DROP_TEST_BRIDGE__?.setScore?.(240);
+    window.__FAST_DROP_TEST_BRIDGE__?.setBallsRemaining?.(12);
+    window.__FAST_DROP_TEST_BRIDGE__?.setTimeRemaining?.(0.1);
+    window.__FAST_DROP_TEST_BRIDGE__?.stepFrames(12);
+  });
+
+  await expect(page.locator('.summary-overlay')).toBeVisible();
+  await expect(page.locator('[data-role="summary-score"]')).toHaveText('240');
+
+  await page.getByRole('button', { name: 'Play Again' }).click();
+
+  await expect(page.locator('.summary-overlay')).toBeHidden();
+  await expect(page.locator('[data-role="score"]')).toHaveText('000000');
+  await expect(page.locator('[data-role="balls"]')).toHaveText('50');
+  await expect(page.locator('[data-role="time"]')).toHaveText(
+    /2[89]\.\d|30\.0/
+  );
+});

@@ -11,13 +11,24 @@ interface FakeOscillator {
   connect: ReturnType<typeof vi.fn>;
   start: ReturnType<typeof vi.fn>;
   stop: ReturnType<typeof vi.fn>;
+  onended: (() => void) | null;
 }
 
 interface FakeGain {
   gain: {
+    value: number;
     setValueAtTime: ReturnType<typeof vi.fn>;
     exponentialRampToValueAtTime: ReturnType<typeof vi.fn>;
   };
+  connect: ReturnType<typeof vi.fn>;
+}
+
+interface FakeCompressor {
+  threshold: { value: number };
+  knee: { value: number };
+  ratio: { value: number };
+  attack: { value: number };
+  release: { value: number };
   connect: ReturnType<typeof vi.fn>;
 }
 
@@ -30,34 +41,51 @@ const installFakeAudioContext = (state: AudioContextState = 'running') => {
     },
     connect: vi.fn(),
     start: vi.fn(),
-    stop: vi.fn()
+    stop: vi.fn(),
+    onended: null
   };
 
   const gain: FakeGain = {
     gain: {
+      value: 1,
       setValueAtTime: vi.fn(),
       exponentialRampToValueAtTime: vi.fn()
     },
     connect: vi.fn()
   };
 
+  const compressor: FakeCompressor = {
+    threshold: { value: 0 },
+    knee: { value: 0 },
+    ratio: { value: 0 },
+    attack: { value: 0 },
+    release: { value: 0 },
+    connect: vi.fn()
+  };
+
   const createOscillator = vi.fn(() => oscillator);
   const createGain = vi.fn(() => gain);
+  const createDynamicsCompressor = vi.fn(() => compressor);
   const resume = vi.fn(() => Promise.resolve());
 
   class FakeAudioContext {
     public static instanceCount = 0;
+    public static nowSeconds = 1;
     public readonly destination = {} as AudioNode;
-    public readonly currentTime = 1;
     public state: AudioContextState = state;
 
     public constructor() {
       FakeAudioContext.instanceCount += 1;
     }
 
+    public get currentTime(): number {
+      return FakeAudioContext.nowSeconds;
+    }
+
     public readonly resume = resume;
     public readonly createOscillator = createOscillator;
     public readonly createGain = createGain;
+    public readonly createDynamicsCompressor = createDynamicsCompressor;
   }
 
   Object.defineProperty(window, 'AudioContext', {
@@ -74,8 +102,10 @@ const installFakeAudioContext = (state: AudioContextState = 'running') => {
   return {
     oscillator,
     gain,
+    compressor,
     createOscillator,
     createGain,
+    createDynamicsCompressor,
     resume,
     FakeAudioContext
   };
@@ -118,7 +148,8 @@ describe('AudioSystem', () => {
     expect(fake.FakeAudioContext.instanceCount).toBe(1);
     expect(fake.resume).toHaveBeenCalled();
     expect(fake.createOscillator).toHaveBeenCalledTimes(2);
-    expect(fake.createGain).toHaveBeenCalledTimes(2);
+    expect(fake.createGain).toHaveBeenCalledTimes(3);
+    expect(fake.createDynamicsCompressor).toHaveBeenCalledTimes(1);
     expect(fake.oscillator.frequency.setValueAtTime).toHaveBeenCalled();
     expect(fake.gain.gain.exponentialRampToValueAtTime).toHaveBeenCalled();
     expect(fake.oscillator.start).toHaveBeenCalled();
@@ -145,5 +176,23 @@ describe('AudioSystem', () => {
     await Promise.resolve();
 
     expect(fake.createOscillator).toHaveBeenCalledTimes(1);
+  });
+
+  it('throttles repeated events inside minimum interval', async () => {
+    const fake = installFakeAudioContext('running');
+    const system = new AudioSystem();
+
+    system.play('drop');
+    window.dispatchEvent(new PointerEvent('pointerdown'));
+    await Promise.resolve();
+
+    expect(fake.createOscillator).toHaveBeenCalledTimes(1);
+
+    system.play('drop');
+    expect(fake.createOscillator).toHaveBeenCalledTimes(1);
+
+    fake.FakeAudioContext.nowSeconds = 1.1;
+    system.play('drop');
+    expect(fake.createOscillator).toHaveBeenCalledTimes(2);
   });
 });
