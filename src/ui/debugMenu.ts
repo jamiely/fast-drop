@@ -121,7 +121,7 @@ export const createDebugMenu = (
       <label>Floor bounce <span class="debug-menu__value" data-value-for="gameplay:floorBounciness">0.42</span><input type="range" min="0.1" max="0.9" step="0.01" value="0.42" data-gameplay="floorBounciness" /></label>
       <label>Jar diameter <span class="debug-menu__value" data-value-for="gameplay:jarDiameterScale">1.00</span><input type="range" min="0.7" max="1.5" step="0.01" value="1" data-gameplay="jarDiameterScale" /></label>
       <label>Jar height <span class="debug-menu__value" data-value-for="gameplay:jarHeightScale">1.00</span><input type="range" min="0.7" max="1.6" step="0.01" value="1" data-gameplay="jarHeightScale" /></label>
-      <label>Jar spin speed <span class="debug-menu__value" data-value-for="gameplay:ringAngularSpeed">0.80</span><input type="range" min="0" max="2.2" step="0.01" value="0.8" data-gameplay="ringAngularSpeed" /></label>
+      <label>Jar spin speed <span class="debug-menu__value" data-value-for="gameplay:ringAngularSpeed">0.70</span><input type="range" min="0" max="2.2" step="0.01" value="0.7" data-gameplay="ringAngularSpeed" /></label>
       <label>Ball size <span class="debug-menu__value" data-value-for="gameplay:ballSizeScale">1.00</span><input type="range" min="0.6" max="1.8" step="0.01" value="1" data-gameplay="ballSizeScale" /></label>
       <label>Ring diameter <span class="debug-menu__value" data-value-for="gameplay:ringDiameter">5.72</span><input type="range" min="3" max="7" step="0.1" value="5.72" data-gameplay="ringDiameter" /></label>
       <label>Drop distance <span class="debug-menu__value" data-value-for="gameplay:dropPointZ">2.86</span><input type="range" min="1.2" max="3.2" step="0.05" value="2.86" data-gameplay="dropPointZ" /></label>

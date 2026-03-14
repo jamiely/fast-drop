@@ -90,7 +90,7 @@ const meta: Meta<JarSpinnerStoryArgs> = {
     jarCount: 5,
     bonusJarCount: 2,
     orbitRadius: 2.86,
-    spinSpeed: 0.8,
+    spinSpeed: 0.7,
     cameraX: 0,
     cameraY: 2.6,
     cameraZ: 5.9,

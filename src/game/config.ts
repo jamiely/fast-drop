@@ -41,7 +41,7 @@ export const gameConfig: RuntimeConfig = {
   bonusBucketCount: 2,
   dropScore: 10,
   tuning: {
-    ringAngularSpeed: 0.8,
+    ringAngularSpeed: 0.7,
     ringRadius: 2.2 + DEFAULT_JAR_DIAMETER,
     dropPointX: 0,
     dropPointZ: 2.2 + DEFAULT_JAR_DIAMETER,
