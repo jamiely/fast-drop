@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/html';
-import { Color, MeshPhysicalMaterial } from 'three';
+import { Color, Group, MeshPhysicalMaterial } from 'three';
 import { BALL_RADIUS, createBallMesh } from '../entities/Ball';
+import { createJarMesh } from '../entities/Jar';
 import { renderThreePreview } from './threePreview';
 
 interface BallStoryArgs {
@@ -15,8 +16,14 @@ interface BallStoryArgs {
 const meta: Meta<BallStoryArgs> = {
   title: 'Components/Ball',
   render: (args) => {
+    const group = new Group();
+
+    const jar = createJarMesh(false);
+    group.add(jar);
+
     const mesh = createBallMesh();
     mesh.scale.setScalar(args.radius / BALL_RADIUS);
+    mesh.position.y = 0.85 + args.radius;
 
     const material = mesh.material as MeshPhysicalMaterial;
     material.color = new Color(args.color);
@@ -25,7 +32,9 @@ const meta: Meta<BallStoryArgs> = {
     material.roughness = args.roughness;
     material.metalness = args.metalness;
 
-    return renderThreePreview(mesh);
+    group.add(mesh);
+
+    return renderThreePreview(group);
   },
   args: {
     radius: BALL_RADIUS,

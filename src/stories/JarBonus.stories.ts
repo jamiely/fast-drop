@@ -4,6 +4,7 @@ import { createJarMesh } from '../entities/Jar';
 import { renderThreePreview } from './threePreview';
 
 interface JarStoryArgs {
+  isBonus: boolean;
   bodyColor: string;
   rimColor: string;
   bodyOpacity: number;
@@ -13,9 +14,9 @@ interface JarStoryArgs {
 }
 
 const meta: Meta<JarStoryArgs> = {
-  title: 'Components/Jar (Bonus)',
+  title: 'Components/Jar',
   render: (args) => {
-    const jar = createJarMesh(true);
+    const jar = createJarMesh(args.isBonus);
 
     const bodyMaterial = jar.material as MeshPhysicalMaterial;
     bodyMaterial.color = new Color(args.bodyColor);
@@ -33,6 +34,7 @@ const meta: Meta<JarStoryArgs> = {
     return renderThreePreview(jar);
   },
   args: {
+    isBonus: true,
     bodyColor: '#57d66a',
     rimColor: '#7deb88',
     bodyOpacity: 0.56,
@@ -41,6 +43,7 @@ const meta: Meta<JarStoryArgs> = {
     rimScale: 1
   },
   argTypes: {
+    isBonus: { control: 'boolean' },
     bodyColor: { control: 'color' },
     rimColor: { control: 'color' },
     bodyOpacity: { control: { type: 'range', min: 0.1, max: 1, step: 0.01 } },
@@ -55,4 +58,26 @@ const meta: Meta<JarStoryArgs> = {
 export default meta;
 type Story = StoryObj<JarStoryArgs>;
 
-export const BonusJar: Story = {};
+export const BonusJar: Story = {
+  args: {
+    isBonus: true,
+    bodyColor: '#57d66a',
+    rimColor: '#7deb88',
+    bodyOpacity: 0.56,
+    rimOpacity: 0.9,
+    emissiveIntensity: 0.45,
+    rimScale: 1
+  }
+};
+
+export const StandardJar: Story = {
+  args: {
+    isBonus: false,
+    bodyColor: '#4ea4ff',
+    rimColor: '#7dc0ff',
+    bodyOpacity: 0.5,
+    rimOpacity: 0.84,
+    emissiveIntensity: 0.24,
+    rimScale: 1
+  }
+};
