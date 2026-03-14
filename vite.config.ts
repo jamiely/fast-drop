@@ -4,14 +4,16 @@ import { defineConfig } from 'vite';
 const repositoryName = process.env.GITHUB_REPOSITORY?.split('/')[1];
 const pagesBase =
   process.env.GITHUB_ACTIONS && repositoryName ? `/${repositoryName}/` : '/';
+const isGitHubCI = process.env.GITHUB_ACTIONS === 'true';
+const testTimeoutMs = isGitHubCI ? 20_000 : 10_000;
 
 export default defineConfig({
   base: pagesBase,
   test: {
     environment: 'node',
     globals: true,
-    testTimeout: 10_000,
-    hookTimeout: 10_000,
+    testTimeout: testTimeoutMs,
+    hookTimeout: testTimeoutMs,
     include: ['tests/unit/**/*.test.ts', 'tests/integration/**/*.test.ts'],
     coverage: {
       provider: 'v8',

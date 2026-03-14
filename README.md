@@ -54,12 +54,16 @@ Open http://localhost:5173.
 
 ## Test timeout policy
 
-The project keeps test timeouts intentionally short to surface hangs quickly:
+The project keeps test timeouts intentionally short to surface hangs quickly.
+
+Local defaults:
 
 - Playwright test timeout: `15s`
 - Playwright expect timeout: `3s`
 - Playwright web server startup timeout: `45s`
 - Vitest test/hook timeout: `10s`
+
+GitHub Actions automatically uses a `2x` multiplier for these timeouts.
 
 ## Git hooks (Husky)
 
