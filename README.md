@@ -54,9 +54,13 @@ Phase 0–4 bootstrap/handoff plan is complete (tooling, placeholder runtime, te
 
 ## Representative screenshots
 
-### Gameplay (desktop)
+### Gameplay (Quick Drop style playfield, desktop)
 
-![Gameplay desktop](docs/history/2026-03-13-230424-phase1-complete-gh-pages/gameplay-desktop.png)
+![Gameplay desktop Quick Drop style](docs/history/2026-03-14-quick-drop-playfield/playfield-desktop.png)
+
+### Gameplay (Quick Drop style playfield, mobile)
+
+![Gameplay mobile Quick Drop style](docs/history/2026-03-14-quick-drop-playfield/playfield-mobile.png)
 
 ### Debug menu (desktop)
 

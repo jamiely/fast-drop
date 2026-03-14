@@ -1,13 +1,6 @@
-import {
-  Color,
-  Group,
-  Mesh,
-  MeshStandardMaterial,
-  PlaneGeometry,
-  Scene,
-  WebGLRenderer
-} from 'three';
+import { Color, Group, Mesh, Scene, WebGLRenderer } from 'three';
 import { BALL_RADIUS, createBallMesh } from '../entities/Ball';
+import { createJarPetalMesh, createPlayfieldBase } from '../entities/Playfield';
 import { JAR_HEIGHT, JAR_RADIUS, createJarMesh } from '../entities/Jar';
 import { createCamera } from './camera';
 import { addLighting } from './lighting';
@@ -89,16 +82,12 @@ export class SceneRoot {
 
     addLighting(this.scene);
 
-    const floor = new Mesh(
-      new PlaneGeometry(8, 8),
-      new MeshStandardMaterial({ color: '#1a2433', roughness: 0.9 })
-    );
-    floor.rotation.x = -Math.PI * 0.5;
-    this.scene.add(floor);
+    this.scene.add(createPlayfieldBase(jarCount));
 
     this.jarGroup = new Group();
     this.jars = Array.from({ length: jarCount }, (_, index) => {
       const jar = createJarMesh(index < 2);
+      jar.add(createJarPetalMesh());
       this.jarGroup.add(jar);
       return jar;
     });
@@ -134,6 +123,8 @@ export class SceneRoot {
 
   public update(dt: number): SceneBallSettlement[] {
     const settlements: SceneBallSettlement[] = [];
+
+    this.syncJarVisuals();
 
     for (let index = this.activeBalls.length - 1; index >= 0; index -= 1) {
       const activeBall = this.activeBalls[index];
@@ -209,6 +200,12 @@ export class SceneRoot {
 
   public render(): void {
     this.renderer?.render(this.scene, this.camera);
+  }
+
+  private syncJarVisuals(): void {
+    for (const jar of this.jars) {
+      jar.lookAt(0, jar.position.y, 0);
+    }
   }
 
   private resolveFloorCollision(activeBall: ActiveBallVisual): void {
