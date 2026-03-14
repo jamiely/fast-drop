@@ -12,7 +12,7 @@ Implement real gameplay systems on top of the completed bootstrap foundation wit
 
 ## Status
 
-- ⏳ Phase 6 — Physics-Driven Bounce + Entry Scoring (not started)
+- 🔄 Phase 6 — Physics-Driven Bounce + Entry Scoring (in progress)
 - ⏳ Phase 7 — Real Scoring Rules (not started)
 - ⏳ Phase 8 — Orbit + Gameplay Controls (not started)
 - ⏳ Phase 9 — Audio Event Mapping + Mobile Unlock (not started)
@@ -33,6 +33,14 @@ Implement real gameplay systems on top of the completed bootstrap foundation wit
 4. Keep `ScoringSystem.onBallSettled(event)` API unchanged.
 5. Keep `dropBallState(state, scoreDelta, bonusTimeDelta)` as the single reducer for drop+reward transitions.
 6. Add deterministic integration tests for event emission and state transitions.
+
+### Progress update
+
+- ✅ Replaced placeholder score-trigger flow with clean-entry events produced by live scene collision context.
+- ✅ Added visible rim, bottom, and jar-wall bounce behavior plus in-jar containment damping to reduce exaggerated bounce-outs.
+- ✅ Kept `ScoringSystem.onBallSettled(event)` and `dropBallState(state, scoreDelta, bonusTimeDelta)` contracts stable.
+- ✅ Added deterministic clean-entry event emission coverage in `tests/unit/scene-root.test.ts`.
+- ⏳ Next: add deeper state-transition integration coverage for repeated settlement edge cases.
 
 ### Acceptance
 

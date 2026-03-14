@@ -15,7 +15,13 @@ import { addLighting } from './lighting';
 interface ActiveBallVisual {
   id: number | null;
   mesh: Mesh;
-  verticalVelocity: number;
+  velocityX: number;
+  velocityY: number;
+  velocityZ: number;
+  enteredJarIndex: number | null;
+  hasScoredEntry: boolean;
+  ageSeconds: number;
+  settledFrames: number;
 }
 
 export interface SceneBallSettlement {
@@ -25,6 +31,22 @@ export interface SceneBallSettlement {
 }
 
 const bonusJarIndices = new Set([0, 1]);
+
+const GRAVITY = 7.6;
+const FLOOR_RESTITUTION = 0.38;
+const FLOOR_FRICTION = 0.89;
+const AIR_DAMPING = 0.998;
+const JAR_AIR_DAMPING = 0.992;
+const RIM_BOUNCE = 0.46;
+const JAR_WALL_RESTITUTION = 0.52;
+const JAR_BOTTOM_RESTITUTION = 0.42;
+const ENTRY_PLANE_Y = JAR_HEIGHT + BALL_RADIUS;
+const CLEAN_ENTRY_RADIUS = JAR_RADIUS - BALL_RADIUS * 0.25;
+const JAR_INNER_RADIUS = JAR_RADIUS - BALL_RADIUS;
+const CONTAINMENT_TOP_Y = JAR_HEIGHT + BALL_RADIUS * 0.55;
+const SETTLE_SPEED_EPSILON = 0.2;
+const SETTLE_FRAME_COUNT = 20;
+const MAX_BALL_AGE_SECONDS = 8;
 
 export class SceneRoot {
   public readonly renderer: WebGLRenderer | null;
@@ -83,10 +105,19 @@ export class SceneRoot {
     const ball = createBallMesh();
     ball.position.set(dropX, 2.6, dropZ);
     this.ballGroup.add(ball);
+
+    const horizontalSeed = ((ballId ?? this.activeBalls.length) % 7) - 3;
+
     this.activeBalls.push({
       id: ballId,
       mesh: ball,
-      verticalVelocity: -2.2
+      velocityX: horizontalSeed * 0.05,
+      velocityY: -1.8,
+      velocityZ: -0.12,
+      enteredJarIndex: null,
+      hasScoredEntry: false,
+      ageSeconds: 0,
+      settledFrames: 0
     });
   }
 
@@ -95,28 +126,34 @@ export class SceneRoot {
 
     for (let index = this.activeBalls.length - 1; index >= 0; index -= 1) {
       const activeBall = this.activeBalls[index];
-      if (!activeBall) {
-        continue;
+
+      activeBall.ageSeconds += dt;
+      const previousY = activeBall.mesh.position.y;
+
+      activeBall.velocityY -= GRAVITY * dt;
+      activeBall.mesh.position.x += activeBall.velocityX * dt;
+      activeBall.mesh.position.y += activeBall.velocityY * dt;
+      activeBall.mesh.position.z += activeBall.velocityZ * dt;
+
+      this.resolveFloorCollision(activeBall);
+
+      if (activeBall.enteredJarIndex === null) {
+        this.resolveRimBounce(activeBall);
       }
 
-      const previousY = activeBall.mesh.position.y;
-      activeBall.verticalVelocity -= 2.8 * dt;
-      activeBall.mesh.position.y += activeBall.verticalVelocity * dt;
-
-      const settlement = this.findTopIntersection(
+      const entry = this.findCleanEntry(
         activeBall,
         previousY,
         activeBall.mesh.position.y
       );
-
-      if (settlement) {
-        settlements.push(settlement);
-        this.ballGroup.remove(activeBall.mesh);
-        this.activeBalls.splice(index, 1);
-        continue;
+      if (entry) {
+        settlements.push(entry);
+        activeBall.hasScoredEntry = true;
+        activeBall.enteredJarIndex = entry.jarIndex;
       }
 
-      if (activeBall.mesh.position.y <= BALL_RADIUS) {
+      const settled = this.resolveEnteredJarPhysics(activeBall, dt);
+      if (settled || activeBall.ageSeconds >= MAX_BALL_AGE_SECONDS) {
         this.ballGroup.remove(activeBall.mesh);
         this.activeBalls.splice(index, 1);
       }
@@ -137,15 +174,66 @@ export class SceneRoot {
     this.renderer?.render(this.scene, this.camera);
   }
 
-  private findTopIntersection(
+  private resolveFloorCollision(activeBall: ActiveBallVisual): void {
+    if (activeBall.mesh.position.y > BALL_RADIUS) {
+      return;
+    }
+
+    activeBall.mesh.position.y = BALL_RADIUS;
+    if (activeBall.velocityY < 0) {
+      activeBall.velocityY = -activeBall.velocityY * FLOOR_RESTITUTION;
+    }
+
+    activeBall.velocityX *= FLOOR_FRICTION;
+    activeBall.velocityZ *= FLOOR_FRICTION;
+  }
+
+  private resolveRimBounce(activeBall: ActiveBallVisual): void {
+    const y = activeBall.mesh.position.y;
+    const rimMinY = JAR_HEIGHT - BALL_RADIUS * 0.5;
+    const rimMaxY = JAR_HEIGHT + BALL_RADIUS * 1.1;
+
+    if (y < rimMinY || y > rimMaxY || activeBall.velocityY >= 0) {
+      return;
+    }
+
+    for (const jar of this.jars) {
+      const dx = activeBall.mesh.position.x - jar.position.x;
+      const dz = activeBall.mesh.position.z - jar.position.z;
+      const distanceXZ = Math.hypot(dx, dz);
+
+      if (distanceXZ < CLEAN_ENTRY_RADIUS || distanceXZ > JAR_RADIUS + BALL_RADIUS) {
+        continue;
+      }
+
+      const nx = dx / Math.max(0.0001, distanceXZ);
+      const nz = dz / Math.max(0.0001, distanceXZ);
+      const targetDistance = JAR_RADIUS + BALL_RADIUS;
+      const correction = targetDistance - distanceXZ;
+
+      activeBall.mesh.position.x += nx * correction;
+      activeBall.mesh.position.z += nz * correction;
+
+      activeBall.velocityY = Math.max(
+        Math.abs(activeBall.velocityY) * RIM_BOUNCE,
+        0.9
+      );
+      activeBall.velocityX += nx * 0.28;
+      activeBall.velocityZ += nz * 0.28;
+      return;
+    }
+  }
+
+  private findCleanEntry(
     activeBall: ActiveBallVisual,
     previousY: number,
     nextY: number
   ): SceneBallSettlement | null {
-    const jarTopY = JAR_HEIGHT;
-    const topCollisionPlaneY = jarTopY + BALL_RADIUS;
+    if (activeBall.hasScoredEntry) {
+      return null;
+    }
 
-    if (!(previousY > topCollisionPlaneY && nextY <= topCollisionPlaneY)) {
+    if (!(previousY > ENTRY_PLANE_Y && nextY <= ENTRY_PLANE_Y)) {
       return null;
     }
 
@@ -154,7 +242,7 @@ export class SceneRoot {
       const dz = activeBall.mesh.position.z - jar.position.z;
       const distanceXZ = Math.hypot(dx, dz);
 
-      if (distanceXZ <= JAR_RADIUS + BALL_RADIUS) {
+      if (distanceXZ <= CLEAN_ENTRY_RADIUS) {
         return {
           ballId: activeBall.id,
           jarIndex,
@@ -164,5 +252,70 @@ export class SceneRoot {
     }
 
     return null;
+  }
+
+  private resolveEnteredJarPhysics(activeBall: ActiveBallVisual, dt: number): boolean {
+    if (activeBall.enteredJarIndex === null) {
+      activeBall.velocityX *= AIR_DAMPING;
+      activeBall.velocityZ *= AIR_DAMPING;
+      return false;
+    }
+
+    const jar = this.jars[activeBall.enteredJarIndex];
+    if (!jar) {
+      return true;
+    }
+
+    const dx = activeBall.mesh.position.x - jar.position.x;
+    const dz = activeBall.mesh.position.z - jar.position.z;
+    const distanceXZ = Math.hypot(dx, dz);
+
+    if (distanceXZ > JAR_INNER_RADIUS) {
+      const nx = dx / Math.max(0.0001, distanceXZ);
+      const nz = dz / Math.max(0.0001, distanceXZ);
+      const penetration = distanceXZ - JAR_INNER_RADIUS;
+
+      activeBall.mesh.position.x -= nx * penetration;
+      activeBall.mesh.position.z -= nz * penetration;
+
+      const radialVelocity = activeBall.velocityX * nx + activeBall.velocityZ * nz;
+      if (radialVelocity > 0) {
+        activeBall.velocityX -= radialVelocity * (1 + JAR_WALL_RESTITUTION) * nx;
+        activeBall.velocityZ -= radialVelocity * (1 + JAR_WALL_RESTITUTION) * nz;
+      }
+    }
+
+    if (activeBall.mesh.position.y <= BALL_RADIUS + 0.01 && activeBall.velocityY < 0) {
+      activeBall.mesh.position.y = BALL_RADIUS + 0.01;
+      activeBall.velocityY = -activeBall.velocityY * JAR_BOTTOM_RESTITUTION;
+    }
+
+    if (activeBall.mesh.position.y > CONTAINMENT_TOP_Y && activeBall.velocityY > 0) {
+      activeBall.mesh.position.y = CONTAINMENT_TOP_Y;
+      activeBall.velocityY = -activeBall.velocityY * 0.24;
+      activeBall.velocityX *= 0.9;
+      activeBall.velocityZ *= 0.9;
+    }
+
+    activeBall.velocityX -= dx * 0.35 * dt;
+    activeBall.velocityZ -= dz * 0.35 * dt;
+
+    activeBall.velocityX *= JAR_AIR_DAMPING;
+    activeBall.velocityY *= JAR_AIR_DAMPING;
+    activeBall.velocityZ *= JAR_AIR_DAMPING;
+
+    const speed = Math.hypot(
+      activeBall.velocityX,
+      activeBall.velocityY,
+      activeBall.velocityZ
+    );
+
+    if (activeBall.mesh.position.y <= BALL_RADIUS + 0.03 && speed <= SETTLE_SPEED_EPSILON) {
+      activeBall.settledFrames += 1;
+    } else {
+      activeBall.settledFrames = 0;
+    }
+
+    return activeBall.settledFrames >= SETTLE_FRAME_COUNT;
   }
 }
