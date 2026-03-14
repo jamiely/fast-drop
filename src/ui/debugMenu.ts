@@ -52,8 +52,8 @@ const readCurrentSettings = (menu: HTMLElement): Record<string, number> => {
     snapshot[`camera.${key}`] = parseNumber(input.value);
   });
 
-  if (Number.isFinite(snapshot.ringDiameter)) {
-    snapshot.ringRadius = snapshot.ringDiameter * 0.5;
+  if (Number.isFinite(snapshot.outerRingDiameter)) {
+    snapshot.outerRingRadius = snapshot.outerRingDiameter * 0.5;
   }
 
   return snapshot;
@@ -123,7 +123,7 @@ export const createDebugMenu = (
       <label>Jar height <span class="debug-menu__value" data-value-for="gameplay:jarHeightScale">1.00</span><input type="range" min="0.7" max="1.6" step="0.01" value="1" data-gameplay="jarHeightScale" /></label>
       <label>Jar spin speed <span class="debug-menu__value" data-value-for="gameplay:ringAngularSpeed">0.70</span><input type="range" min="0" max="2.2" step="0.01" value="0.7" data-gameplay="ringAngularSpeed" /></label>
       <label>Ball size <span class="debug-menu__value" data-value-for="gameplay:ballSizeScale">1.00</span><input type="range" min="0.6" max="1.8" step="0.01" value="1" data-gameplay="ballSizeScale" /></label>
-      <label>Ring diameter <span class="debug-menu__value" data-value-for="gameplay:ringDiameter">5.72</span><input type="range" min="3" max="7" step="0.1" value="5.72" data-gameplay="ringDiameter" /></label>
+      <label>Ring diameter <span class="debug-menu__value" data-value-for="gameplay:outerRingDiameter">6.41</span><input type="range" min="3" max="8" step="0.1" value="6.41" data-gameplay="outerRingDiameter" /></label>
       <label>Drop distance <span class="debug-menu__value" data-value-for="gameplay:dropPointZ">2.86</span><input type="range" min="1.2" max="3.2" step="0.05" value="2.86" data-gameplay="dropPointZ" /></label>
       <label>Drop height <span class="debug-menu__value" data-value-for="gameplay:dropHeight">2.30</span><input type="range" min="1.2" max="4.2" step="0.05" value="2.3" data-gameplay="dropHeight" /></label>
       <label>Drop cooldown (ms) <span class="debug-menu__value" data-value-for="gameplay:dropCooldownMs">80</span><input type="range" min="0" max="100" step="5" value="80" data-gameplay="dropCooldownMs" /></label>
@@ -202,15 +202,6 @@ export const createDebugMenu = (
       input.addEventListener('input', () => {
         const key = input.dataset.gameplay;
         if (!key) {
-          return;
-        }
-
-        if (key === 'ringDiameter') {
-          controls?.applyGameplayTuning(
-            'ringRadius',
-            parseNumber(input.value) * 0.5
-          );
-          refreshDebugMenuValues(menu);
           return;
         }
 

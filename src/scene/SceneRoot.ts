@@ -1,4 +1,12 @@
-import { Color, Group, Mesh, Scene, WebGLRenderer } from 'three';
+import {
+  Color,
+  Group,
+  Mesh,
+  MeshPhysicalMaterial,
+  Scene,
+  TorusGeometry,
+  WebGLRenderer
+} from 'three';
 import type { CameraTuning, GameplayTuning } from '../game/config';
 import { BALL_RADIUS, createBallMesh } from '../entities/Ball';
 import {
@@ -62,6 +70,7 @@ export class SceneRoot {
   private readonly ballGroup: Group;
   private readonly activeBalls: ActiveBallVisual[] = [];
   private readonly playfieldMesh: Group;
+  private readonly outerRingMesh: Mesh<TorusGeometry, MeshPhysicalMaterial>;
   private readonly bonusJarIndices: Set<number>;
   private missedBallCountSinceLastUpdate = 0;
 
@@ -105,6 +114,15 @@ export class SceneRoot {
       JAR_RADIUS
     );
     this.playfieldMesh = createPlayfieldBase(this.playfieldDimensions);
+    const outerRing = this.playfieldMesh.children[1];
+    if (
+      !(outerRing instanceof Mesh) ||
+      !(outerRing.material instanceof MeshPhysicalMaterial)
+    ) {
+      throw new Error('[SceneRoot] Playfield outer ring mesh is missing');
+    }
+
+    this.outerRingMesh = outerRing as Mesh<TorusGeometry, MeshPhysicalMaterial>;
     this.scene.add(this.playfieldMesh);
 
     this.jarGroup = new Group();
@@ -141,6 +159,11 @@ export class SceneRoot {
 
   public applyGameplayTuning(key: keyof GameplayTuning, value: number): void {
     if (!Number.isFinite(value)) {
+      return;
+    }
+
+    if (key === 'outerRingDiameter') {
+      this.updateOuterRingGeometry(value);
       return;
     }
 
@@ -334,6 +357,20 @@ export class SceneRoot {
         this.jarDiameterScale
       );
     }
+  }
+
+  private updateOuterRingGeometry(diameter: number): void {
+    const safeDiameter = Math.max(0.6, diameter);
+    const radius = safeDiameter * 0.5;
+    const nextGeometry = new TorusGeometry(
+      radius,
+      this.playfieldDimensions.outerRingTubeRadius,
+      24,
+      120
+    );
+
+    this.outerRingMesh.geometry.dispose();
+    this.outerRingMesh.geometry = nextGeometry;
   }
 
   private syncBallScale(): void {

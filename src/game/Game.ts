@@ -58,6 +58,10 @@ export class Game {
       this.runtimeConfig.tuning.ringRadius,
       this.runtimeConfig.bonusBucketCount
     );
+    this.sceneRoot.applyGameplayTuning(
+      'outerRingDiameter',
+      this.runtimeConfig.tuning.outerRingDiameter
+    );
     this.uiSystem = new UISystem(host);
     this.scoringSystem = new ScoringSystem();
     this.audioSystem = new AudioSystem();

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/html';
 import { useArgs } from '@storybook/preview-api';
-import { Color, Mesh, MeshPhysicalMaterial } from 'three';
+import { Color, Mesh, MeshPhysicalMaterial, TorusGeometry } from 'three';
 import {
   createPlayfieldBase,
   createPlayfieldDimensions
@@ -9,6 +9,7 @@ import { renderThreePreview } from './threePreview';
 
 interface OuterRingStoryArgs {
   ringDiameter: number;
+  jarOrbitRadius: number;
   jarRadius: number;
   ringColor: string;
   emissiveColor: string;
@@ -29,12 +30,20 @@ const meta: Meta<OuterRingStoryArgs> = {
   render: (args) => {
     const [, updateArgs] = useArgs<OuterRingStoryArgs>();
 
-    const jarOrbitRadius = Math.max(0.8, args.ringDiameter * 0.5 - args.jarRadius * 1.05);
-    const dimensions = createPlayfieldDimensions(jarOrbitRadius, args.jarRadius);
+    const dimensions = createPlayfieldDimensions(args.jarOrbitRadius, args.jarRadius);
     const platform = createPlayfieldBase(dimensions);
 
     const outerRing = platform.children[1] as Mesh | undefined;
     if (outerRing) {
+      const radius = Math.max(0.3, args.ringDiameter * 0.5);
+      outerRing.geometry.dispose();
+      outerRing.geometry = new TorusGeometry(
+        radius,
+        dimensions.outerRingTubeRadius,
+        24,
+        120
+      );
+
       const material = outerRing.material as MeshPhysicalMaterial;
       material.color = new Color(args.ringColor);
       material.emissive = new Color(args.emissiveColor);
@@ -83,7 +92,8 @@ const meta: Meta<OuterRingStoryArgs> = {
     });
   },
   args: {
-    ringDiameter: 5.72,
+    ringDiameter: 6.41,
+    jarOrbitRadius: 2.86,
     jarRadius: 0.33,
     ringColor: '#f3f7ff',
     emissiveColor: '#4e79ff',
@@ -97,7 +107,10 @@ const meta: Meta<OuterRingStoryArgs> = {
     cameraFov: 50
   },
   argTypes: {
-    ringDiameter: { control: { type: 'range', min: 3, max: 7, step: 0.01 } },
+    ringDiameter: { control: { type: 'range', min: 3, max: 8, step: 0.01 } },
+    jarOrbitRadius: {
+      control: { type: 'range', min: 1.4, max: 3.8, step: 0.01 }
+    },
     jarRadius: { control: { type: 'range', min: 0.2, max: 0.65, step: 0.01 } },
     ringColor: { control: 'color' },
     emissiveColor: { control: 'color' },
