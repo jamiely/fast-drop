@@ -52,6 +52,8 @@ const SETTLE_SPEED_EPSILON = 0.2;
 const SETTLE_FRAME_COUNT = 20;
 const MAX_BALL_AGE_SECONDS = 8;
 const MISSED_BALL_CLEANUP_Y = -1.5;
+const BALL_COLLISION_RESTITUTION = 0.45;
+const BALL_COLLISION_MIN_DISTANCE = BALL_RADIUS * 2;
 
 export class SceneRoot {
   public readonly renderer: WebGLRenderer | null;
@@ -192,6 +194,8 @@ export class SceneRoot {
       }
     }
 
+    this.resolveBallPairCollisions();
+
     return settlements;
   }
 
@@ -285,6 +289,106 @@ export class SceneRoot {
     }
 
     return null;
+  }
+
+  private resolveBallPairCollisions(): void {
+    for (let leftIndex = 0; leftIndex < this.activeBalls.length; leftIndex += 1) {
+      const leftBall = this.activeBalls[leftIndex];
+
+      for (
+        let rightIndex = leftIndex + 1;
+        rightIndex < this.activeBalls.length;
+        rightIndex += 1
+      ) {
+        const rightBall = this.activeBalls[rightIndex];
+
+        const dx = rightBall.mesh.position.x - leftBall.mesh.position.x;
+        const dy = rightBall.mesh.position.y - leftBall.mesh.position.y;
+        const dz = rightBall.mesh.position.z - leftBall.mesh.position.z;
+        const distance = Math.hypot(dx, dy, dz);
+
+        if (distance >= BALL_COLLISION_MIN_DISTANCE) {
+          continue;
+        }
+
+        const nx = dx / Math.max(0.0001, distance);
+        const ny = dy / Math.max(0.0001, distance);
+        const nz = dz / Math.max(0.0001, distance);
+        const penetration = BALL_COLLISION_MIN_DISTANCE - distance;
+
+        if (leftBall.isSettled && rightBall.isSettled) {
+          continue;
+        }
+
+        if (leftBall.isSettled) {
+          this.separateAndBounceMovingBall(rightBall, nx, ny, nz, penetration);
+          continue;
+        }
+
+        if (rightBall.isSettled) {
+          this.separateAndBounceMovingBall(leftBall, -nx, -ny, -nz, penetration);
+          continue;
+        }
+
+        leftBall.mesh.position.x -= nx * penetration * 0.5;
+        leftBall.mesh.position.y -= ny * penetration * 0.5;
+        leftBall.mesh.position.z -= nz * penetration * 0.5;
+        rightBall.mesh.position.x += nx * penetration * 0.5;
+        rightBall.mesh.position.y += ny * penetration * 0.5;
+        rightBall.mesh.position.z += nz * penetration * 0.5;
+
+        const relativeVelocityX = rightBall.velocityX - leftBall.velocityX;
+        const relativeVelocityY = rightBall.velocityY - leftBall.velocityY;
+        const relativeVelocityZ = rightBall.velocityZ - leftBall.velocityZ;
+        const normalSpeed =
+          relativeVelocityX * nx + relativeVelocityY * ny + relativeVelocityZ * nz;
+
+        if (normalSpeed < 0) {
+          const impulse = (-(1 + BALL_COLLISION_RESTITUTION) * normalSpeed) / 2;
+          leftBall.velocityX -= impulse * nx;
+          leftBall.velocityY -= impulse * ny;
+          leftBall.velocityZ -= impulse * nz;
+          rightBall.velocityX += impulse * nx;
+          rightBall.velocityY += impulse * ny;
+          rightBall.velocityZ += impulse * nz;
+        }
+
+        this.stabilizeBallAfterCollision(leftBall);
+        this.stabilizeBallAfterCollision(rightBall);
+      }
+    }
+  }
+
+  private separateAndBounceMovingBall(
+    movingBall: ActiveBallVisual,
+    nx: number,
+    ny: number,
+    nz: number,
+    penetration: number
+  ): void {
+    movingBall.mesh.position.x += nx * penetration;
+    movingBall.mesh.position.y += ny * penetration;
+    movingBall.mesh.position.z += nz * penetration;
+
+    const normalSpeed =
+      movingBall.velocityX * nx + movingBall.velocityY * ny + movingBall.velocityZ * nz;
+
+    if (normalSpeed < 0) {
+      movingBall.velocityX -= (1 + BALL_COLLISION_RESTITUTION) * normalSpeed * nx;
+      movingBall.velocityY -= (1 + BALL_COLLISION_RESTITUTION) * normalSpeed * ny;
+      movingBall.velocityZ -= (1 + BALL_COLLISION_RESTITUTION) * normalSpeed * nz;
+    }
+
+    this.stabilizeBallAfterCollision(movingBall);
+  }
+
+  private stabilizeBallAfterCollision(activeBall: ActiveBallVisual): void {
+    if (activeBall.isSettled) {
+      this.updateSettledBallAttachment(activeBall);
+      return;
+    }
+
+    this.resolveFloorCollision(activeBall);
   }
 
   private resolveEnteredJarPhysics(activeBall: ActiveBallVisual, dt: number): boolean {
