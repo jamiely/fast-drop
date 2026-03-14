@@ -1,96 +1,54 @@
-# PLAN — Gameplay Implementation (Completed)
+# PLAN — Post-Completion Follow-ups
 
-## Objective
+Previous gameplay delivery plan was archived to:
 
-Implement real gameplay systems on top of the completed bootstrap foundation without breaking existing tooling, tests, and CI quality gates.
+- `docs/history/2026-03-14-plan-phase6-13-complete/PLAN.md`
 
-## Final status
+## Goal
 
-- ✅ Phase 6 — Physics-Driven Bounce + Entry Scoring
-- ✅ Phase 7 — Real Scoring Rules
-- ✅ Phase 8 — Orbit + Gameplay Controls
-- ✅ Phase 9 — Audio Event Mapping + Mobile Unlock
-- ✅ Phase 10 — Debug Controls + E2E Expansion
-- ✅ Phase 11 — Live Gameplay Tuning Controls
-- ✅ Phase 12 — Arcade Cabinet Shell Rendering
-- ✅ Phase 13 — Electron Packaging + Windows Offline Build
+Track remaining items that are still called out in `RESEARCH.md` but are not fully implemented yet.
 
----
+## Remaining items from RESEARCH
 
-## Delivered by phase
+### 1) Round flow + end-of-round overlay
 
-### Phase 6 — Physics-Driven Bounce + Entry Scoring
+Status: ⏳ Not started
 
-- Real clean-entry settlements are emitted from live SceneRoot collision context.
-- Entry includes center offset normalization for downstream scoring.
-- In-jar and rim/bottom bounce behavior remains visible while reducing exaggerated pop-outs.
+- Add explicit round/game phase model (`idle | countdown | playing | ended`).
+- End round when:
+  - `timeRemaining <= 0`, or
+  - `ballsRemaining === 0` and all active balls resolve.
+- Add end-of-round summary overlay with:
+  - final score,
+  - hits,
+  - misses,
+  - accuracy.
 
-### Phase 7 — Real Scoring Rules
+### 2) State accounting for hits/misses/accuracy
 
-- `ScoringSystem.onBallSettled(event)` now applies:
-  - jar-specific base values,
-  - center-accuracy weighting,
-  - streak bonus progression,
-  - bonus-time award for bonus jars.
+Status: ⏳ Not started
 
-### Phase 8 — Orbit + Gameplay Controls
+- Extend runtime state with deterministic counters for landed/missed balls.
+- Use settlement + miss cleanup events to update stats.
+- Add unit tests for round accounting.
 
-- `OrbitSystem.update(dt)` contract unchanged.
-- Added internal deterministic controls:
-  - pause/toggle pause,
-  - speed multiplier,
-  - runtime ring radius and base speed updates.
+### 3) E2E for round completion and summary
 
-### Phase 9 — Audio Event Mapping + Mobile Unlock
+Status: ⏳ Not started
 
-- `AudioSystem.play(event)` remains the only public trigger.
-- Event-specific synth profiles were expanded.
-- Browser/mobile unlock flow implemented:
-  - queue audio events before interaction,
-  - resume context and flush queue on first user gesture.
+- Add Playwright regression that validates round-end conditions.
+- Add Playwright regression that validates summary overlay content.
 
-### Phase 10 — Debug Controls + E2E Expansion
+### 4) Optional gameplay throttle (from TODO)
 
-- HUD now renders as a physical-panel styled red LED scoreboard for score/time/balls.
-- Debug menu remains gated behind `?debug=1`.
-- Debug buttons now execute live commands (+time, +score, pause, step, spawn, speed presets).
-- Added focused Playwright regression for live debug HUD mutations.
+Status: ⏳ Not started
 
-### Phase 11 — Live Gameplay Tuning Controls
+- Evaluate short drop cooldown (50–100ms) to avoid unbounded burst spawning.
+- Keep rapid play feel; apply only if needed for stability/tuning.
 
-- Debug sliders apply runtime tuning for:
-  - ball/wall/floor bounciness,
-  - jar diameter and height,
-  - ring diameter,
-  - drop distance,
-  - camera distance/pitch/yaw/target framing.
-- Dev preset save/load implemented via localStorage.
+## Definition of done for this follow-up plan
 
-### Phase 12 — Arcade Cabinet Shell Rendering
-
-- Added cabinet framing meshes around the playfield.
-- Maintained gameplay readability with simple neutral background.
-- Captured representative screenshots in:
-  - `docs/history/2026-03-14-phase7-13-complete/`
-
-### Phase 13 — Electron Packaging + Windows Offline Build
-
-- Added Electron desktop wrapper (`electron/main.mjs`, `electron/preload.mjs`).
-- Added Windows packaging scripts via `electron-builder`.
-- Added release workflow:
-  - `.github/workflows/release-electron.yml`
-- Added desktop smoke check script:
-  - `scripts/electron-smoke.mjs`
-
----
-
-## Definition of Done (Gameplay Plan) — Result
-
-1. ✅ Real physics clean-entry events drive scoring.
-2. ✅ Real scoring rules + audio mapping are implemented.
-3. ✅ Existing public contracts remain stable:
-   - `OrbitSystem.update(dt)`
-   - `ScoringSystem.onBallSettled(event)`
-   - `AudioSystem.play(event)`
-   - `testBridge.stepFrames(n)`
-4. ✅ `npm run check` and `npm run test:e2e` are green.
+- Round can start, play, and end deterministically.
+- End-of-round summary overlay is shown and test-covered.
+- Hit/miss/accuracy counters are correct and reflected in UI.
+- `npm run check` and `npm run test:e2e` remain green.
