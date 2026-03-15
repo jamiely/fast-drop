@@ -97,3 +97,77 @@ export const createOuterRingLedShaderMaterial = (
       }
     `
   });
+
+export const createCenterDomeReflectionMaterial = (): ShaderMaterial =>
+  new ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    depthTest: true,
+    blending: AdditiveBlending,
+    uniforms: {
+      uPhase: { value: 0 },
+      uEnabled: { value: 1 },
+      uBaseColor: { value: new Color('#274a93') },
+      uPalette: { value: OUTER_RING_LED_PALETTE.map((color) => color.clone()) }
+    },
+    vertexShader: `
+      varying vec3 vNormal;
+      varying vec3 vWorldPosition;
+
+      void main() {
+        vec4 worldPos = modelMatrix * vec4(position, 1.0);
+        vWorldPosition = worldPos.xyz;
+        vNormal = normalize(mat3(modelMatrix) * normal);
+        gl_Position = projectionMatrix * viewMatrix * worldPos;
+      }
+    `,
+    fragmentShader: `
+      varying vec3 vNormal;
+      varying vec3 vWorldPosition;
+
+      uniform float uPhase;
+      uniform float uEnabled;
+      uniform vec3 uBaseColor;
+      uniform vec3 uPalette[4];
+
+      float wrapSigned(float value) {
+        return mod(value + 0.5, 1.0) - 0.5;
+      }
+
+      void main() {
+        if (uEnabled < 0.5) {
+          gl_FragColor = vec4(0.0);
+          return;
+        }
+
+        float angle = atan(vWorldPosition.z, vWorldPosition.x) / (6.28318530718) + 0.5;
+        float radial = clamp(length(vWorldPosition.xz) * 0.4, 0.0, 1.0);
+        float headCount = 4.0;
+        float sigma = 0.08;
+
+        float intensity = 0.0;
+        float weight = 0.0;
+        vec3 colorSum = vec3(0.0);
+
+        for (int i = 0; i < 4; i += 1) {
+          float idx = float(i);
+          float headT = fract(uPhase + idx / headCount);
+          float dist = abs(wrapSigned(angle - headT));
+          float contribution = exp(-(dist * dist) / (2.0 * sigma * sigma));
+          contribution *= (0.55 + radial * 0.45);
+
+          intensity += contribution;
+          colorSum += uPalette[i] * contribution;
+          weight += contribution;
+        }
+
+        float fresnel = pow(1.0 - clamp(dot(normalize(vNormal), vec3(0.0, 1.0, 0.0)), 0.0, 1.0), 1.45);
+        vec3 ledColor = weight > 0.0001 ? colorSum / weight : uBaseColor;
+        float glow = clamp(intensity, 0.0, 1.0) * (0.28 + fresnel * 0.72);
+
+        vec3 finalColor = mix(uBaseColor, ledColor, 0.9) * glow;
+        float alpha = glow * 0.5;
+        gl_FragColor = vec4(finalColor, alpha);
+      }
+    `
+  });

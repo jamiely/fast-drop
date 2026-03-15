@@ -126,6 +126,7 @@ Implemented in this pass:
 - visual style refresh inspired by the neon reference image,
 - decorative outer ring around the jar orbit,
 - LED chase effect on the outer ring with moving multi-color heads, soft gradient blending, and trailing glow,
+- center dome now receives a subtle shader-based animated reflection driven by the outer-ring LED phase,
 - material/lighting polish pass (metallic center, glass jars, red rubber balls),
 - audio polish pass with dynamic-range compression and event throttling to reduce clipping/stacking,
 - improved HUD/summary readability polish and mobile-safe-area spacing,

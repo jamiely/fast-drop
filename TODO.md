@@ -2,7 +2,7 @@
 
 - [x] Add a debug toggle for the center diameter
 - [x] Add a toggle to disable outer ring LED
-- the center dome should reflect some of the lights of the outer ring. we could do this with shaders?
+- [x] the center dome should reflect some of the lights of the outer ring. we could do this with shaders?
 - [x] in storybook, the outer ring doesn't have led effects. it should have the same controls as the debug menu
 - [x] when debug mode is enabled, allow me to use scroll to zoom in/out
 - [x] when I'm experimenting with lighting in debug mode, i want to be able to see the light source in the scene (if applicable)

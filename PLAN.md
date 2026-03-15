@@ -17,6 +17,7 @@ Addendum (2026-03-14 late pass, completed):
 - [x] Add debug-mode mouse-wheel camera zoom (outside UI controls).
 - [x] Show light-source markers in debug mode while tuning lights.
 - [x] Bring outer-ring LED chase controls/effects into Storybook.
+- [x] Add center-dome shader reflection driven by outer-ring LED phase.
 - [x] Update TODO and README docs.
 
 Progress snapshot (2026-03-14):

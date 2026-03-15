@@ -29,6 +29,7 @@ import {
 } from './lighting';
 import {
   OUTER_RING_LED_BASE_COLOR,
+  createCenterDomeReflectionMaterial,
   createOuterRingLedShaderMaterial
 } from './outerRingLed';
 
@@ -84,6 +85,8 @@ export class SceneRoot {
   private readonly activeBalls: ActiveBallVisual[] = [];
   private readonly playfieldMesh: Group;
   private readonly moundMesh: Object3D;
+  private readonly centerDomeReflectionMesh: Object3D;
+  private readonly centerDomeReflectionMaterial: ShaderMaterial;
   private readonly outerRingMesh: Mesh<TorusGeometry, MeshPhysicalMaterial>;
   private readonly outerRingLedOverlayMesh: Mesh<TorusGeometry, ShaderMaterial>;
   private readonly bonusJarIndices: Set<number>;
@@ -157,6 +160,16 @@ export class SceneRoot {
     }
 
     this.moundMesh = mound;
+    this.centerDomeReflectionMaterial = createCenterDomeReflectionMaterial();
+    this.centerDomeReflectionMesh = new Mesh(
+      mound.geometry,
+      this.centerDomeReflectionMaterial
+    );
+    this.centerDomeReflectionMesh.scale.setScalar(1.002);
+    this.centerDomeReflectionMesh.renderOrder = 2;
+    this.centerDomeReflectionMesh.position.set(0, 0.001, 0);
+    this.moundMesh.add(this.centerDomeReflectionMesh);
+
     this.outerRingMesh = outerRing as Mesh<TorusGeometry, MeshPhysicalMaterial>;
     this.outerRingMesh.renderOrder = 1;
     this.scene.add(this.playfieldMesh);
@@ -481,13 +494,17 @@ export class SceneRoot {
   }
 
   private updateOuterRingLeds(dt: number): void {
+    const centerDomeMaterial = this.centerDomeReflectionMaterial;
     this.outerRingLedOverlayMesh.visible = this.outerRingLedEnabled;
 
     if (!this.outerRingLedEnabled) {
+      centerDomeMaterial.uniforms.uEnabled.value = 0;
       this.outerRingMesh.material.emissive.copy(OUTER_RING_LED_BASE_COLOR);
       this.outerRingMesh.material.emissiveIntensity = 0.02;
       return;
     }
+
+    centerDomeMaterial.uniforms.uEnabled.value = 1;
 
     this.outerRingLedReverseTimer += dt;
     if (this.outerRingLedReverseTimer >= OUTER_RING_LED_REVERSE_CHECK_SECONDS) {
@@ -505,6 +522,8 @@ export class SceneRoot {
     material.uniforms.uHeadCount.value = this.outerRingLedHeadCount;
     material.uniforms.uTrail.value = this.outerRingLedTrail;
     material.uniforms.uDirection.value = this.outerRingLedDirection;
+
+    centerDomeMaterial.uniforms.uPhase.value = this.outerRingLedPhase;
 
     this.outerRingMesh.material.emissive.copy(OUTER_RING_LED_BASE_COLOR);
     this.outerRingMesh.material.emissiveIntensity = 0.08;
