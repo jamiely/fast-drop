@@ -26,6 +26,7 @@ export default defineConfig({
         'src/game/types.ts',
         'src/game/Game.ts',
         'src/scene/SceneRoot.ts',
+        'src/scene/lighting.ts',
         'src/ui/debugMenu.ts',
         'src/systems/AudioSystem.ts',
         'src/systems/OrbitSystem.ts',

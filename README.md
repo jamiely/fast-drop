@@ -44,7 +44,8 @@ Storybook stories currently included:
   - speed controls
   - gameplay tuning (including jar spin speed, ring diameter, drop cooldown, ball size, drop height)
   - camera tuning
-  - live numeric values + copyable JSON snapshot for sharing tuned settings
+  - lighting rig tuning (move lights, change light type, add lights)
+  - live numeric values + copyable JSON snapshot for sharing tuned settings (including lights)
   - preset save/load
 - Controls:
   - click/tap the page (outside UI controls) or press `Space` to drop
@@ -94,7 +95,7 @@ To reduce flakiness in CI, Playwright also runs with `1` worker and `1` retry wh
   - `npm run test`
   - `npm run coverage` (enforces global 90% minimum for statements/branches/functions/lines)
   - `npm run test:e2e`
-- Coverage excludes runtime-heavy orchestration/render/audio UI files (`Game.ts`, `SceneRoot.ts`, `ui/debugMenu.ts`, `systems/AudioSystem.ts`, `systems/OrbitSystem.ts`, `ui/hud.ts`, `stories/**`) and pure type-only modules from threshold accounting so the 90% gate targets deterministic unit-testable logic.
+- Coverage excludes runtime-heavy orchestration/render/audio UI files (`Game.ts`, `SceneRoot.ts`, `scene/lighting.ts`, `ui/debugMenu.ts`, `systems/AudioSystem.ts`, `systems/OrbitSystem.ts`, `ui/hud.ts`, `stories/**`) and pure type-only modules from threshold accounting so the 90% gate targets deterministic unit-testable logic.
 
 ## CI/CD
 
@@ -123,13 +124,15 @@ Implemented in this pass:
 - click-anywhere drop input (outside UI controls),
 - visual style refresh inspired by the neon reference image,
 - decorative outer ring around the jar orbit,
+- LED-style strobe pulse effect on the outer ring,
 - material/lighting polish pass (metallic center, glass jars, red rubber balls),
 - audio polish pass with dynamic-range compression and event throttling to reduce clipping/stacking,
 - improved HUD/summary readability polish and mobile-safe-area spacing,
 - ball size updated to 0.157 reference diameter (relative to jar diameter scaling),
 - outer arcade enclosure removed,
 - added StorybookJS component stories for ball, bonus jar, center platform, outer ring, jar spinner, score panel, and round-complete dialog,
-- debug menu now shows live control values and a copyable JSON snapshot of current tuning for easy sharing.
+- debug menu now shows live control values and a copyable JSON snapshot of current tuning for easy sharing,
+- debug menu lighting controls for moving lights, swapping light type, and adding extra lights.
 
 ## Representative screenshots
 

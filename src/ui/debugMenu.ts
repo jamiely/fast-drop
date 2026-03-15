@@ -1,4 +1,9 @@
 import type { CameraTuning, GameplayTuning } from '../game/config';
+import type {
+  LightPropertyKey,
+  LightSnapshot,
+  LightType
+} from '../scene/lighting';
 
 export interface DebugMenuControls {
   togglePause: () => void;
@@ -9,8 +14,19 @@ export interface DebugMenuControls {
   setSpeedMultiplier: (multiplier: number) => void;
   applyGameplayTuning: (key: keyof GameplayTuning, value: number) => void;
   applyCameraTuning: (key: keyof CameraTuning, value: number) => void;
+  getLightSnapshot: () => LightSnapshot[];
+  applyLightValue: (
+    id: string,
+    key: LightPropertyKey,
+    value: number | string
+  ) => void;
+  addLight: (type: LightType) => void;
   savePreset: () => void;
   loadPreset: () => void;
+}
+
+interface LightEditorState {
+  selectedLightId: string | null;
 }
 
 const parseNumber = (value: string): number => {
@@ -31,8 +47,11 @@ const formatControlValue = (value: string): string => {
   return number.toFixed(2);
 };
 
-const readCurrentSettings = (menu: HTMLElement): Record<string, number> => {
-  const snapshot: Record<string, number> = {};
+const readCurrentSettings = (
+  menu: HTMLElement,
+  controls?: DebugMenuControls
+): Record<string, unknown> => {
+  const snapshot: Record<string, unknown> = {};
 
   menu.querySelectorAll<HTMLInputElement>('input[data-gameplay]').forEach((input) => {
     const key = input.dataset.gameplay;
@@ -52,8 +71,12 @@ const readCurrentSettings = (menu: HTMLElement): Record<string, number> => {
     snapshot[`camera.${key}`] = parseNumber(input.value);
   });
 
-  if (Number.isFinite(snapshot.outerRingDiameter)) {
-    snapshot.outerRingRadius = snapshot.outerRingDiameter * 0.5;
+  if (Number.isFinite(snapshot.outerRingDiameter as number)) {
+    snapshot.outerRingRadius = Number(snapshot.outerRingDiameter) * 0.5;
+  }
+
+  if (controls) {
+    snapshot.lights = controls.getLightSnapshot();
   }
 
   return snapshot;
@@ -63,7 +86,20 @@ const updateControlBadges = (menu: HTMLElement): void => {
   menu.querySelectorAll<HTMLInputElement>('input[type="range"]').forEach((input) => {
     const gameplayKey = input.dataset.gameplay;
     const cameraKey = input.dataset.camera;
-    const key = gameplayKey ? `gameplay:${gameplayKey}` : `camera:${cameraKey ?? ''}`;
+    const lightKey = input.dataset.lightInput;
+
+    let key = '';
+    if (gameplayKey) {
+      key = `gameplay:${gameplayKey}`;
+    } else if (cameraKey) {
+      key = `camera:${cameraKey}`;
+    } else if (lightKey) {
+      key = `light:${lightKey}`;
+    }
+
+    if (!key) {
+      return;
+    }
 
     const output = menu.querySelector<HTMLElement>(`[data-value-for="${key}"]`);
     if (!output) {
@@ -74,19 +110,92 @@ const updateControlBadges = (menu: HTMLElement): void => {
   });
 };
 
-const updateSnapshotField = (menu: HTMLElement): void => {
+const updateSnapshotField = (
+  menu: HTMLElement,
+  controls?: DebugMenuControls
+): void => {
   const output = menu.querySelector<HTMLTextAreaElement>('[data-role="snapshot"]');
   if (!output) {
     return;
   }
 
-  const snapshot = readCurrentSettings(menu);
+  const snapshot = readCurrentSettings(menu, controls);
   output.value = JSON.stringify(snapshot, null, 2);
 };
 
-const refreshDebugMenuValues = (menu: HTMLElement): void => {
+const LIGHT_TYPES: LightType[] = [
+  'ambient',
+  'hemisphere',
+  'directional',
+  'point',
+  'spot'
+];
+
+const renderLightEditor = (
+  menu: HTMLElement,
+  controls: DebugMenuControls | undefined,
+  state: LightEditorState
+): void => {
+  if (!controls) {
+    return;
+  }
+
+  const lights = controls.getLightSnapshot();
+  const select = menu.querySelector<HTMLSelectElement>('[data-light-selector]');
+  if (!select) {
+    return;
+  }
+
+  const hasCurrent = lights.some((light) => light.id === state.selectedLightId);
+  if (!hasCurrent) {
+    state.selectedLightId = lights[0]?.id ?? null;
+  }
+
+  select.innerHTML = lights
+    .map(
+      (light) =>
+        `<option value="${light.id}">${light.name} (${light.type})</option>`
+    )
+    .join('');
+
+  if (state.selectedLightId) {
+    select.value = state.selectedLightId;
+  }
+
+  const selected = lights.find((light) => light.id === state.selectedLightId);
+  const fields = menu.querySelectorAll<
+    HTMLInputElement | HTMLSelectElement
+  >('[data-light-input]');
+
+  for (const field of fields) {
+    if (!selected) {
+      field.disabled = true;
+      continue;
+    }
+
+    field.disabled = false;
+    const key = field.dataset.lightInput as LightPropertyKey | undefined;
+    if (!key) {
+      continue;
+    }
+
+    const value = selected[key];
+    if (typeof value === 'number') {
+      field.value = String(value);
+    } else if (typeof value === 'string') {
+      field.value = value;
+    }
+  }
+};
+
+const refreshDebugMenuValues = (
+  menu: HTMLElement,
+  controls?: DebugMenuControls,
+  lightState: LightEditorState = { selectedLightId: null }
+): void => {
+  renderLightEditor(menu, controls, lightState);
   updateControlBadges(menu);
-  updateSnapshotField(menu);
+  updateSnapshotField(menu, controls);
 };
 
 export const createDebugMenu = (
@@ -97,6 +206,8 @@ export const createDebugMenu = (
   if (!enabled) {
     return null;
   }
+
+  const lightState: LightEditorState = { selectedLightId: null };
 
   const menu = document.createElement('aside');
   menu.className = 'debug-menu';
@@ -136,6 +247,32 @@ export const createDebugMenu = (
       <label>Target Y <span class="debug-menu__value" data-value-for="camera:targetY">0.60</span><input type="range" min="0" max="2" step="0.05" value="0.6" data-camera="targetY" /></label>
     </div>
     <div class="debug-menu__group">
+      <h4>Lighting</h4>
+      <label>Selected light
+        <select data-light-selector></select>
+      </label>
+      <div class="debug-menu__actions">
+        <button type="button" data-action="add-point-light">+ Point light</button>
+        <button type="button" data-action="add-spot-light">+ Spot light</button>
+      </div>
+      <label>Type
+        <select data-light-input="type">
+          <option value="ambient">Ambient</option>
+          <option value="hemisphere">Hemisphere</option>
+          <option value="directional">Directional</option>
+          <option value="point">Point</option>
+          <option value="spot">Spot</option>
+        </select>
+      </label>
+      <label>Color
+        <input type="color" value="#ffffff" data-light-input="color" />
+      </label>
+      <label>Intensity <span class="debug-menu__value" data-value-for="light:intensity">1.00</span><input type="range" min="0" max="8" step="0.05" value="1" data-light-input="intensity" /></label>
+      <label>X <span class="debug-menu__value" data-value-for="light:x">0.00</span><input type="range" min="-8" max="8" step="0.1" value="0" data-light-input="x" /></label>
+      <label>Y <span class="debug-menu__value" data-value-for="light:y">5.00</span><input type="range" min="-2" max="10" step="0.1" value="5" data-light-input="y" /></label>
+      <label>Z <span class="debug-menu__value" data-value-for="light:z">0.00</span><input type="range" min="-8" max="8" step="0.1" value="0" data-light-input="z" /></label>
+    </div>
+    <div class="debug-menu__group">
       <h4>Current values</h4>
       <textarea class="debug-menu__snapshot" data-role="snapshot" readonly></textarea>
       <button type="button" data-action="copy-values">Copy values</button>
@@ -170,12 +307,17 @@ export const createDebugMenu = (
         case 'speed-2':
           controls?.setSpeedMultiplier(2);
           break;
+        case 'add-point-light':
+          controls?.addLight('point');
+          break;
+        case 'add-spot-light':
+          controls?.addLight('spot');
+          break;
         case 'save':
           controls?.savePreset();
           break;
         case 'load':
           controls?.loadPreset();
-          refreshDebugMenuValues(menu);
           break;
         case 'copy-values': {
           const snapshot = menu.querySelector<HTMLTextAreaElement>(
@@ -193,6 +335,8 @@ export const createDebugMenu = (
         default:
           console.info('[DebugMenu] unknown action', action);
       }
+
+      refreshDebugMenuValues(menu, controls, lightState);
     });
   });
 
@@ -209,7 +353,7 @@ export const createDebugMenu = (
           key as keyof GameplayTuning,
           parseNumber(input.value)
         );
-        refreshDebugMenuValues(menu);
+        refreshDebugMenuValues(menu, controls, lightState);
       });
     });
 
@@ -226,11 +370,48 @@ export const createDebugMenu = (
           key as keyof CameraTuning,
           parseNumber(input.value)
         );
-        refreshDebugMenuValues(menu);
+        refreshDebugMenuValues(menu, controls, lightState);
+      });
+    });
+
+  const lightSelect = menu.querySelector<HTMLSelectElement>('[data-light-selector]');
+  lightSelect?.addEventListener('change', () => {
+    lightState.selectedLightId = lightSelect.value || null;
+    refreshDebugMenuValues(menu, controls, lightState);
+  });
+
+  menu
+    .querySelectorAll<HTMLInputElement | HTMLSelectElement>('[data-light-input]')
+    .forEach((input) => {
+      const trigger = input instanceof HTMLSelectElement ? 'change' : 'input';
+      input.addEventListener(trigger, () => {
+        if (!controls || !lightState.selectedLightId) {
+          return;
+        }
+
+        const key = input.dataset.lightInput as LightPropertyKey | undefined;
+        if (!key) {
+          return;
+        }
+
+        const value =
+          input instanceof HTMLInputElement && input.type === 'range'
+            ? parseNumber(input.value)
+            : input.value;
+
+        if (key === 'type') {
+          const type = String(value) as LightType;
+          if (!LIGHT_TYPES.includes(type)) {
+            return;
+          }
+        }
+
+        controls.applyLightValue(lightState.selectedLightId, key, value);
+        refreshDebugMenuValues(menu, controls, lightState);
       });
     });
 
   host.appendChild(menu);
-  refreshDebugMenuValues(menu);
+  refreshDebugMenuValues(menu, controls, lightState);
   return menu;
 };

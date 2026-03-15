@@ -18,6 +18,7 @@ import type { BallSettledEvent, GameState, TestBridgeContract } from './types';
 import { PhysicsWorld } from '../physics/PhysicsWorld';
 import type { SceneBallSettlement } from '../scene/SceneRoot';
 import { SceneRoot } from '../scene/SceneRoot';
+import type { LightPropertyKey, LightType } from '../scene/lighting';
 import { AudioSystem } from '../systems/AudioSystem';
 import { InputSystem } from '../systems/InputSystem';
 import { OrbitSystem } from '../systems/OrbitSystem';
@@ -87,6 +88,10 @@ export class Game {
         this.runtimeConfig.camera[key] = value;
         this.sceneRoot.applyCameraTuning(this.runtimeConfig.camera);
       },
+      getLightSnapshot: () => this.sceneRoot.getLightSnapshot(),
+      applyLightValue: (id, key, value) =>
+        this.sceneRoot.updateLightValue(id, key, value),
+      addLight: (type) => this.sceneRoot.addDebugLight(type),
       savePreset: () => this.savePreset(),
       loadPreset: () => this.loadPreset()
     });
@@ -199,7 +204,8 @@ export class Game {
 
     const payload = JSON.stringify({
       tuning: this.runtimeConfig.tuning,
-      camera: this.runtimeConfig.camera
+      camera: this.runtimeConfig.camera,
+      lights: this.sceneRoot.getLightSnapshot()
     });
     localStorage.setItem(DEV_PRESET_STORAGE_KEY, payload);
   }
@@ -217,10 +223,60 @@ export class Game {
     const parsed = JSON.parse(payload) as {
       tuning?: Partial<GameplayTuning>;
       camera?: Partial<CameraTuning>;
+      lights?: Array<{
+        id?: string;
+        type?: LightType;
+        color?: string;
+        groundColor?: string;
+        intensity?: number;
+        x?: number;
+        y?: number;
+        z?: number;
+        targetX?: number;
+        targetY?: number;
+        targetZ?: number;
+        distance?: number;
+        decay?: number;
+        angle?: number;
+        penumbra?: number;
+      }>;
     };
 
     for (const [key, value] of Object.entries(parsed.tuning ?? {})) {
       this.applyGameplayTuning(key as keyof GameplayTuning, Number(value));
+    }
+
+    for (const light of parsed.lights ?? []) {
+      if (!light.id) {
+        continue;
+      }
+
+      const lightId = light.id;
+      const applyValue = (
+        key: LightPropertyKey,
+        value: number | string | undefined
+      ): void => {
+        if (value === undefined) {
+          return;
+        }
+
+        this.sceneRoot.updateLightValue(lightId, key, value);
+      };
+
+      applyValue('type', light.type);
+      applyValue('color', light.color);
+      applyValue('groundColor', light.groundColor);
+      applyValue('intensity', light.intensity);
+      applyValue('x', light.x);
+      applyValue('y', light.y);
+      applyValue('z', light.z);
+      applyValue('targetX', light.targetX);
+      applyValue('targetY', light.targetY);
+      applyValue('targetZ', light.targetZ);
+      applyValue('distance', light.distance);
+      applyValue('decay', light.decay);
+      applyValue('angle', light.angle);
+      applyValue('penumbra', light.penumbra);
     }
 
     Object.assign(this.runtimeConfig.camera, parsed.camera ?? {});

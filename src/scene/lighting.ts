@@ -2,29 +2,404 @@ import {
   AmbientLight,
   DirectionalLight,
   HemisphereLight,
+  Object3D,
   PointLight,
   Scene,
-  SpotLight
+  SpotLight,
+  type Light
 } from 'three';
 
-export const addLighting = (scene: Scene): void => {
-  const ambient = new AmbientLight('#88a8e0', 0.22);
+export type LightType =
+  | 'ambient'
+  | 'hemisphere'
+  | 'directional'
+  | 'point'
+  | 'spot';
 
-  const hemi = new HemisphereLight('#c6dcff', '#1b0f36', 0.5);
-  hemi.position.set(0, 5.8, 0);
+export interface LightSnapshot {
+  id: string;
+  name: string;
+  type: LightType;
+  color: string;
+  groundColor: string;
+  intensity: number;
+  x: number;
+  y: number;
+  z: number;
+  targetX: number;
+  targetY: number;
+  targetZ: number;
+  distance: number;
+  decay: number;
+  angle: number;
+  penumbra: number;
+}
 
-  const key = new DirectionalLight('#ffffff', 0.8);
-  key.position.set(2.6, 6.2, 2.8);
+export type LightPropertyKey =
+  | 'name'
+  | 'type'
+  | 'color'
+  | 'groundColor'
+  | 'intensity'
+  | 'x'
+  | 'y'
+  | 'z'
+  | 'targetX'
+  | 'targetY'
+  | 'targetZ'
+  | 'distance'
+  | 'decay'
+  | 'angle'
+  | 'penumbra';
 
-  const centerSpot = new SpotLight('#fff7df', 1.9, 14, 0.62, 0.28, 1.3);
-  centerSpot.position.set(0, 5.2, 1.3);
-  centerSpot.target.position.set(0, 0.45, 0);
+interface LightEntry {
+  snapshot: LightSnapshot;
+  light: Light;
+  target: Object3D | null;
+}
 
-  const cyanRim = new PointLight('#3ca7ff', 0.78, 12, 2.2);
-  cyanRim.position.set(4.2, 3.2, 4.4);
+export interface LightingRig {
+  getSnapshot: () => LightSnapshot[];
+  setLightValue: (
+    id: string,
+    key: LightPropertyKey,
+    value: number | string
+  ) => void;
+  addLight: (type?: LightType) => LightSnapshot;
+}
 
-  const purpleBack = new PointLight('#6d56ff', 0.66, 14, 2);
-  purpleBack.position.set(0, 4.8, -5.5);
+const toHexColor = (value: string): string => {
+  if (/^#[\da-f]{6}$/i.test(value)) {
+    return value.toLowerCase();
+  }
 
-  scene.add(ambient, hemi, key, centerSpot, centerSpot.target, cyanRim, purpleBack);
+  return '#ffffff';
+};
+
+const clamp = (value: number, min: number, max: number): number =>
+  Math.min(max, Math.max(min, value));
+
+const toNumber = (value: number | string, fallback: number): number => {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : fallback;
+};
+
+const makeLight = (
+  snapshot: LightSnapshot
+): { light: Light; target: Object3D | null } => {
+  switch (snapshot.type) {
+    case 'ambient': {
+      return {
+        light: new AmbientLight(snapshot.color, snapshot.intensity),
+        target: null
+      };
+    }
+    case 'hemisphere': {
+      const light = new HemisphereLight(
+        snapshot.color,
+        snapshot.groundColor,
+        snapshot.intensity
+      );
+      light.position.set(snapshot.x, snapshot.y, snapshot.z);
+      return { light, target: null };
+    }
+    case 'directional': {
+      const light = new DirectionalLight(snapshot.color, snapshot.intensity);
+      light.position.set(snapshot.x, snapshot.y, snapshot.z);
+      const target = new Object3D();
+      target.position.set(snapshot.targetX, snapshot.targetY, snapshot.targetZ);
+      light.target = target;
+      return { light, target };
+    }
+    case 'spot': {
+      const light = new SpotLight(
+        snapshot.color,
+        snapshot.intensity,
+        snapshot.distance,
+        snapshot.angle,
+        snapshot.penumbra,
+        snapshot.decay
+      );
+      light.position.set(snapshot.x, snapshot.y, snapshot.z);
+      const target = new Object3D();
+      target.position.set(snapshot.targetX, snapshot.targetY, snapshot.targetZ);
+      light.target = target;
+      return { light, target };
+    }
+    case 'point':
+    default: {
+      const light = new PointLight(
+        snapshot.color,
+        snapshot.intensity,
+        snapshot.distance,
+        snapshot.decay
+      );
+      light.position.set(snapshot.x, snapshot.y, snapshot.z);
+      return { light, target: null };
+    }
+  }
+};
+
+const syncEntryInstance = (entry: LightEntry): void => {
+  const { snapshot, light, target } = entry;
+
+  light.color.set(snapshot.color);
+  light.intensity = snapshot.intensity;
+
+  if (light instanceof HemisphereLight) {
+    light.position.set(snapshot.x, snapshot.y, snapshot.z);
+    light.groundColor.set(snapshot.groundColor);
+  }
+
+  if (
+    light instanceof DirectionalLight ||
+    light instanceof PointLight ||
+    light instanceof SpotLight
+  ) {
+    light.position.set(snapshot.x, snapshot.y, snapshot.z);
+  }
+
+  if (light instanceof PointLight || light instanceof SpotLight) {
+    light.distance = snapshot.distance;
+    light.decay = snapshot.decay;
+  }
+
+  if (light instanceof SpotLight) {
+    light.angle = snapshot.angle;
+    light.penumbra = snapshot.penumbra;
+  }
+
+  if (
+    target &&
+    (light instanceof DirectionalLight || light instanceof SpotLight)
+  ) {
+    target.position.set(snapshot.targetX, snapshot.targetY, snapshot.targetZ);
+  }
+};
+
+const createDefaultSnapshot = (
+  id: string,
+  name: string,
+  type: LightType,
+  overrides: Partial<LightSnapshot> = {}
+): LightSnapshot => ({
+  id,
+  name,
+  type,
+  color: '#ffffff',
+  groundColor: '#1b0f36',
+  intensity: 1,
+  x: 0,
+  y: 5,
+  z: 0,
+  targetX: 0,
+  targetY: 0.45,
+  targetZ: 0,
+  distance: 12,
+  decay: 2,
+  angle: 0.62,
+  penumbra: 0.28,
+  ...overrides
+});
+
+export const addLighting = (scene: Scene): LightingRig => {
+  const entries: LightEntry[] = [];
+  let debugLightCount = 0;
+
+  const mountSnapshot = (snapshot: LightSnapshot): LightSnapshot => {
+    const normalized: LightSnapshot = {
+      ...snapshot,
+      color: toHexColor(snapshot.color),
+      groundColor: toHexColor(snapshot.groundColor)
+    };
+
+    const { light, target } = makeLight(normalized);
+    scene.add(light);
+    if (target) {
+      scene.add(target);
+    }
+
+    entries.push({ snapshot: normalized, light, target });
+    return normalized;
+  };
+
+  const replaceLightType = (entry: LightEntry, type: LightType): void => {
+    if (entry.snapshot.type === type) {
+      return;
+    }
+
+    scene.remove(entry.light);
+    if (entry.target) {
+      scene.remove(entry.target);
+    }
+
+    entry.snapshot.type = type;
+    const { light, target } = makeLight(entry.snapshot);
+    entry.light = light;
+    entry.target = target;
+
+    scene.add(entry.light);
+    if (entry.target) {
+      scene.add(entry.target);
+    }
+  };
+
+  mountSnapshot(
+    createDefaultSnapshot('ambient', 'Ambient Fill', 'ambient', {
+      color: '#88a8e0',
+      intensity: 0.22
+    })
+  );
+
+  mountSnapshot(
+    createDefaultSnapshot('hemi', 'Sky/Ground', 'hemisphere', {
+      color: '#c6dcff',
+      groundColor: '#1b0f36',
+      intensity: 0.5,
+      x: 0,
+      y: 5.8,
+      z: 0
+    })
+  );
+
+  mountSnapshot(
+    createDefaultSnapshot('key', 'Key Light', 'directional', {
+      color: '#ffffff',
+      intensity: 0.8,
+      x: 2.6,
+      y: 6.2,
+      z: 2.8,
+      targetX: 0,
+      targetY: 0.45,
+      targetZ: 0
+    })
+  );
+
+  mountSnapshot(
+    createDefaultSnapshot('center-spot', 'Center Spot', 'spot', {
+      color: '#fff7df',
+      intensity: 1.9,
+      distance: 14,
+      angle: 0.62,
+      penumbra: 0.28,
+      decay: 1.3,
+      x: 0,
+      y: 5.2,
+      z: 1.3,
+      targetX: 0,
+      targetY: 0.45,
+      targetZ: 0
+    })
+  );
+
+  mountSnapshot(
+    createDefaultSnapshot('cyan-rim', 'Cyan Rim', 'point', {
+      color: '#3ca7ff',
+      intensity: 0.78,
+      distance: 12,
+      decay: 2.2,
+      x: 4.2,
+      y: 3.2,
+      z: 4.4
+    })
+  );
+
+  mountSnapshot(
+    createDefaultSnapshot('purple-back', 'Purple Back', 'point', {
+      color: '#6d56ff',
+      intensity: 0.66,
+      distance: 14,
+      decay: 2,
+      x: 0,
+      y: 4.8,
+      z: -5.5
+    })
+  );
+
+  return {
+    getSnapshot: () => entries.map((entry) => ({ ...entry.snapshot })),
+    setLightValue: (id, key, value) => {
+      const entry = entries.find((candidate) => candidate.snapshot.id === id);
+      if (!entry) {
+        return;
+      }
+
+      if (key === 'name') {
+        entry.snapshot.name = String(value).trim() || entry.snapshot.name;
+        return;
+      }
+
+      if (key === 'type') {
+        const type = String(value) as LightType;
+        if (
+          type !== 'ambient' &&
+          type !== 'hemisphere' &&
+          type !== 'directional' &&
+          type !== 'point' &&
+          type !== 'spot'
+        ) {
+          return;
+        }
+
+        replaceLightType(entry, type);
+        syncEntryInstance(entry);
+        return;
+      }
+
+      if (key === 'color' || key === 'groundColor') {
+        entry.snapshot[key] = toHexColor(String(value));
+        syncEntryInstance(entry);
+        return;
+      }
+
+      const numeric = toNumber(value, Number(entry.snapshot[key] ?? 0));
+      switch (key) {
+        case 'intensity':
+          entry.snapshot.intensity = clamp(numeric, 0, 8);
+          break;
+        case 'x':
+        case 'y':
+        case 'z':
+        case 'targetX':
+        case 'targetY':
+        case 'targetZ':
+          entry.snapshot[key] = clamp(numeric, -12, 12);
+          break;
+        case 'distance':
+          entry.snapshot.distance = clamp(numeric, 0, 40);
+          break;
+        case 'decay':
+          entry.snapshot.decay = clamp(numeric, 0, 4);
+          break;
+        case 'angle':
+          entry.snapshot.angle = clamp(numeric, 0.05, 1.57);
+          break;
+        case 'penumbra':
+          entry.snapshot.penumbra = clamp(numeric, 0, 1);
+          break;
+        default:
+          return;
+      }
+
+      syncEntryInstance(entry);
+    },
+    addLight: (type = 'point') => {
+      debugLightCount += 1;
+      const snapshot = mountSnapshot(
+        createDefaultSnapshot(
+          `debug-${debugLightCount}`,
+          `Debug Light ${debugLightCount}`,
+          type,
+          {
+            intensity: type === 'ambient' ? 0.15 : 0.9,
+            x: (debugLightCount % 3) * 1.8 - 1.8,
+            y: 4 + (debugLightCount % 2) * 0.7,
+            z: 3.8
+          }
+        )
+      );
+
+      return { ...snapshot };
+    }
+  };
 };

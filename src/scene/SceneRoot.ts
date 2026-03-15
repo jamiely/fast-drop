@@ -18,7 +18,13 @@ import {
 } from '../entities/Playfield';
 import { JAR_HEIGHT, JAR_RADIUS, createJarMesh } from '../entities/Jar';
 import { applyCameraTuning, createCamera } from './camera';
-import { addLighting } from './lighting';
+import {
+  addLighting,
+  type LightPropertyKey,
+  type LightSnapshot,
+  type LightType,
+  type LightingRig
+} from './lighting';
 
 interface ActiveBallVisual {
   id: number | null;
@@ -72,7 +78,9 @@ export class SceneRoot {
   private readonly playfieldMesh: Group;
   private readonly outerRingMesh: Mesh<TorusGeometry, MeshPhysicalMaterial>;
   private readonly bonusJarIndices: Set<number>;
+  private readonly lightingRig: LightingRig;
   private missedBallCountSinceLastUpdate = 0;
+  private outerRingStrobeTimeSeconds = 0;
 
   private dropPoint = { x: 0, z: 2.2, y: 2.3 };
   private jarDiameterScale = 1;
@@ -107,7 +115,7 @@ export class SceneRoot {
       this.renderer = null;
     }
 
-    addLighting(this.scene);
+    this.lightingRig = addLighting(this.scene);
 
     this.playfieldDimensions = createPlayfieldDimensions(
       jarOrbitRadius,
@@ -219,6 +227,22 @@ export class SceneRoot {
     applyCameraTuning(this.camera, tuning);
   }
 
+  public getLightSnapshot(): LightSnapshot[] {
+    return this.lightingRig.getSnapshot();
+  }
+
+  public updateLightValue(
+    id: string,
+    key: LightPropertyKey,
+    value: number | string
+  ): void {
+    this.lightingRig.setLightValue(id, key, value);
+  }
+
+  public addDebugLight(type: LightType): LightSnapshot {
+    return this.lightingRig.addLight(type);
+  }
+
   public spawnDropBall(
     dropX = this.dropPoint.x,
     dropZ = this.dropPoint.z,
@@ -252,6 +276,7 @@ export class SceneRoot {
     const settlements: SceneBallSettlement[] = [];
 
     this.syncPlayfieldVisuals();
+    this.updateOuterRingStrobe(dt);
 
     for (let index = this.activeBalls.length - 1; index >= 0; index -= 1) {
       const activeBall = this.activeBalls[index];
@@ -377,6 +402,25 @@ export class SceneRoot {
     for (const activeBall of this.activeBalls) {
       activeBall.mesh.scale.setScalar(this.ballSizeScale);
     }
+  }
+
+  private updateOuterRingStrobe(dt: number): void {
+    this.outerRingStrobeTimeSeconds += dt;
+
+    const pulseA = (Math.sin(this.outerRingStrobeTimeSeconds * 18) + 1) * 0.5;
+    const pulseB =
+      (Math.sin(this.outerRingStrobeTimeSeconds * 43 + Math.PI * 0.25) + 1) *
+      0.5;
+
+    const intensity = 0.08 + pulseA * 0.2 + pulseB * 0.1;
+    this.outerRingMesh.material.emissiveIntensity = intensity;
+
+    const hueMix = Math.min(1, pulseA * 0.75 + pulseB * 0.25);
+    this.outerRingMesh.material.emissive.setRGB(
+      0.2 + hueMix * 0.2,
+      0.35 + hueMix * 0.22,
+      0.95
+    );
   }
 
   private getBallRadius(): number {

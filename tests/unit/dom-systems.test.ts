@@ -29,6 +29,9 @@ describe('DOM systems and UI helpers', () => {
       setSpeedMultiplier: vi.fn(),
       applyGameplayTuning: vi.fn(),
       applyCameraTuning: vi.fn(),
+      getLightSnapshot: vi.fn(() => []),
+      applyLightValue: vi.fn(),
+      addLight: vi.fn(),
       savePreset: vi.fn(),
       loadPreset: vi.fn()
     };
