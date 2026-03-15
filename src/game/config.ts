@@ -44,7 +44,7 @@ export const gameConfig: RuntimeConfig = {
   tuning: {
     ringAngularSpeed: 0.7,
     ringRadius: 2.2 + DEFAULT_JAR_DIAMETER,
-    outerRingDiameter: (2.2 + DEFAULT_JAR_DIAMETER + (DEFAULT_JAR_DIAMETER * 0.5) * 1.05) * 2,
+    outerRingDiameter: 7.5,
     dropPointX: 0,
     dropPointZ: 2.2 + DEFAULT_JAR_DIAMETER,
     dropHeight: 2.3,

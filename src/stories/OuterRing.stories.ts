@@ -92,7 +92,7 @@ const meta: Meta<OuterRingStoryArgs> = {
     });
   },
   args: {
-    ringDiameter: 6.41,
+    ringDiameter: 7.5,
     jarOrbitRadius: 2.86,
     jarRadius: 0.33,
     ringColor: '#f3f7ff',
