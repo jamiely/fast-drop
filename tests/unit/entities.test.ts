@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MeshPhysicalMaterial } from 'three';
+import { Mesh, MeshPhysicalMaterial } from 'three';
 import { createBallMesh } from '../../src/entities/Ball';
 import { createJarMesh } from '../../src/entities/Jar';
 
@@ -14,11 +14,19 @@ describe('entity factories', () => {
     expect(material.opacity).toBeCloseTo(0.4);
   });
 
-  it('creates a bonus jar mesh with a different material color', () => {
-    const normal = createJarMesh(false).material as MeshPhysicalMaterial;
-    const bonus = createJarMesh(true).material as MeshPhysicalMaterial;
+  it('uses the same body color for normal and bonus jars with a black rim', () => {
+    const normal = createJarMesh(false);
+    const bonus = createJarMesh(true);
 
-    expect(bonus.color.getHex()).not.toBe(normal.color.getHex());
+    const normalBodyMaterial = normal.material as MeshPhysicalMaterial;
+    const bonusBodyMaterial = bonus.material as MeshPhysicalMaterial;
+
+    expect(normal.children[0]).toBeDefined();
+    const normalRim = normal.children[0] as Mesh;
+    const normalRimMaterial = normalRim.material as MeshPhysicalMaterial;
+
+    expect(bonusBodyMaterial.color.getHex()).toBe(normalBodyMaterial.color.getHex());
+    expect(normalRimMaterial.color.getHexString()).toBe('111111');
   });
 
   it('creates a visible placeholder ball mesh', () => {
