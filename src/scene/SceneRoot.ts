@@ -3,10 +3,9 @@ import {
   Color,
   Group,
   Mesh,
-  MeshBasicMaterial,
   MeshPhysicalMaterial,
   Scene,
-  SphereGeometry,
+  ShaderMaterial,
   TorusGeometry,
   WebGLRenderer
 } from 'three';
@@ -45,11 +44,6 @@ interface ActiveBallVisual {
   settledOffsetZ: number;
 }
 
-interface OuterRingLedNode {
-  coreMesh: Mesh<SphereGeometry, MeshBasicMaterial>;
-  haloMesh: Mesh<SphereGeometry, MeshBasicMaterial>;
-}
-
 export interface SceneBallSettlement {
   ballId: number | null;
   jarIndex: number;
@@ -69,7 +63,6 @@ const SETTLE_FRAME_COUNT = 20;
 const MAX_BALL_AGE_SECONDS = 8;
 const MISSED_BALL_CLEANUP_Y = -3.5;
 const BALL_COLLISION_RESTITUTION = 0.45;
-const OUTER_RING_LED_SEGMENT_COUNT = 120;
 const OUTER_RING_LED_REVERSE_CHECK_SECONDS = 2.4;
 const OUTER_RING_LED_BASE_COLOR = new Color('#1f3f99');
 const OUTER_RING_LED_PALETTE = [
@@ -78,6 +71,7 @@ const OUTER_RING_LED_PALETTE = [
   new Color('#ff6bc9'),
   new Color('#6fd9ff')
 ];
+const OUTER_RING_LED_MAX_HEADS = 12;
 
 export class SceneRoot {
   public readonly renderer: WebGLRenderer | null;
@@ -94,8 +88,7 @@ export class SceneRoot {
   private readonly activeBalls: ActiveBallVisual[] = [];
   private readonly playfieldMesh: Group;
   private readonly outerRingMesh: Mesh<TorusGeometry, MeshPhysicalMaterial>;
-  private readonly outerRingLedGroup: Group;
-  private readonly outerRingLedNodes: OuterRingLedNode[] = [];
+  private readonly outerRingLedOverlayMesh: Mesh<TorusGeometry, ShaderMaterial>;
   private readonly bonusJarIndices: Set<number>;
   private readonly lightingRig: LightingRig;
   private missedBallCountSinceLastUpdate = 0;
@@ -158,10 +151,13 @@ export class SceneRoot {
     this.outerRingMesh = outerRing as Mesh<TorusGeometry, MeshPhysicalMaterial>;
     this.scene.add(this.playfieldMesh);
 
-    this.outerRingLedGroup = new Group();
-    this.scene.add(this.outerRingLedGroup);
-    this.createOuterRingLeds();
-    this.syncOuterRingLedLayout();
+    this.outerRingLedOverlayMesh = new Mesh(
+      this.outerRingMesh.geometry.clone(),
+      this.createOuterRingLedShaderMaterial()
+    );
+    this.outerRingLedOverlayMesh.rotation.copy(this.outerRingMesh.rotation);
+    this.outerRingLedOverlayMesh.position.copy(this.outerRingMesh.position);
+    this.scene.add(this.outerRingLedOverlayMesh);
 
     this.jarGroup = new Group();
     this.jars = Array.from({ length: jarCount }, (_, index) => {
@@ -446,7 +442,9 @@ export class SceneRoot {
 
     this.outerRingMesh.geometry.dispose();
     this.outerRingMesh.geometry = nextGeometry;
-    this.syncOuterRingLedLayout();
+
+    this.outerRingLedOverlayMesh.geometry.dispose();
+    this.outerRingLedOverlayMesh.geometry = nextGeometry.clone();
   }
 
   private syncBallScale(): void {
@@ -455,48 +453,82 @@ export class SceneRoot {
     }
   }
 
-  private createOuterRingLeds(): void {
-    const coreGeometry = new SphereGeometry(0.03, 10, 10);
-    const haloGeometry = new SphereGeometry(0.09, 12, 12);
+  private createOuterRingLedShaderMaterial(): ShaderMaterial {
+    return new ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      blending: AdditiveBlending,
+      uniforms: {
+        uPhase: { value: 0 },
+        uHeadCount: { value: this.outerRingLedHeadCount },
+        uTrail: { value: this.outerRingLedTrail },
+        uDirection: { value: this.outerRingLedDirection },
+        uBaseColor: { value: OUTER_RING_LED_BASE_COLOR.clone() },
+        uPalette: { value: OUTER_RING_LED_PALETTE.map((color) => color.clone()) }
+      },
+      vertexShader: `
+        varying vec2 vUv;
 
-    for (let index = 0; index < OUTER_RING_LED_SEGMENT_COUNT; index += 1) {
-      const coreMaterial = new MeshBasicMaterial({
-        color: OUTER_RING_LED_BASE_COLOR.clone(),
-        transparent: true,
-        opacity: 0.2,
-        depthWrite: false
-      });
-      const haloMaterial = new MeshBasicMaterial({
-        color: OUTER_RING_LED_BASE_COLOR.clone(),
-        transparent: true,
-        opacity: 0.08,
-        depthWrite: false,
-        blending: AdditiveBlending
-      });
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        varying vec2 vUv;
 
-      const coreMesh = new Mesh(coreGeometry, coreMaterial);
-      const haloMesh = new Mesh(haloGeometry, haloMaterial);
+        uniform float uPhase;
+        uniform float uHeadCount;
+        uniform float uTrail;
+        uniform float uDirection;
+        uniform vec3 uBaseColor;
+        uniform vec3 uPalette[4];
 
-      this.outerRingLedGroup.add(haloMesh, coreMesh);
-      this.outerRingLedNodes.push({ coreMesh, haloMesh });
-    }
-  }
+        float wrapSigned(float value) {
+          return mod(value + 0.5, 1.0) - 0.5;
+        }
 
-  private syncOuterRingLedLayout(): void {
-    const ringRadius = this.getOuterRingRadius();
-    const ringHeight = this.playfieldDimensions.outerRingY;
+        void main() {
+          float headCount = clamp(uHeadCount, 1.0, ${OUTER_RING_LED_MAX_HEADS.toFixed(1)});
+          float sigma = 0.06 + (1.0 - clamp(uTrail, 0.05, 1.0)) * 0.18;
 
-    for (const [index, ledNode] of this.outerRingLedNodes.entries()) {
-      const angle = (index / this.outerRingLedNodes.length) * Math.PI * 2;
-      const x = Math.cos(angle) * ringRadius;
-      const z = Math.sin(angle) * ringRadius;
-      ledNode.coreMesh.position.set(x, ringHeight, z);
-      ledNode.haloMesh.position.set(x, ringHeight, z);
-    }
-  }
+          float intensity = 0.0;
+          float colorWeightTotal = 0.0;
+          vec3 weightedColor = vec3(0.0);
 
-  private getOuterRingRadius(): number {
-    return this.outerRingMesh.geometry.parameters.radius;
+          for (int i = 0; i < ${OUTER_RING_LED_MAX_HEADS}; i += 1) {
+            float index = float(i);
+            if (index >= headCount) {
+              break;
+            }
+
+            float headT = fract(uPhase + index / headCount);
+            float wrappedDelta = wrapSigned(vUv.x - headT);
+            float distanceToHead = abs(wrappedDelta);
+            float directionDelta = wrappedDelta * uDirection;
+            float tailMask = directionDelta < 0.0 ? 1.0 : 0.35;
+            float gaussian = exp(-(distanceToHead * distanceToHead) / (2.0 * sigma * sigma));
+            float contribution = gaussian * tailMask;
+
+            intensity += contribution;
+            vec3 paletteColor = uPalette[i % 4];
+            weightedColor += paletteColor * contribution;
+            colorWeightTotal += contribution;
+          }
+
+          float clampedIntensity = clamp(intensity, 0.0, 1.0);
+          vec3 mixedColor = uBaseColor;
+          if (colorWeightTotal > 0.0001) {
+            mixedColor = weightedColor / colorWeightTotal;
+          }
+
+          vec3 finalColor = mix(uBaseColor, mixedColor, 0.92) * (0.28 + clampedIntensity * 1.05);
+          float alpha = 0.08 + clampedIntensity * 0.44;
+
+          gl_FragColor = vec4(finalColor, alpha);
+        }
+      `
+    });
   }
 
   private updateOuterRingLeds(dt: number): void {
@@ -511,75 +543,14 @@ export class SceneRoot {
     this.outerRingLedPhase +=
       dt * this.outerRingLedSpeed * this.outerRingLedDirection;
 
-    const speedCycle = this.outerRingLedPhase / (Math.PI * 2);
-    const baseIntensity = 0.1;
-    const sigma = 0.06 + (1 - this.outerRingLedTrail) * 0.18;
-
-    for (const [index, ledNode] of this.outerRingLedNodes.entries()) {
-      const nodeT = index / this.outerRingLedNodes.length;
-
-      let colorWeightTotal = 0;
-      let weightedR = 0;
-      let weightedG = 0;
-      let weightedB = 0;
-      let intensity = 0;
-
-      for (let headIndex = 0; headIndex < this.outerRingLedHeadCount; headIndex += 1) {
-        const headT = (speedCycle + headIndex / this.outerRingLedHeadCount) % 1;
-        const wrappedDelta = ((nodeT - headT + 1.5) % 1) - 0.5;
-        const distance = Math.abs(wrappedDelta);
-
-        const directionDelta = wrappedDelta * this.outerRingLedDirection;
-        const tailMask = directionDelta < 0 ? 1 : 0.35;
-
-        const gaussian = Math.exp(-(distance * distance) / (2 * sigma * sigma));
-        const contribution = gaussian * tailMask;
-
-        if (contribution <= 0.001) {
-          continue;
-        }
-
-        intensity += contribution;
-
-        const paletteColor =
-          OUTER_RING_LED_PALETTE[headIndex % OUTER_RING_LED_PALETTE.length];
-        weightedR += paletteColor.r * contribution;
-        weightedG += paletteColor.g * contribution;
-        weightedB += paletteColor.b * contribution;
-        colorWeightTotal += contribution;
-      }
-
-      const clamped = Math.min(1, intensity);
-
-      if (colorWeightTotal > 0.0001) {
-        const colorR = weightedR / colorWeightTotal;
-        const colorG = weightedG / colorWeightTotal;
-        const colorB = weightedB / colorWeightTotal;
-        ledNode.coreMesh.material.color.setRGB(colorR, colorG, colorB);
-        ledNode.haloMesh.material.color.setRGB(colorR, colorG, colorB);
-      } else {
-        ledNode.coreMesh.material.color.copy(OUTER_RING_LED_BASE_COLOR);
-        ledNode.haloMesh.material.color.copy(OUTER_RING_LED_BASE_COLOR);
-      }
-
-      ledNode.coreMesh.material.opacity = 0.12 + clamped * 0.58;
-      ledNode.haloMesh.material.opacity = 0.06 + clamped * 0.34;
-
-      ledNode.coreMesh.scale.setScalar(0.65 + clamped * 0.45);
-      ledNode.haloMesh.scale.setScalar(0.95 + clamped * 1.1);
-
-      const angle = nodeT * Math.PI * 2;
-      const ringRadius = this.getOuterRingRadius();
-      const x = Math.cos(angle) * ringRadius;
-      const z = Math.sin(angle) * ringRadius;
-      ledNode.coreMesh.position.x = x;
-      ledNode.coreMesh.position.z = z;
-      ledNode.haloMesh.position.x = x;
-      ledNode.haloMesh.position.z = z;
-    }
+    const material = this.outerRingLedOverlayMesh.material;
+    material.uniforms.uPhase.value = this.outerRingLedPhase;
+    material.uniforms.uHeadCount.value = this.outerRingLedHeadCount;
+    material.uniforms.uTrail.value = this.outerRingLedTrail;
+    material.uniforms.uDirection.value = this.outerRingLedDirection;
 
     this.outerRingMesh.material.emissive.copy(OUTER_RING_LED_BASE_COLOR);
-    this.outerRingMesh.material.emissiveIntensity = 0.06 + baseIntensity * 0.5;
+    this.outerRingMesh.material.emissiveIntensity = 0.08;
   }
 
   private getBallRadius(): number {
