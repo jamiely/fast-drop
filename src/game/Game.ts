@@ -438,9 +438,6 @@ export class Game {
           scoringResult.bonusTimeDelta
         );
 
-        if (scoringResult.bonusTimeDelta > 0) {
-          this.audioSystem.play('bonus-awarded');
-        }
       }
 
       const bounceCount = this.sceneRoot.consumeBounceCount();

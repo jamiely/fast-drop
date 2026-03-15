@@ -275,7 +275,6 @@ describe('Game', () => {
     expect(latestState.hits).toBe(1);
     expect(latestState.misses).toBe(2);
     expect(gameMocks.audioPlay).toHaveBeenCalledWith('ball-settled');
-    expect(gameMocks.audioPlay).toHaveBeenCalledWith('bonus-awarded');
   });
 
   it('does not play the bounce sound for clean jar entry alone', async () => {
