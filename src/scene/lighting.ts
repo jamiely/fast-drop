@@ -62,6 +62,7 @@ interface LightEntry {
   light: Light;
   target: Object3D | null;
   sourceHelper: Mesh | null;
+  sourceSelectionHelper: Mesh | null;
   targetHelper: Mesh | null;
 }
 
@@ -232,6 +233,17 @@ const createLightHelper = (color: string, scale = 0.06): Mesh => {
   return new Mesh(new SphereGeometry(scale, 12, 12), material);
 };
 
+const createSelectionHelper = (scale = 0.1): Mesh => {
+  const material = new MeshBasicMaterial({
+    color: '#ffffff',
+    transparent: true,
+    opacity: 0.88,
+    wireframe: true,
+    depthWrite: false
+  });
+  return new Mesh(new SphereGeometry(scale, 12, 12), material);
+};
+
 const syncLightHelpers = (
   entry: LightEntry,
   selectedLightId: string | null
@@ -254,12 +266,25 @@ const syncLightHelpers = (
       entry.snapshot.y,
       entry.snapshot.z
     );
-    entry.sourceHelper.scale.setScalar(isSelected ? 1.65 : 1);
+    entry.sourceHelper.scale.setScalar(isSelected ? 1.45 : 0.92);
 
     const sourceMaterial = entry.sourceHelper.material as MeshBasicMaterial;
     sourceMaterial.color.set(entry.snapshot.color);
     sourceMaterial.wireframe = !isSelected;
-    sourceMaterial.opacity = isSelected ? 0.98 : 0.5;
+    sourceMaterial.opacity = isSelected ? 1 : 0.26;
+  }
+
+  if (entry.sourceSelectionHelper) {
+    entry.sourceSelectionHelper.visible =
+      isPositionedLight && entry.snapshot.enabled && isSelected;
+    if (isPositionedLight) {
+      entry.sourceSelectionHelper.position.set(
+        entry.snapshot.x,
+        entry.snapshot.y,
+        entry.snapshot.z
+      );
+      entry.sourceSelectionHelper.scale.setScalar(1.9);
+    }
   }
 
   if (!entry.targetHelper) {
@@ -304,12 +329,19 @@ export const addLighting = (
     const sourceHelper = options.showDebugHelpers
       ? createLightHelper(normalized.color, 0.07)
       : null;
+    const sourceSelectionHelper = options.showDebugHelpers
+      ? createSelectionHelper(0.1)
+      : null;
     const targetHelper = options.showDebugHelpers
       ? createLightHelper('#ffd166', 0.045)
       : null;
 
     if (sourceHelper) {
       scene.add(sourceHelper);
+    }
+
+    if (sourceSelectionHelper) {
+      scene.add(sourceSelectionHelper);
     }
 
     if (targetHelper) {
@@ -321,6 +353,7 @@ export const addLighting = (
       light,
       target,
       sourceHelper,
+      sourceSelectionHelper,
       targetHelper
     };
 
