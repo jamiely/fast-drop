@@ -190,12 +190,12 @@ export class AudioSystem implements AudioSystemContract {
         };
       case 'ball-settled':
         return {
-          frequency: 420,
-          duration: 0.12,
-          gain: 0.04,
-          type: 'square',
-          slideTo: 520,
-          minIntervalMs: 70
+          frequency: 135,
+          duration: 0.16,
+          gain: 0.012,
+          type: 'sine',
+          slideTo: 105,
+          minIntervalMs: 110
         };
       case 'bonus-awarded':
         return {

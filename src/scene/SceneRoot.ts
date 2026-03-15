@@ -92,6 +92,7 @@ export class SceneRoot {
   private readonly bonusJarIndices: Set<number>;
   private readonly lightingRig: LightingRig;
   private missedBallCountSinceLastUpdate = 0;
+  private bounceCountSinceLastUpdate = 0;
   private outerRingLedPhase = 0;
   private outerRingLedDirection = 1;
   private outerRingLedReverseTimer = 0;
@@ -451,6 +452,12 @@ export class SceneRoot {
     return value;
   }
 
+  public consumeBounceCount(): number {
+    const value = this.bounceCountSinceLastUpdate;
+    this.bounceCountSinceLastUpdate = 0;
+    return value;
+  }
+
   public hasUnresolvedBalls(): boolean {
     return this.activeBalls.some((ball) => !ball.isSettled);
   }
@@ -462,6 +469,7 @@ export class SceneRoot {
 
     this.activeBalls.length = 0;
     this.missedBallCountSinceLastUpdate = 0;
+    this.bounceCountSinceLastUpdate = 0;
   }
 
   public resize(): void {
@@ -604,6 +612,14 @@ export class SceneRoot {
     }
   }
 
+  private registerBounce(impactSpeed: number): void {
+    if (impactSpeed < 0.5) {
+      return;
+    }
+
+    this.bounceCountSinceLastUpdate += 1;
+  }
+
   private resolvePlayfieldCollision(
     activeBall: ActiveBallVisual,
     dt: number
@@ -625,6 +641,7 @@ export class SceneRoot {
     activeBall.mesh.position.y = contactY;
 
     if (activeBall.velocityY < 0) {
+      this.registerBounce(Math.abs(activeBall.velocityY));
       activeBall.velocityY = -activeBall.velocityY * PLAYFIELD_RESTITUTION;
     }
 
@@ -734,6 +751,7 @@ export class SceneRoot {
       activeBall.mesh.position.x += nx * correction;
       activeBall.mesh.position.z += nz * correction;
 
+      this.registerBounce(Math.abs(activeBall.velocityY));
       activeBall.velocityY = Math.max(
         Math.abs(activeBall.velocityY) * this.rimBounce,
         0.9
@@ -847,6 +865,7 @@ export class SceneRoot {
           relativeVelocityZ * nz;
 
         if (normalSpeed < 0) {
+          this.registerBounce(-normalSpeed);
           const impulse = (-(1 + BALL_COLLISION_RESTITUTION) * normalSpeed) / 2;
           leftBall.velocityX -= impulse * nx;
           leftBall.velocityY -= impulse * ny;
@@ -879,6 +898,7 @@ export class SceneRoot {
       movingBall.velocityZ * nz;
 
     if (normalSpeed < 0) {
+      this.registerBounce(-normalSpeed);
       movingBall.velocityX -=
         (1 + BALL_COLLISION_RESTITUTION) * normalSpeed * nx;
       movingBall.velocityY -=
@@ -929,6 +949,7 @@ export class SceneRoot {
       const radialVelocity =
         activeBall.velocityX * nx + activeBall.velocityZ * nz;
       if (radialVelocity > 0) {
+        this.registerBounce(radialVelocity);
         activeBall.velocityX -=
           radialVelocity * (1 + this.wallRestitution) * nx;
         activeBall.velocityZ -=
@@ -940,6 +961,7 @@ export class SceneRoot {
       activeBall.mesh.position.y <= ballRadius + 0.01 &&
       activeBall.velocityY < 0
     ) {
+      this.registerBounce(Math.abs(activeBall.velocityY));
       activeBall.mesh.position.y = ballRadius + 0.01;
       activeBall.velocityY = -activeBall.velocityY * this.floorRestitution;
     }
@@ -948,6 +970,7 @@ export class SceneRoot {
       activeBall.mesh.position.y > this.getContainmentTopY() &&
       activeBall.velocityY > 0
     ) {
+      this.registerBounce(activeBall.velocityY);
       activeBall.mesh.position.y = this.getContainmentTopY();
       activeBall.velocityY = -activeBall.velocityY * 0.24;
       activeBall.velocityX *= 0.9;

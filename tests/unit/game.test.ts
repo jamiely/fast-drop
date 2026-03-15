@@ -15,6 +15,7 @@ const gameMocks = vi.hoisted(() => {
   const sceneResetRound = vi.fn();
   const sceneHasUnresolvedBalls = vi.fn(() => true);
   const sceneConsumeMissedBallCount = vi.fn(() => 0);
+  const sceneConsumeBounceCount = vi.fn(() => 0);
   const sceneUpdate = vi.fn<
     () => Array<{
       ballId: number | null;
@@ -50,6 +51,7 @@ const gameMocks = vi.hoisted(() => {
     sceneResetRound,
     sceneHasUnresolvedBalls,
     sceneConsumeMissedBallCount,
+    sceneConsumeBounceCount,
     sceneUpdate,
     physicsStep,
     createDebugMenu,
@@ -107,6 +109,7 @@ vi.mock('../../src/scene/SceneRoot', () => ({
     public readonly update = gameMocks.sceneUpdate;
     public readonly consumeMissedBallCount =
       gameMocks.sceneConsumeMissedBallCount;
+    public readonly consumeBounceCount = gameMocks.sceneConsumeBounceCount;
     public readonly hasUnresolvedBalls = gameMocks.sceneHasUnresolvedBalls;
     public readonly resetRound = gameMocks.sceneResetRound;
   }
@@ -193,6 +196,7 @@ describe('Game', () => {
     window.history.pushState({}, '', '/');
     gameMocks.sceneHasUnresolvedBalls.mockReturnValue(true);
     gameMocks.sceneConsumeMissedBallCount.mockReturnValue(0);
+    gameMocks.sceneConsumeBounceCount.mockReturnValue(0);
     gameMocks.sceneUpdate.mockImplementation(() => []);
   });
 
@@ -254,6 +258,7 @@ describe('Game', () => {
         isBonusJar: true
       }
     ]);
+    gameMocks.sceneConsumeBounceCount.mockReturnValueOnce(1);
     gameMocks.sceneConsumeMissedBallCount.mockReturnValueOnce(2);
     gameMocks.scoring.mockReturnValueOnce({ scoreDelta: 7, bonusTimeDelta: 3 });
 
@@ -271,6 +276,28 @@ describe('Game', () => {
     expect(latestState.misses).toBe(2);
     expect(gameMocks.audioPlay).toHaveBeenCalledWith('ball-settled');
     expect(gameMocks.audioPlay).toHaveBeenCalledWith('bonus-awarded');
+  });
+
+  it('does not play the bounce sound for clean jar entry alone', async () => {
+    const { Game } = await import('../../src/game/Game');
+    const game = new Game(document.createElement('div'));
+
+    await game.init();
+    gameMocks.getInputHandler()();
+    gameMocks.audioPlay.mockClear();
+
+    gameMocks.sceneUpdate.mockImplementationOnce(() => [
+      {
+        ballId: 1,
+        jarIndex: 0,
+        isBonusJar: false
+      }
+    ]);
+    gameMocks.sceneConsumeBounceCount.mockReturnValueOnce(0);
+
+    gameMocks.getBridge().stepFrames(1);
+
+    expect(gameMocks.audioPlay).not.toHaveBeenCalledWith('ball-settled');
   });
 
   it('ends round on timer expiry', async () => {

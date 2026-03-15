@@ -438,10 +438,14 @@ export class Game {
           scoringResult.bonusTimeDelta
         );
 
-        this.audioSystem.play('ball-settled');
         if (scoringResult.bonusTimeDelta > 0) {
           this.audioSystem.play('bonus-awarded');
         }
+      }
+
+      const bounceCount = this.sceneRoot.consumeBounceCount();
+      if (bounceCount > 0) {
+        this.audioSystem.play('ball-settled');
       }
 
       const missedCount = this.sceneRoot.consumeMissedBallCount();
