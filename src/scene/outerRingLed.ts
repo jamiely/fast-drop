@@ -36,15 +36,15 @@ export const createOuterRingLedShaderMaterial = (
       uPalette: { value: OUTER_RING_LED_PALETTE.map((color) => color.clone()) }
     },
     vertexShader: `
-      varying vec2 vUv;
+      varying float vRingT;
 
       void main() {
-        vUv = uv;
+        vRingT = atan(position.y, position.x) / 6.28318530718 + 0.5;
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
       }
     `,
     fragmentShader: `
-      varying vec2 vUv;
+      varying float vRingT;
 
       uniform float uPhase;
       uniform float uHeadCount;
@@ -72,7 +72,7 @@ export const createOuterRingLedShaderMaterial = (
           }
 
           float headT = fract(uPhase + index / headCount);
-          float wrappedDelta = wrapSigned(vUv.x - headT);
+          float wrappedDelta = wrapSigned(vRingT - headT);
           float distanceToHead = abs(wrappedDelta);
           float directionDelta = wrappedDelta * uDirection;
           float tailMask = directionDelta < 0.0 ? 1.0 : 0.35;
