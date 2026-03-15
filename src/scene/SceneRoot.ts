@@ -149,6 +149,7 @@ export class SceneRoot {
     }
 
     this.outerRingMesh = outerRing as Mesh<TorusGeometry, MeshPhysicalMaterial>;
+    this.outerRingMesh.renderOrder = 1;
     this.scene.add(this.playfieldMesh);
 
     this.outerRingLedOverlayMesh = new Mesh(
@@ -157,6 +158,8 @@ export class SceneRoot {
     );
     this.outerRingLedOverlayMesh.rotation.copy(this.outerRingMesh.rotation);
     this.outerRingLedOverlayMesh.position.copy(this.outerRingMesh.position);
+    this.outerRingLedOverlayMesh.scale.setScalar(1.0015);
+    this.outerRingLedOverlayMesh.renderOrder = 2;
     this.scene.add(this.outerRingLedOverlayMesh);
 
     this.jarGroup = new Group();
@@ -457,6 +460,10 @@ export class SceneRoot {
     return new ShaderMaterial({
       transparent: true,
       depthWrite: false,
+      depthTest: true,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+      polygonOffsetUnits: -2,
       blending: AdditiveBlending,
       uniforms: {
         uPhase: { value: 0 },
