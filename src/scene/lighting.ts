@@ -406,7 +406,7 @@ export const addLighting = (
   mountSnapshot(
     createDefaultSnapshot('key', 'Key Light', 'directional', {
       color: '#ffffff',
-      intensity: 0.8,
+      intensity: 5,
       x: 2.6,
       y: 6.2,
       z: 2.8,
