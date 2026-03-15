@@ -2,8 +2,10 @@ import {
   Color,
   Group,
   Mesh,
+  MeshBasicMaterial,
   MeshPhysicalMaterial,
   Scene,
+  SphereGeometry,
   TorusGeometry,
   WebGLRenderer
 } from 'three';
@@ -42,6 +44,10 @@ interface ActiveBallVisual {
   settledOffsetZ: number;
 }
 
+interface OuterRingLedNode {
+  mesh: Mesh<SphereGeometry, MeshBasicMaterial>;
+}
+
 export interface SceneBallSettlement {
   ballId: number | null;
   jarIndex: number;
@@ -61,6 +67,15 @@ const SETTLE_FRAME_COUNT = 20;
 const MAX_BALL_AGE_SECONDS = 8;
 const MISSED_BALL_CLEANUP_Y = -3.5;
 const BALL_COLLISION_RESTITUTION = 0.45;
+const OUTER_RING_LED_SEGMENT_COUNT = 56;
+const OUTER_RING_LED_REVERSE_CHECK_SECONDS = 2.4;
+const OUTER_RING_LED_BASE_COLOR = new Color('#1f3f99');
+const OUTER_RING_LED_PALETTE = [
+  new Color('#32f2ff'),
+  new Color('#7b73ff'),
+  new Color('#ff6bc9'),
+  new Color('#6fd9ff')
+];
 
 export class SceneRoot {
   public readonly renderer: WebGLRenderer | null;
@@ -77,10 +92,14 @@ export class SceneRoot {
   private readonly activeBalls: ActiveBallVisual[] = [];
   private readonly playfieldMesh: Group;
   private readonly outerRingMesh: Mesh<TorusGeometry, MeshPhysicalMaterial>;
+  private readonly outerRingLedGroup: Group;
+  private readonly outerRingLedNodes: OuterRingLedNode[] = [];
   private readonly bonusJarIndices: Set<number>;
   private readonly lightingRig: LightingRig;
   private missedBallCountSinceLastUpdate = 0;
-  private outerRingStrobeTimeSeconds = 0;
+  private outerRingLedPhase = 0;
+  private outerRingLedDirection = 1;
+  private outerRingLedReverseTimer = 0;
 
   private dropPoint = { x: 0, z: 2.2, y: 2.3 };
   private jarDiameterScale = 1;
@@ -89,6 +108,10 @@ export class SceneRoot {
   private rimBounce = 0.46;
   private wallRestitution = 0.52;
   private floorRestitution = 0.42;
+  private outerRingLedSpeed = 0.35;
+  private outerRingLedHeadCount = 4;
+  private outerRingLedTrail = 0.58;
+  private outerRingLedReverseChance = 0.2;
 
   public constructor(
     private readonly host: HTMLElement,
@@ -132,6 +155,11 @@ export class SceneRoot {
 
     this.outerRingMesh = outerRing as Mesh<TorusGeometry, MeshPhysicalMaterial>;
     this.scene.add(this.playfieldMesh);
+
+    this.outerRingLedGroup = new Group();
+    this.scene.add(this.outerRingLedGroup);
+    this.createOuterRingLeds();
+    this.syncOuterRingLedLayout();
 
     this.jarGroup = new Group();
     this.jars = Array.from({ length: jarCount }, (_, index) => {
@@ -220,6 +248,26 @@ export class SceneRoot {
 
     if (key === 'floorBounciness') {
       this.floorRestitution = Math.max(0.05, Math.min(0.95, value));
+      return;
+    }
+
+    if (key === 'outerRingLedSpeed') {
+      this.outerRingLedSpeed = Math.max(0.05, Math.min(2.5, value));
+      return;
+    }
+
+    if (key === 'outerRingLedHeadCount') {
+      this.outerRingLedHeadCount = Math.max(1, Math.min(12, Math.round(value)));
+      return;
+    }
+
+    if (key === 'outerRingLedTrail') {
+      this.outerRingLedTrail = Math.max(0.05, Math.min(1, value));
+      return;
+    }
+
+    if (key === 'outerRingLedReverseChance') {
+      this.outerRingLedReverseChance = Math.max(0, Math.min(1, value));
     }
   }
 
@@ -276,7 +324,7 @@ export class SceneRoot {
     const settlements: SceneBallSettlement[] = [];
 
     this.syncPlayfieldVisuals();
-    this.updateOuterRingStrobe(dt);
+    this.updateOuterRingLeds(dt);
 
     for (let index = this.activeBalls.length - 1; index >= 0; index -= 1) {
       const activeBall = this.activeBalls[index];
@@ -396,6 +444,7 @@ export class SceneRoot {
 
     this.outerRingMesh.geometry.dispose();
     this.outerRingMesh.geometry = nextGeometry;
+    this.syncOuterRingLedLayout();
   }
 
   private syncBallScale(): void {
@@ -404,23 +453,110 @@ export class SceneRoot {
     }
   }
 
-  private updateOuterRingStrobe(dt: number): void {
-    this.outerRingStrobeTimeSeconds += dt;
+  private createOuterRingLeds(): void {
+    for (let index = 0; index < OUTER_RING_LED_SEGMENT_COUNT; index += 1) {
+      const material = new MeshBasicMaterial({
+        color: OUTER_RING_LED_BASE_COLOR.clone(),
+        transparent: true,
+        opacity: 0.2
+      });
+      const mesh = new Mesh(new SphereGeometry(0.045, 12, 12), material);
+      this.outerRingLedGroup.add(mesh);
+      this.outerRingLedNodes.push({ mesh });
+    }
+  }
 
-    const pulseA = (Math.sin(this.outerRingStrobeTimeSeconds * 18) + 1) * 0.5;
-    const pulseB =
-      (Math.sin(this.outerRingStrobeTimeSeconds * 43 + Math.PI * 0.25) + 1) *
-      0.5;
+  private syncOuterRingLedLayout(): void {
+    const ringRadius = this.getOuterRingRadius();
+    const ringHeight = this.playfieldDimensions.outerRingY;
 
-    const intensity = 0.08 + pulseA * 0.2 + pulseB * 0.1;
-    this.outerRingMesh.material.emissiveIntensity = intensity;
+    for (const [index, ledNode] of this.outerRingLedNodes.entries()) {
+      const angle = (index / this.outerRingLedNodes.length) * Math.PI * 2;
+      ledNode.mesh.position.set(
+        Math.cos(angle) * ringRadius,
+        ringHeight,
+        Math.sin(angle) * ringRadius
+      );
+    }
+  }
 
-    const hueMix = Math.min(1, pulseA * 0.75 + pulseB * 0.25);
-    this.outerRingMesh.material.emissive.setRGB(
-      0.2 + hueMix * 0.2,
-      0.35 + hueMix * 0.22,
-      0.95
-    );
+  private getOuterRingRadius(): number {
+    return this.outerRingMesh.geometry.parameters.radius;
+  }
+
+  private updateOuterRingLeds(dt: number): void {
+    this.outerRingLedReverseTimer += dt;
+    if (this.outerRingLedReverseTimer >= OUTER_RING_LED_REVERSE_CHECK_SECONDS) {
+      this.outerRingLedReverseTimer = 0;
+      if (Math.random() <= this.outerRingLedReverseChance) {
+        this.outerRingLedDirection *= -1;
+      }
+    }
+
+    this.outerRingLedPhase +=
+      dt * this.outerRingLedSpeed * this.outerRingLedDirection;
+
+    const speedCycle = this.outerRingLedPhase / (Math.PI * 2);
+    const baseIntensity = 0.1;
+    const sigma = 0.035 + (1 - this.outerRingLedTrail) * 0.16;
+
+    for (const [index, ledNode] of this.outerRingLedNodes.entries()) {
+      const nodeT = index / this.outerRingLedNodes.length;
+
+      let colorWeightTotal = 0;
+      let weightedR = 0;
+      let weightedG = 0;
+      let weightedB = 0;
+      let intensity = 0;
+
+      for (let headIndex = 0; headIndex < this.outerRingLedHeadCount; headIndex += 1) {
+        const headT = (speedCycle + headIndex / this.outerRingLedHeadCount) % 1;
+        const wrappedDelta = ((nodeT - headT + 1.5) % 1) - 0.5;
+        const distance = Math.abs(wrappedDelta);
+
+        const directionDelta = wrappedDelta * this.outerRingLedDirection;
+        const tailMask = directionDelta < 0 ? 1 : 0.35;
+
+        const gaussian = Math.exp(-(distance * distance) / (2 * sigma * sigma));
+        const contribution = gaussian * tailMask;
+
+        if (contribution <= 0.001) {
+          continue;
+        }
+
+        intensity += contribution;
+
+        const paletteColor =
+          OUTER_RING_LED_PALETTE[headIndex % OUTER_RING_LED_PALETTE.length];
+        weightedR += paletteColor.r * contribution;
+        weightedG += paletteColor.g * contribution;
+        weightedB += paletteColor.b * contribution;
+        colorWeightTotal += contribution;
+      }
+
+      const clamped = Math.min(1, intensity);
+
+      if (colorWeightTotal > 0.0001) {
+        ledNode.mesh.material.color.setRGB(
+          weightedR / colorWeightTotal,
+          weightedG / colorWeightTotal,
+          weightedB / colorWeightTotal
+        );
+      } else {
+        ledNode.mesh.material.color.copy(OUTER_RING_LED_BASE_COLOR);
+      }
+
+      ledNode.mesh.material.opacity = 0.18 + clamped * 0.82;
+      ledNode.mesh.scale.setScalar(0.75 + clamped * 0.95);
+
+      const angle = nodeT * Math.PI * 2;
+      const ringRadius = this.getOuterRingRadius();
+      ledNode.mesh.position.x = Math.cos(angle) * ringRadius;
+      ledNode.mesh.position.z = Math.sin(angle) * ringRadius;
+    }
+
+    this.outerRingMesh.material.emissive.copy(OUTER_RING_LED_BASE_COLOR);
+    this.outerRingMesh.material.emissiveIntensity = 0.06 + baseIntensity * 0.5;
   }
 
   private getBallRadius(): number {

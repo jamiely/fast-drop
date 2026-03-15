@@ -6,7 +6,7 @@
 - [x] Add jar spin speed to the debug controls, and add a new story that shows all the jars spinner so I can try it out.
 - [x] Add the Round complete dialog to storybook as a new story.
 - [x] Balls should collide with the sides of the jar
-- [x] the outer ring should have an led strobe effect
+- [x] the outer ring should have an led chase effect (moving, multi-color)
 
 Completed in 2026-03-14 pass:
 

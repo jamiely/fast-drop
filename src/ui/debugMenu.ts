@@ -238,6 +238,10 @@ export const createDebugMenu = (
       <label>Drop distance <span class="debug-menu__value" data-value-for="gameplay:dropPointZ">2.86</span><input type="range" min="1.2" max="3.2" step="0.05" value="2.86" data-gameplay="dropPointZ" /></label>
       <label>Drop height <span class="debug-menu__value" data-value-for="gameplay:dropHeight">2.30</span><input type="range" min="1.2" max="4.2" step="0.05" value="2.3" data-gameplay="dropHeight" /></label>
       <label>Drop cooldown (ms) <span class="debug-menu__value" data-value-for="gameplay:dropCooldownMs">80</span><input type="range" min="0" max="100" step="5" value="80" data-gameplay="dropCooldownMs" /></label>
+      <label>Ring LED speed <span class="debug-menu__value" data-value-for="gameplay:outerRingLedSpeed">0.35</span><input type="range" min="0.05" max="2.5" step="0.01" value="0.35" data-gameplay="outerRingLedSpeed" /></label>
+      <label>Ring LED heads <span class="debug-menu__value" data-value-for="gameplay:outerRingLedHeadCount">4.00</span><input type="range" min="1" max="12" step="1" value="4" data-gameplay="outerRingLedHeadCount" /></label>
+      <label>Ring LED trail <span class="debug-menu__value" data-value-for="gameplay:outerRingLedTrail">0.58</span><input type="range" min="0.05" max="1" step="0.01" value="0.58" data-gameplay="outerRingLedTrail" /></label>
+      <label>Ring LED reverse chance <span class="debug-menu__value" data-value-for="gameplay:outerRingLedReverseChance">0.20</span><input type="range" min="0" max="1" step="0.01" value="0.2" data-gameplay="outerRingLedReverseChance" /></label>
     </div>
     <div class="debug-menu__group">
       <h4>Camera tuning</h4>

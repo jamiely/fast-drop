@@ -12,6 +12,10 @@ export interface GameplayTuning {
   ballBounciness: number;
   wallBounciness: number;
   floorBounciness: number;
+  outerRingLedSpeed: number;
+  outerRingLedHeadCount: number;
+  outerRingLedTrail: number;
+  outerRingLedReverseChance: number;
 }
 
 export interface CameraTuning {
@@ -54,7 +58,11 @@ export const gameConfig: RuntimeConfig = {
     ballSizeScale: 1,
     ballBounciness: 0.46,
     wallBounciness: 0.52,
-    floorBounciness: 0.42
+    floorBounciness: 0.42,
+    outerRingLedSpeed: 0.35,
+    outerRingLedHeadCount: 4,
+    outerRingLedTrail: 0.58,
+    outerRingLedReverseChance: 0.2
   },
   camera: {
     distance: 6.8,

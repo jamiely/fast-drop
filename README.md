@@ -42,7 +42,7 @@ Storybook stories currently included:
   - pause/resume + step
   - score/time mutators
   - speed controls
-  - gameplay tuning (including jar spin speed, ring diameter, drop cooldown, ball size, drop height)
+  - gameplay tuning (including jar spin speed, ring diameter, drop cooldown, ball size, drop height, ring LED chase speed/head count/trail/reverse chance)
   - camera tuning
   - lighting rig tuning (move lights, change light type, add lights)
   - live numeric values + copyable JSON snapshot for sharing tuned settings (including lights)
@@ -124,7 +124,7 @@ Implemented in this pass:
 - click-anywhere drop input (outside UI controls),
 - visual style refresh inspired by the neon reference image,
 - decorative outer ring around the jar orbit,
-- LED-style strobe pulse effect on the outer ring,
+- LED chase effect on the outer ring with moving multi-color heads and trailing glow,
 - material/lighting polish pass (metallic center, glass jars, red rubber balls),
 - audio polish pass with dynamic-range compression and event throttling to reduce clipping/stacking,
 - improved HUD/summary readability polish and mobile-safe-area spacing,
