@@ -10,12 +10,12 @@ describe('DOM systems and UI helpers', () => {
     document.body.innerHTML = '';
   });
 
-  it('creates HUD and appends controls', () => {
+  it('creates HUD elements', () => {
     const host = document.createElement('div');
     const hud = createHud(host);
 
     expect(host.contains(hud.root)).toBe(true);
-    expect(hud.dropButton.textContent).toContain('Drop Ball');
+    expect(host.querySelector('.drop-btn')).toBeNull();
   });
 
   it('creates debug menu only when enabled and dispatches actions', () => {
@@ -97,12 +97,9 @@ describe('DOM systems and UI helpers', () => {
     expect(drops).toBe(0);
   });
 
-  it('renders state and handles button events in UISystem', () => {
+  it('renders state and handles play again events in UISystem', () => {
     const host = document.createElement('div');
     const ui = new UISystem(host);
-    const handler = vi.fn();
-
-    ui.onDrop(handler);
 
     const onPlayAgain = vi.fn();
     ui.onPlayAgain(onPlayAgain);
@@ -120,7 +117,6 @@ describe('DOM systems and UI helpers', () => {
     const score = host.querySelector('[data-role="score"]');
     const time = host.querySelector('[data-role="time"]');
     const balls = host.querySelector('[data-role="balls"]');
-    const button = host.querySelector<HTMLButtonElement>('.drop-btn');
     const playAgainButton = host.querySelector<HTMLButtonElement>(
       '.summary-overlay__play-again'
     );
@@ -128,10 +124,6 @@ describe('DOM systems and UI helpers', () => {
     expect(score?.textContent).toBe('000025');
     expect(time?.textContent).toBe('09.9');
     expect(balls?.textContent).toBe('03');
-    expect(button?.disabled).toBe(false);
-
-    button?.click();
-    expect(handler).toHaveBeenCalledTimes(1);
 
     ui.render({
       phase: 'ended',
@@ -143,7 +135,6 @@ describe('DOM systems and UI helpers', () => {
       misses: 1
     });
 
-    expect(button?.disabled).toBe(true);
     expect(host.querySelector('.summary-overlay')?.hasAttribute('hidden')).toBe(
       false
     );

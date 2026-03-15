@@ -9,10 +9,6 @@ export class UISystem {
     this.hud = createHud(host);
   }
 
-  public onDrop(handler: () => void): void {
-    this.hud.dropButton.addEventListener('click', handler);
-  }
-
   public onPlayAgain(handler: () => void): void {
     this.hud.playAgainButton.addEventListener('click', handler);
   }
@@ -30,8 +26,6 @@ export class UISystem {
     ).padStart(2, '0');
 
     const isEnded = state.phase === 'ended';
-    this.hud.dropButton.disabled =
-      isEnded || state.timeRemaining <= 0 || state.ballsRemaining <= 0;
 
     this.hud.summaryOverlay.hidden = !isEnded;
     this.hud.summaryScore.textContent = String(Math.max(0, state.score));

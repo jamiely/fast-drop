@@ -25,9 +25,6 @@ const meta: Meta<RoundCompleteDialogArgs> = {
     const hud = createHud(host);
     hud.root.remove();
 
-    const controls = hud.dropButton.closest<HTMLElement>('.controls');
-    controls?.remove();
-
     hud.summaryOverlay.hidden = false;
     hud.summaryScore.textContent = args.score;
     hud.summaryHits.textContent = args.hits;

@@ -11,7 +11,7 @@ test('shows HUD and updates balls after drop', async ({ page }) => {
   const ballsValue = page.locator('[data-role="balls"]');
   await expect(ballsValue).toHaveText('50');
 
-  await page.getByRole('button', { name: 'Drop Ball (Space)' }).click();
+  await page.keyboard.press('Space');
   await expect(ballsValue).toHaveText('49');
 });
 
@@ -60,7 +60,7 @@ test('round ends immediately after balls are exhausted', async ({ page }) => {
     window.__FAST_DROP_TEST_BRIDGE__?.setBallsRemaining?.(1);
   });
 
-  await page.getByRole('button', { name: 'Drop Ball (Space)' }).click();
+  await page.keyboard.press('Space');
 
   await expect(page.locator('[data-role="balls"]')).toHaveText('00');
   await expect(page.locator('.summary-overlay')).toBeVisible();

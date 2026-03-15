@@ -30,11 +30,6 @@ const meta: Meta<ScoreboardArgs> = {
     hud.root.style.transform = `scale(${args.panelScale})`;
     hud.root.style.transformOrigin = 'top left';
 
-    const controls = hud.dropButton.closest<HTMLElement>('.controls');
-    if (controls) {
-      controls.remove();
-    }
-
     const leds = host.querySelectorAll<HTMLElement>('.led');
     for (const led of leds) {
       led.style.color = args.ledColor;

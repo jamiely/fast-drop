@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const gameMocks = vi.hoisted(() => {
   const uiRender = vi.fn();
-  const uiOnDrop = vi.fn<(handler: () => void) => void>();
   const uiOnPlayAgain = vi.fn<(handler: () => void) => void>();
   const audioPlay = vi.fn();
   const orbitUpdate = vi.fn();
@@ -29,7 +28,6 @@ const gameMocks = vi.hoisted(() => {
   const installTestBridge = vi.fn();
   const scoring = vi.fn(() => ({ scoreDelta: 7, bonusTimeDelta: 0 }));
 
-  let dropHandler: (() => void) | null = null;
   let playAgainHandler: (() => void) | null = null;
   let inputHandler: (() => void) | null = null;
   let bridge: {
@@ -40,7 +38,6 @@ const gameMocks = vi.hoisted(() => {
 
   return {
     uiRender,
-    uiOnDrop,
     uiOnPlayAgain,
     audioPlay,
     orbitUpdate,
@@ -58,15 +55,6 @@ const gameMocks = vi.hoisted(() => {
     createDebugMenu,
     installTestBridge,
     scoring,
-    setDropHandler: (handler: () => void): void => {
-      dropHandler = handler;
-    },
-    getDropHandler: (): (() => void) => {
-      if (!dropHandler) {
-        throw new Error('Missing drop handler');
-      }
-      return dropHandler;
-    },
     setPlayAgainHandler: (handler: () => void): void => {
       playAgainHandler = handler;
     },
@@ -127,11 +115,6 @@ vi.mock('../../src/scene/SceneRoot', () => ({
 vi.mock('../../src/systems/UISystem', () => ({
   UISystem: class {
     public constructor() {}
-
-    public onDrop(handler: () => void): void {
-      gameMocks.uiOnDrop(handler);
-      gameMocks.setDropHandler(handler);
-    }
 
     public onPlayAgain(handler: () => void): void {
       gameMocks.uiOnPlayAgain(handler);
@@ -235,7 +218,7 @@ describe('Game', () => {
     expect(gameMocks.installTestBridge).toHaveBeenCalledTimes(1);
     expect(gameMocks.uiRender).toHaveBeenCalled();
 
-    gameMocks.getDropHandler()();
+    gameMocks.getInputHandler()();
     expect(gameMocks.audioPlay).toHaveBeenCalledWith('drop');
     expect(gameMocks.sceneSpawnDropBall).toHaveBeenCalledTimes(1);
 
@@ -262,7 +245,7 @@ describe('Game', () => {
     const game = new Game(document.createElement('div'));
 
     await game.init();
-    gameMocks.getDropHandler()();
+    gameMocks.getInputHandler()();
 
     gameMocks.sceneUpdate.mockImplementationOnce(() => [
       {

@@ -106,9 +106,6 @@ export class Game {
 
     this.sceneRoot.applyCameraTuning(this.runtimeConfig.camera);
 
-    this.uiSystem.onDrop(() => {
-      this.dropBall();
-    });
     this.uiSystem.onPlayAgain(() => {
       this.startRound();
     });
