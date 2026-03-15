@@ -46,7 +46,7 @@ Storybook stories currently included:
   - score/time mutators
   - speed controls
   - gameplay tuning (including jar spin speed, center dome diameter, ring diameter, drop cooldown, ball size, drop height, ring LED enable/speed/head count/trail/reverse chance)
-  - camera tuning
+  - camera tuning (distance/pitch/yaw + lateral pan X, with wider zoom-out range)
   - lighting rig tuning (move lights, change light type, toggle each light on/off, add lights, and show light-source markers while debugging)
   - light legend showing each light id/name plus marker mapping (`●` source color, `◆` target)
   - stronger light helper emphasis: selected source markers render with a bright white halo + filled core; non-selected source markers stay dim and outline-only
@@ -141,7 +141,7 @@ Implemented in this pass:
 - added StorybookJS component stories for ball, bonus jar, center platform, outer ring, jar spinner, score panel, and round-complete dialog,
 - debug menu now shows live control values and a copyable JSON snapshot of current tuning for easy sharing,
 - debug menu lighting controls for moving lights, swapping light type, toggling light enabled/disabled, and adding extra lights.
-- debug camera wheel zoom in `?debug=1`, plus visible light-source markers while tuning lighting.
+- debug camera wheel zoom in `?debug=1` now supports a farther zoom-out range, plus visible light-source markers while tuning lighting.
 - debug controls for center dome diameter and enabling/disabling outer ring LED chase.
 - debug lighting legend now maps each light id/name to visible source/target helper markers and clearly tags the selected light.
 - optional shader-effects kill switch via URL (`?effects=0` / `?fx=0`) to reduce GPU load.

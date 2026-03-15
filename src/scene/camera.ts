@@ -7,6 +7,7 @@ export const createCamera = (aspect: number): PerspectiveCamera => {
     distance: 6.8,
     pitch: 3.8,
     yaw: 0,
+    panX: 0,
     targetY: 0.6
   });
   return camera;
@@ -16,6 +17,7 @@ export const applyCameraTuning = (
   camera: PerspectiveCamera,
   tuning: CameraTuning
 ): void => {
-  camera.position.set(tuning.yaw, tuning.pitch, tuning.distance);
-  camera.lookAt(0, tuning.targetY, 0);
+  const panX = tuning.panX ?? 0;
+  camera.position.set(tuning.yaw + panX, tuning.pitch, tuning.distance);
+  camera.lookAt(panX, tuning.targetY, 0);
 };

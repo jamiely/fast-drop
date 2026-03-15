@@ -403,7 +403,7 @@ export class Game {
     const delta = Math.sign(deltaY) * 0.2;
     const nextDistance = Math.max(
       3.6,
-      Math.min(11, this.runtimeConfig.camera.distance + delta)
+      Math.min(16, this.runtimeConfig.camera.distance + delta)
     );
 
     if (Math.abs(nextDistance - this.runtimeConfig.camera.distance) <= 0.001) {

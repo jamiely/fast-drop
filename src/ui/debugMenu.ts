@@ -291,9 +291,10 @@ export const createDebugMenu = (
     </div>
     <div class="debug-menu__group">
       <h4>Camera tuning</h4>
-      <label>Distance <span class="debug-menu__value" data-value-for="camera:distance">6.80</span><input type="range" min="4" max="10" step="0.1" value="6.8" data-camera="distance" /></label>
+      <label>Distance <span class="debug-menu__value" data-value-for="camera:distance">6.80</span><input type="range" min="4" max="16" step="0.1" value="6.8" data-camera="distance" /></label>
       <label>Pitch <span class="debug-menu__value" data-value-for="camera:pitch">3.80</span><input type="range" min="2" max="6" step="0.1" value="3.8" data-camera="pitch" /></label>
       <label>Yaw <span class="debug-menu__value" data-value-for="camera:yaw">0.00</span><input type="range" min="-2" max="2" step="0.1" value="0" data-camera="yaw" /></label>
+      <label>Pan X <span class="debug-menu__value" data-value-for="camera:panX">0.00</span><input type="range" min="-6" max="6" step="0.1" value="0" data-camera="panX" /></label>
       <label>Target Y <span class="debug-menu__value" data-value-for="camera:targetY">0.60</span><input type="range" min="0" max="2" step="0.05" value="0.6" data-camera="targetY" /></label>
     </div>
     <div class="debug-menu__group">

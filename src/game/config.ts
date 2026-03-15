@@ -24,6 +24,7 @@ export interface CameraTuning {
   distance: number;
   pitch: number;
   yaw: number;
+  panX?: number;
   targetY: number;
 }
 
@@ -72,6 +73,7 @@ export const gameConfig: RuntimeConfig = {
     distance: 6.8,
     pitch: 3.8,
     yaw: 0,
+    panX: 0,
     targetY: 0.6
   }
 };
