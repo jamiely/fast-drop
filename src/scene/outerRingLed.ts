@@ -21,7 +21,7 @@ export const createOuterRingLedShaderMaterial = (
   new ShaderMaterial({
     transparent: true,
     depthWrite: false,
-    depthTest: true,
+    depthTest: false,
     side: DoubleSide,
     polygonOffset: true,
     polygonOffsetFactor: -2,
