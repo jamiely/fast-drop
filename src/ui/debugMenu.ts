@@ -21,6 +21,7 @@ export interface DebugMenuControls {
     value: number | string
   ) => void;
   addLight: (type: LightType) => void;
+  setSelectedLight: (id: string | null) => void;
   savePreset: () => void;
   loadPreset: () => void;
 }
@@ -175,7 +176,9 @@ const renderLightEditor = (
 
   const hasCurrent = lights.some((light) => light.id === state.selectedLightId);
   if (!hasCurrent) {
-    state.selectedLightId = lights[0]?.id ?? null;
+    const preferred = lights.find((light) => light.type !== 'ambient');
+    state.selectedLightId = preferred?.id ?? lights[0]?.id ?? null;
+    controls.setSelectedLight(state.selectedLightId);
   }
 
   select.innerHTML = lights
@@ -414,6 +417,7 @@ export const createDebugMenu = (
   const lightSelect = menu.querySelector<HTMLSelectElement>('[data-light-selector]');
   lightSelect?.addEventListener('change', () => {
     lightState.selectedLightId = lightSelect.value || null;
+    controls?.setSelectedLight(lightState.selectedLightId);
     refreshDebugMenuValues(menu, controls, lightState);
   });
 

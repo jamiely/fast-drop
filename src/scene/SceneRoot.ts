@@ -341,6 +341,10 @@ export class SceneRoot {
     return this.lightingRig.addLight(type);
   }
 
+  public setSelectedDebugLight(id: string | null): void {
+    this.lightingRig.setSelectedLight(id);
+  }
+
   public spawnDropBall(
     dropX = this.dropPoint.x,
     dropZ = this.dropPoint.z,

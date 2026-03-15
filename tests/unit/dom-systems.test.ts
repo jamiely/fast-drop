@@ -32,6 +32,7 @@ describe('DOM systems and UI helpers', () => {
       getLightSnapshot: vi.fn(() => []),
       applyLightValue: vi.fn(),
       addLight: vi.fn(),
+      setSelectedLight: vi.fn(),
       savePreset: vi.fn(),
       loadPreset: vi.fn()
     };

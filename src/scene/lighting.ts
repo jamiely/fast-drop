@@ -75,6 +75,7 @@ export interface LightingRig {
     value: number | string
   ) => void;
   addLight: (type?: LightType) => LightSnapshot;
+  setSelectedLight: (id: string | null) => void;
 }
 
 const toHexColor = (value: string): string => {
@@ -149,7 +150,10 @@ const makeLight = (
   }
 };
 
-const syncEntryInstance = (entry: LightEntry): void => {
+const syncEntryInstance = (
+  entry: LightEntry,
+  selectedLightId: string | null
+): void => {
   const { snapshot, light, target } = entry;
 
   light.color.set(snapshot.color);
@@ -185,7 +189,7 @@ const syncEntryInstance = (entry: LightEntry): void => {
     target.position.set(snapshot.targetX, snapshot.targetY, snapshot.targetZ);
   }
 
-  syncLightHelpers(entry);
+  syncLightHelpers(entry, selectedLightId);
 };
 
 const createDefaultSnapshot = (
@@ -223,7 +227,10 @@ const createLightHelper = (color: string, scale = 0.06): Mesh => {
   return new Mesh(new SphereGeometry(scale, 12, 12), material);
 };
 
-const syncLightHelpers = (entry: LightEntry): void => {
+const syncLightHelpers = (
+  entry: LightEntry,
+  selectedLightId: string | null
+): void => {
   if (!entry.sourceHelper) {
     return;
   }
@@ -237,7 +244,10 @@ const syncLightHelpers = (entry: LightEntry): void => {
   entry.sourceHelper.visible = isPositionedLight;
   if (isPositionedLight) {
     entry.sourceHelper.position.set(entry.snapshot.x, entry.snapshot.y, entry.snapshot.z);
-    (entry.sourceHelper.material as MeshBasicMaterial).color.set(entry.snapshot.color);
+    const sourceMaterial = entry.sourceHelper.material as MeshBasicMaterial;
+    sourceMaterial.color.set(entry.snapshot.color);
+    sourceMaterial.wireframe = entry.snapshot.id !== selectedLightId;
+    sourceMaterial.opacity = entry.snapshot.id === selectedLightId ? 0.95 : 1;
   }
 
   if (!entry.targetHelper) {
@@ -263,6 +273,7 @@ export const addLighting = (
 ): LightingRig => {
   const entries: LightEntry[] = [];
   let debugLightCount = 0;
+  let selectedLightId: string | null = null;
 
   const mountSnapshot = (snapshot: LightSnapshot): LightSnapshot => {
     const normalized: LightSnapshot = {
@@ -300,7 +311,7 @@ export const addLighting = (
       targetHelper
     };
 
-    syncLightHelpers(entry);
+    syncLightHelpers(entry, selectedLightId);
     entries.push(entry);
     return normalized;
   };
@@ -325,7 +336,7 @@ export const addLighting = (
       scene.add(entry.target);
     }
 
-    syncLightHelpers(entry);
+    syncLightHelpers(entry, selectedLightId);
   };
 
   mountSnapshot(
@@ -400,6 +411,12 @@ export const addLighting = (
     })
   );
 
+  const syncAllHelperSelections = (): void => {
+    for (const entry of entries) {
+      syncLightHelpers(entry, selectedLightId);
+    }
+  };
+
   return {
     getSnapshot: () => entries.map((entry) => ({ ...entry.snapshot })),
     setLightValue: (id, key, value) => {
@@ -426,13 +443,13 @@ export const addLighting = (
         }
 
         replaceLightType(entry, type);
-        syncEntryInstance(entry);
+        syncEntryInstance(entry, selectedLightId);
         return;
       }
 
       if (key === 'color' || key === 'groundColor') {
         entry.snapshot[key] = toHexColor(String(value));
-        syncEntryInstance(entry);
+        syncEntryInstance(entry, selectedLightId);
         return;
       }
 
@@ -465,7 +482,7 @@ export const addLighting = (
           return;
       }
 
-      syncEntryInstance(entry);
+      syncEntryInstance(entry, selectedLightId);
     },
     addLight: (type = 'point') => {
       debugLightCount += 1;
@@ -484,6 +501,15 @@ export const addLighting = (
       );
 
       return { ...snapshot };
+    },
+    setSelectedLight: (id) => {
+      const normalized = id && entries.some((entry) => entry.snapshot.id === id) ? id : null;
+      if (selectedLightId === normalized) {
+        return;
+      }
+
+      selectedLightId = normalized;
+      syncAllHelperSelections();
     }
   };
 };

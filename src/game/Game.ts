@@ -95,6 +95,7 @@ export class Game {
       applyLightValue: (id, key, value) =>
         this.sceneRoot.updateLightValue(id, key, value),
       addLight: (type) => this.sceneRoot.addDebugLight(type),
+      setSelectedLight: (id) => this.sceneRoot.setSelectedDebugLight(id),
       savePreset: () => this.savePreset(),
       loadPreset: () => this.loadPreset()
     });
