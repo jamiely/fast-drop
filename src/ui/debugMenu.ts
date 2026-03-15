@@ -202,6 +202,13 @@ const renderLightEditor = (
   const selected = lights.find((light) => light.id === state.selectedLightId);
   renderLightLegend(menu, lights, state.selectedLightId);
 
+  const colorOutput = menu.querySelector<HTMLElement>(
+    '[data-value-for="light:color"]'
+  );
+  if (colorOutput) {
+    colorOutput.textContent = selected?.color ?? 'n/a';
+  }
+
   const fields = menu.querySelectorAll<
     HTMLInputElement | HTMLSelectElement
   >('[data-light-input]');
@@ -320,7 +327,7 @@ export const createDebugMenu = (
           <option value="spot">Spot</option>
         </select>
       </label>
-      <label>Color
+      <label>Color <span class="debug-menu__value" data-value-for="light:color">#ffffff</span>
         <input type="color" value="#ffffff" data-light-input="color" />
       </label>
       <label>Intensity <span class="debug-menu__value" data-value-for="light:intensity">1.00</span><input type="range" min="0" max="8" step="0.05" value="1" data-light-input="intensity" /></label>

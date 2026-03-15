@@ -419,13 +419,13 @@ export const addLighting = (
   mountSnapshot(
     createDefaultSnapshot('center-spot', 'Center Spot', 'spot', {
       color: '#fff7df',
-      intensity: 1.9,
+      intensity: 6.7,
       distance: 14,
       angle: 0.62,
       penumbra: 0.28,
       decay: 1.3,
       x: 0,
-      y: 5.2,
+      y: 2.5,
       z: 1.3,
       targetX: 0,
       targetY: 0.45,

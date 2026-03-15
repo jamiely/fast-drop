@@ -50,7 +50,7 @@ Storybook stories currently included:
   - lighting rig tuning (move lights, change light type, toggle each light on/off, add lights, and show light-source markers while debugging)
   - light legend showing each light id/name plus marker mapping (`●` source color, `◆` target)
   - stronger light helper emphasis: selected source markers render with a bright white halo + filled core; non-selected source markers stay dim and outline-only
-  - live numeric values + copyable JSON snapshot for sharing tuned settings (including lights)
+  - live numeric values + selected light color hex value + copyable JSON snapshot for sharing tuned settings (including lights)
   - preset save/load
 - Controls:
   - click/tap the page (outside UI controls) or press `Space` to drop
