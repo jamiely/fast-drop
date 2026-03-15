@@ -38,8 +38,10 @@ export class Game {
   private readonly scoringSystem: ScoringSystem;
   private readonly audioSystem: AudioSystem;
   private readonly orbitSystem: OrbitSystem;
-  private readonly debugEnabled =
-    new URLSearchParams(window.location.search).get('debug') === '1';
+  private readonly urlParams = new URLSearchParams(window.location.search);
+  private readonly debugEnabled = this.urlParams.get('debug') === '1';
+  private readonly shaderEffectsEnabled =
+    this.urlParams.get('effects') !== '0' && this.urlParams.get('fx') !== '0';
   private state: GameState;
   private physicsWorld: PhysicsWorld | null = null;
   private rafId = 0;
@@ -59,7 +61,8 @@ export class Game {
       this.runtimeConfig.jarCount,
       this.runtimeConfig.tuning.ringRadius,
       this.runtimeConfig.bonusBucketCount,
-      this.debugEnabled
+      this.debugEnabled,
+      this.shaderEffectsEnabled
     );
     this.sceneRoot.applyGameplayTuning(
       'outerRingDiameter',

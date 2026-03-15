@@ -85,10 +85,10 @@ export class SceneRoot {
   private readonly activeBalls: ActiveBallVisual[] = [];
   private readonly playfieldMesh: Group;
   private readonly moundMesh: Object3D;
-  private readonly centerDomeReflectionMesh: Object3D;
-  private readonly centerDomeReflectionMaterial: ShaderMaterial;
+  private readonly centerDomeReflectionMesh: Object3D | null;
+  private readonly centerDomeReflectionMaterial: ShaderMaterial | null;
   private readonly outerRingMesh: Mesh<TorusGeometry, MeshPhysicalMaterial>;
-  private readonly outerRingLedOverlayMesh: Mesh<TorusGeometry, ShaderMaterial>;
+  private readonly outerRingLedOverlayMesh: Mesh<TorusGeometry, ShaderMaterial> | null;
   private readonly bonusJarIndices: Set<number>;
   private readonly lightingRig: LightingRig;
   private missedBallCountSinceLastUpdate = 0;
@@ -109,14 +109,17 @@ export class SceneRoot {
   private outerRingLedHeadCount = 4;
   private outerRingLedTrail = 0.58;
   private outerRingLedReverseChance = 0.2;
+  private readonly shaderEffectsEnabled: boolean;
 
   public constructor(
     private readonly host: HTMLElement,
     jarCount: number,
     jarOrbitRadius = 2.2,
     bonusBucketCount = 2,
-    showLightHelpers = false
+    showLightHelpers = false,
+    shaderEffectsEnabled = true
   ) {
+    this.shaderEffectsEnabled = shaderEffectsEnabled;
     this.scene = new Scene();
     this.scene.background = new Color('#170a2e');
 
@@ -160,33 +163,42 @@ export class SceneRoot {
     }
 
     this.moundMesh = mound;
-    this.centerDomeReflectionMaterial = createCenterDomeReflectionMaterial();
-    this.centerDomeReflectionMesh = new Mesh(
-      mound.geometry,
-      this.centerDomeReflectionMaterial
-    );
-    this.centerDomeReflectionMesh.scale.setScalar(1.002);
-    this.centerDomeReflectionMesh.renderOrder = 2;
-    this.centerDomeReflectionMesh.position.set(0, 0.001, 0);
-    this.moundMesh.add(this.centerDomeReflectionMesh);
+    if (this.shaderEffectsEnabled) {
+      this.centerDomeReflectionMaterial = createCenterDomeReflectionMaterial();
+      this.centerDomeReflectionMesh = new Mesh(
+        mound.geometry,
+        this.centerDomeReflectionMaterial
+      );
+      this.centerDomeReflectionMesh.scale.setScalar(1.002);
+      this.centerDomeReflectionMesh.renderOrder = 2;
+      this.centerDomeReflectionMesh.position.set(0, 0.001, 0);
+      this.moundMesh.add(this.centerDomeReflectionMesh);
+    } else {
+      this.centerDomeReflectionMaterial = null;
+      this.centerDomeReflectionMesh = null;
+    }
 
     this.outerRingMesh = outerRing as Mesh<TorusGeometry, MeshPhysicalMaterial>;
     this.outerRingMesh.renderOrder = 1;
     this.scene.add(this.playfieldMesh);
 
-    this.outerRingLedOverlayMesh = new Mesh(
-      this.outerRingMesh.geometry.clone(),
-      createOuterRingLedShaderMaterial({
-        headCount: this.outerRingLedHeadCount,
-        trail: this.outerRingLedTrail,
-        direction: this.outerRingLedDirection
-      })
-    );
-    this.outerRingLedOverlayMesh.rotation.copy(this.outerRingMesh.rotation);
-    this.outerRingLedOverlayMesh.position.copy(this.outerRingMesh.position);
-    this.outerRingLedOverlayMesh.scale.setScalar(1.0015);
-    this.outerRingLedOverlayMesh.renderOrder = 2;
-    this.scene.add(this.outerRingLedOverlayMesh);
+    if (this.shaderEffectsEnabled) {
+      this.outerRingLedOverlayMesh = new Mesh(
+        this.outerRingMesh.geometry.clone(),
+        createOuterRingLedShaderMaterial({
+          headCount: this.outerRingLedHeadCount,
+          trail: this.outerRingLedTrail,
+          direction: this.outerRingLedDirection
+        })
+      );
+      this.outerRingLedOverlayMesh.rotation.copy(this.outerRingMesh.rotation);
+      this.outerRingLedOverlayMesh.position.copy(this.outerRingMesh.position);
+      this.outerRingLedOverlayMesh.scale.setScalar(1.0015);
+      this.outerRingLedOverlayMesh.renderOrder = 2;
+      this.scene.add(this.outerRingLedOverlayMesh);
+    } else {
+      this.outerRingLedOverlayMesh = null;
+    }
 
     this.jarGroup = new Group();
     this.jars = Array.from({ length: jarCount }, (_, index) => {
@@ -483,8 +495,10 @@ export class SceneRoot {
     this.outerRingMesh.geometry.dispose();
     this.outerRingMesh.geometry = nextGeometry;
 
-    this.outerRingLedOverlayMesh.geometry.dispose();
-    this.outerRingLedOverlayMesh.geometry = nextGeometry.clone();
+    if (this.outerRingLedOverlayMesh) {
+      this.outerRingLedOverlayMesh.geometry.dispose();
+      this.outerRingLedOverlayMesh.geometry = nextGeometry.clone();
+    }
   }
 
   private syncBallScale(): void {
@@ -494,8 +508,19 @@ export class SceneRoot {
   }
 
   private updateOuterRingLeds(dt: number): void {
+    if (!this.shaderEffectsEnabled) {
+      this.outerRingMesh.material.emissive.copy(OUTER_RING_LED_BASE_COLOR);
+      this.outerRingMesh.material.emissiveIntensity = 0.02;
+      return;
+    }
+
     const centerDomeMaterial = this.centerDomeReflectionMaterial;
-    this.outerRingLedOverlayMesh.visible = this.outerRingLedEnabled;
+    const ledOverlay = this.outerRingLedOverlayMesh;
+    if (!centerDomeMaterial || !ledOverlay) {
+      return;
+    }
+
+    ledOverlay.visible = this.outerRingLedEnabled;
 
     if (!this.outerRingLedEnabled) {
       centerDomeMaterial.uniforms.uEnabled.value = 0;
@@ -517,7 +542,7 @@ export class SceneRoot {
     this.outerRingLedPhase +=
       dt * this.outerRingLedSpeed * this.outerRingLedDirection;
 
-    const material = this.outerRingLedOverlayMesh.material;
+    const material = ledOverlay.material;
     material.uniforms.uPhase.value = this.outerRingLedPhase;
     material.uniforms.uHeadCount.value = this.outerRingLedHeadCount;
     material.uniforms.uTrail.value = this.outerRingLedTrail;

@@ -1,5 +1,11 @@
 # TODO
 
+- [x] Make sure it scales to fit in mobile (and other) viewports.
+- [x] Disable shader effects with a query string param (`?effects=0` or `?fx=0`) for lower-end devices.
+- [x] Allow clicking/pressing anywhere (on mobile) to drop a ball.
+- [x] Add a light-source legend in the debug menu so each source/target marker is identifiable.
+- [x] Add a Storybook light-rig lab for light-source experimentation.
+
 - [x] Add a debug toggle for the center diameter
 - [x] Add a toggle to disable outer ring LED
 - [x] the center dome should reflect some of the lights of the outer ring. we could do this with shaders?

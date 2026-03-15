@@ -131,6 +131,33 @@ const LIGHT_TYPES: LightType[] = [
   'spot'
 ];
 
+const renderLightLegend = (
+  menu: HTMLElement,
+  lights: LightSnapshot[],
+  selectedLightId: string | null
+): void => {
+  const legend = menu.querySelector<HTMLElement>('[data-role="light-legend"]');
+  if (!legend) {
+    return;
+  }
+
+  legend.innerHTML = lights
+    .map((light) => {
+      const selectedClass = light.id === selectedLightId ? ' is-selected' : '';
+      const sourceBadge =
+        light.type === 'ambient'
+          ? ''
+          : `<span class="debug-menu__light-dot" style="--light-color:${light.color}"></span>`;
+      const targetBadge =
+        light.type === 'directional' || light.type === 'spot'
+          ? '<span class="debug-menu__light-target">◆</span>'
+          : '';
+
+      return `<div class="debug-menu__light-row${selectedClass}">${sourceBadge}<code>${light.id}</code><span>${light.name}</span>${targetBadge}</div>`;
+    })
+    .join('');
+};
+
 const renderLightEditor = (
   menu: HTMLElement,
   controls: DebugMenuControls | undefined,
@@ -163,6 +190,8 @@ const renderLightEditor = (
   }
 
   const selected = lights.find((light) => light.id === state.selectedLightId);
+  renderLightLegend(menu, lights, state.selectedLightId);
+
   const fields = menu.querySelectorAll<
     HTMLInputElement | HTMLSelectElement
   >('[data-light-input]');
@@ -257,6 +286,8 @@ export const createDebugMenu = (
       <label>Selected light
         <select data-light-selector></select>
       </label>
+      <div class="debug-menu__light-legend-key">● source marker color · ◆ target marker</div>
+      <div class="debug-menu__light-legend" data-role="light-legend"></div>
       <div class="debug-menu__actions">
         <button type="button" data-action="add-point-light">+ Point light</button>
         <button type="button" data-action="add-spot-light">+ Spot light</button>

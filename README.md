@@ -30,6 +30,7 @@ Storybook stories currently included:
 - Jar (bonus jar body/rim controls)
 - Center Platform (radius/bridge/material controls)
 - Outer Ring (diameter/material + LED chase tuning)
+- Light Rig Lab (interactive light source/type/position/intensity experimentation)
 - Jar Spinner (orbit radius/spin speed tuning)
 - Score Panel (value/LED color/scale controls)
 - Round Complete Dialog (summary UI states)
@@ -38,6 +39,8 @@ Storybook stories currently included:
 
 - Use `?debug=1` in the URL to open the debug panel:
   - `http://localhost:5173/?debug=1`
+- Use `?effects=0` (or `?fx=0`) to disable shader-driven LED/reflection effects on lower-end devices:
+  - `http://localhost:5173/?effects=0`
 - Debug panel includes:
   - pause/resume + step
   - score/time mutators
@@ -45,6 +48,7 @@ Storybook stories currently included:
   - gameplay tuning (including jar spin speed, center dome diameter, ring diameter, drop cooldown, ball size, drop height, ring LED enable/speed/head count/trail/reverse chance)
   - camera tuning
   - lighting rig tuning (move lights, change light type, add lights, and show light-source markers while debugging)
+  - light legend showing each light id/name plus marker mapping (`●` source color, `◆` target)
   - live numeric values + copyable JSON snapshot for sharing tuned settings (including lights)
   - preset save/load
 - Controls:
@@ -130,6 +134,7 @@ Implemented in this pass:
 - material/lighting polish pass (metallic center, glass jars, red rubber balls),
 - audio polish pass with dynamic-range compression and event throttling to reduce clipping/stacking,
 - improved HUD/summary readability polish and mobile-safe-area spacing,
+- mobile viewport-fit polish for dynamic viewport units (`dvh`/`svh`) so layout scales better on phones,
 - ball size updated to 0.157 reference diameter (relative to jar diameter scaling),
 - outer arcade enclosure removed,
 - added StorybookJS component stories for ball, bonus jar, center platform, outer ring, jar spinner, score panel, and round-complete dialog,
@@ -137,7 +142,10 @@ Implemented in this pass:
 - debug menu lighting controls for moving lights, swapping light type, and adding extra lights.
 - debug camera wheel zoom in `?debug=1`, plus visible light-source markers while tuning lighting.
 - debug controls for center dome diameter and enabling/disabling outer ring LED chase.
+- debug lighting legend now maps each light id/name to visible source/target helper markers.
+- optional shader-effects kill switch via URL (`?effects=0` / `?fx=0`) to reduce GPU load.
 - outer ring Storybook story now includes live LED chase controls (enable/speed/heads/trail/reverse chance).
+- added Storybook "Light Rig Lab" story for interactive light-source experimentation.
 
 ## Representative screenshots
 
@@ -156,3 +164,11 @@ Implemented in this pass:
 ### StorybookJS controls (component isolation)
 
 ![StorybookJS ball controls](docs/history/2026-03-14-storybookjs-controls/storybookjs-ball-controls.png)
+
+### Debug light legend
+
+![Debug light legend](docs/history/2026-03-15-todo-lighting-effects/debug-light-legend.png)
+
+### Effects disabled (`?effects=0`)
+
+![Shader effects disabled](docs/history/2026-03-15-todo-lighting-effects/effects-disabled.png)

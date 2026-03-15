@@ -20,6 +20,13 @@ Addendum (2026-03-14 late pass, completed):
 - [x] Add center-dome shader reflection driven by outer-ring LED phase.
 - [x] Update TODO and README docs.
 
+Addendum (2026-03-15, completed):
+
+- [x] Improve viewport scaling for mobile/short-height displays.
+- [x] Add URL shader-effects kill switch (`?effects=0` / `?fx=0`).
+- [x] Add debug light legend for source/target helper mapping.
+- [x] Add Storybook Light Rig Lab for light-source experimentation.
+
 Progress snapshot (2026-03-14):
 
 - [x] Phase A — Electron packaging hardening
