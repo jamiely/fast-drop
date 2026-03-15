@@ -1,4 +1,5 @@
 import {
+  AdditiveBlending,
   Color,
   Group,
   Mesh,
@@ -45,7 +46,8 @@ interface ActiveBallVisual {
 }
 
 interface OuterRingLedNode {
-  mesh: Mesh<SphereGeometry, MeshBasicMaterial>;
+  coreMesh: Mesh<SphereGeometry, MeshBasicMaterial>;
+  haloMesh: Mesh<SphereGeometry, MeshBasicMaterial>;
 }
 
 export interface SceneBallSettlement {
@@ -67,7 +69,7 @@ const SETTLE_FRAME_COUNT = 20;
 const MAX_BALL_AGE_SECONDS = 8;
 const MISSED_BALL_CLEANUP_Y = -3.5;
 const BALL_COLLISION_RESTITUTION = 0.45;
-const OUTER_RING_LED_SEGMENT_COUNT = 56;
+const OUTER_RING_LED_SEGMENT_COUNT = 120;
 const OUTER_RING_LED_REVERSE_CHECK_SECONDS = 2.4;
 const OUTER_RING_LED_BASE_COLOR = new Color('#1f3f99');
 const OUTER_RING_LED_PALETTE = [
@@ -454,15 +456,29 @@ export class SceneRoot {
   }
 
   private createOuterRingLeds(): void {
+    const coreGeometry = new SphereGeometry(0.03, 10, 10);
+    const haloGeometry = new SphereGeometry(0.09, 12, 12);
+
     for (let index = 0; index < OUTER_RING_LED_SEGMENT_COUNT; index += 1) {
-      const material = new MeshBasicMaterial({
+      const coreMaterial = new MeshBasicMaterial({
         color: OUTER_RING_LED_BASE_COLOR.clone(),
         transparent: true,
-        opacity: 0.2
+        opacity: 0.2,
+        depthWrite: false
       });
-      const mesh = new Mesh(new SphereGeometry(0.045, 12, 12), material);
-      this.outerRingLedGroup.add(mesh);
-      this.outerRingLedNodes.push({ mesh });
+      const haloMaterial = new MeshBasicMaterial({
+        color: OUTER_RING_LED_BASE_COLOR.clone(),
+        transparent: true,
+        opacity: 0.08,
+        depthWrite: false,
+        blending: AdditiveBlending
+      });
+
+      const coreMesh = new Mesh(coreGeometry, coreMaterial);
+      const haloMesh = new Mesh(haloGeometry, haloMaterial);
+
+      this.outerRingLedGroup.add(haloMesh, coreMesh);
+      this.outerRingLedNodes.push({ coreMesh, haloMesh });
     }
   }
 
@@ -472,11 +488,10 @@ export class SceneRoot {
 
     for (const [index, ledNode] of this.outerRingLedNodes.entries()) {
       const angle = (index / this.outerRingLedNodes.length) * Math.PI * 2;
-      ledNode.mesh.position.set(
-        Math.cos(angle) * ringRadius,
-        ringHeight,
-        Math.sin(angle) * ringRadius
-      );
+      const x = Math.cos(angle) * ringRadius;
+      const z = Math.sin(angle) * ringRadius;
+      ledNode.coreMesh.position.set(x, ringHeight, z);
+      ledNode.haloMesh.position.set(x, ringHeight, z);
     }
   }
 
@@ -498,7 +513,7 @@ export class SceneRoot {
 
     const speedCycle = this.outerRingLedPhase / (Math.PI * 2);
     const baseIntensity = 0.1;
-    const sigma = 0.035 + (1 - this.outerRingLedTrail) * 0.16;
+    const sigma = 0.06 + (1 - this.outerRingLedTrail) * 0.18;
 
     for (const [index, ledNode] of this.outerRingLedNodes.entries()) {
       const nodeT = index / this.outerRingLedNodes.length;
@@ -537,22 +552,30 @@ export class SceneRoot {
       const clamped = Math.min(1, intensity);
 
       if (colorWeightTotal > 0.0001) {
-        ledNode.mesh.material.color.setRGB(
-          weightedR / colorWeightTotal,
-          weightedG / colorWeightTotal,
-          weightedB / colorWeightTotal
-        );
+        const colorR = weightedR / colorWeightTotal;
+        const colorG = weightedG / colorWeightTotal;
+        const colorB = weightedB / colorWeightTotal;
+        ledNode.coreMesh.material.color.setRGB(colorR, colorG, colorB);
+        ledNode.haloMesh.material.color.setRGB(colorR, colorG, colorB);
       } else {
-        ledNode.mesh.material.color.copy(OUTER_RING_LED_BASE_COLOR);
+        ledNode.coreMesh.material.color.copy(OUTER_RING_LED_BASE_COLOR);
+        ledNode.haloMesh.material.color.copy(OUTER_RING_LED_BASE_COLOR);
       }
 
-      ledNode.mesh.material.opacity = 0.18 + clamped * 0.82;
-      ledNode.mesh.scale.setScalar(0.75 + clamped * 0.95);
+      ledNode.coreMesh.material.opacity = 0.12 + clamped * 0.58;
+      ledNode.haloMesh.material.opacity = 0.06 + clamped * 0.34;
+
+      ledNode.coreMesh.scale.setScalar(0.65 + clamped * 0.45);
+      ledNode.haloMesh.scale.setScalar(0.95 + clamped * 1.1);
 
       const angle = nodeT * Math.PI * 2;
       const ringRadius = this.getOuterRingRadius();
-      ledNode.mesh.position.x = Math.cos(angle) * ringRadius;
-      ledNode.mesh.position.z = Math.sin(angle) * ringRadius;
+      const x = Math.cos(angle) * ringRadius;
+      const z = Math.sin(angle) * ringRadius;
+      ledNode.coreMesh.position.x = x;
+      ledNode.coreMesh.position.z = z;
+      ledNode.haloMesh.position.x = x;
+      ledNode.haloMesh.position.z = z;
     }
 
     this.outerRingMesh.material.emissive.copy(OUTER_RING_LED_BASE_COLOR);

@@ -124,7 +124,7 @@ Implemented in this pass:
 - click-anywhere drop input (outside UI controls),
 - visual style refresh inspired by the neon reference image,
 - decorative outer ring around the jar orbit,
-- LED chase effect on the outer ring with moving multi-color heads and trailing glow,
+- LED chase effect on the outer ring with moving multi-color heads, soft gradient blending, and trailing glow,
 - material/lighting polish pass (metallic center, glass jars, red rubber balls),
 - audio polish pass with dynamic-range compression and event throttling to reduce clipping/stacking,
 - improved HUD/summary readability polish and mobile-safe-area spacing,
