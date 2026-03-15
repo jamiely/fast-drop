@@ -434,18 +434,6 @@ export const addLighting = (
   );
 
   mountSnapshot(
-    createDefaultSnapshot('cyan-rim', 'Cyan Rim', 'point', {
-      color: '#3ca7ff',
-      intensity: 0.78,
-      distance: 12,
-      decay: 2.2,
-      x: 4.2,
-      y: 3.2,
-      z: 4.4
-    })
-  );
-
-  mountSnapshot(
     createDefaultSnapshot('purple-back', 'Purple Back', 'point', {
       color: '#6d56ff',
       intensity: 0.66,

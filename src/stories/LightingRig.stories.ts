@@ -183,7 +183,7 @@ const meta: Meta<LightingRigStoryArgs> = {
   },
   argTypes: {
     selectedLightId: {
-      options: ['ambient', 'hemi', 'key', 'center-spot', 'cyan-rim', 'purple-back'],
+      options: ['ambient', 'hemi', 'key', 'center-spot', 'purple-back'],
       control: { type: 'select' }
     },
     lightType: {
