@@ -18,7 +18,7 @@ export interface DebugMenuControls {
   applyLightValue: (
     id: string,
     key: LightPropertyKey,
-    value: number | string
+    value: number | string | boolean
   ) => void;
   addLight: (type: LightType) => void;
   setSelectedLight: (id: string | null) => void;
@@ -153,8 +153,15 @@ const renderLightLegend = (
         light.type === 'directional' || light.type === 'spot'
           ? '<span class="debug-menu__light-target">◆</span>'
           : '';
+      const statusBadge = light.enabled
+        ? ''
+        : '<span class="debug-menu__light-status">OFF</span>';
+      const selectedBadge =
+        light.id === selectedLightId
+          ? '<span class="debug-menu__light-selected">SELECTED</span>'
+          : '';
 
-      return `<div class="debug-menu__light-row${selectedClass}">${sourceBadge}<code>${light.id}</code><span>${light.name}</span>${targetBadge}</div>`;
+      return `<div class="debug-menu__light-row${selectedClass}">${sourceBadge}<code>${light.id}</code><span>${light.name}</span><span class="debug-menu__light-badges">${statusBadge}${selectedBadge}</span>${targetBadge}</div>`;
     })
     .join('');
 };
@@ -212,6 +219,11 @@ const renderLightEditor = (
     }
 
     const value = selected[key];
+    if (field instanceof HTMLInputElement && field.type === 'checkbox') {
+      field.checked = Boolean(value);
+      continue;
+    }
+
     if (typeof value === 'number') {
       field.value = String(value);
     } else if (typeof value === 'string') {
@@ -289,12 +301,15 @@ export const createDebugMenu = (
       <label>Selected light
         <select data-light-selector></select>
       </label>
-      <div class="debug-menu__light-legend-key">● source marker color · ◆ target marker</div>
+      <div class="debug-menu__light-legend-key">○ unselected source · ● selected source · ◆ target marker</div>
       <div class="debug-menu__light-legend" data-role="light-legend"></div>
       <div class="debug-menu__actions">
         <button type="button" data-action="add-point-light">+ Point light</button>
         <button type="button" data-action="add-spot-light">+ Spot light</button>
       </div>
+      <label class="debug-menu__checkbox-row">Enabled
+        <input type="checkbox" checked data-light-input="enabled" />
+      </label>
       <label>Type
         <select data-light-input="type">
           <option value="ambient">Ambient</option>
@@ -438,7 +453,9 @@ export const createDebugMenu = (
         const value =
           input instanceof HTMLInputElement && input.type === 'range'
             ? parseNumber(input.value)
-            : input.value;
+            : input instanceof HTMLInputElement && input.type === 'checkbox'
+              ? input.checked
+              : input.value;
 
         if (key === 'type') {
           const type = String(value) as LightType;

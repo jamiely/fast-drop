@@ -199,7 +199,7 @@ canvas {
 
 .debug-menu__light-row {
   display: grid;
-  grid-template-columns: auto auto 1fr auto;
+  grid-template-columns: auto auto 1fr auto auto;
   align-items: center;
   gap: 6px;
   font-size: 11px;
@@ -215,11 +215,43 @@ canvas {
 }
 
 .debug-menu__light-dot {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 999px;
-  background: var(--light-color, #fff);
+  border: 2px solid var(--light-color, #fff);
+  background: transparent;
   box-shadow: 0 0 8px var(--light-color, #fff);
+}
+
+.debug-menu__light-row.is-selected .debug-menu__light-dot {
+  background: var(--light-color, #fff);
+  box-shadow: 0 0 10px var(--light-color, #fff);
+}
+
+.debug-menu__light-badges {
+  display: inline-flex;
+  justify-self: end;
+  gap: 4px;
+}
+
+.debug-menu__light-status,
+.debug-menu__light-selected {
+  font-size: 10px;
+  line-height: 1;
+  border-radius: 999px;
+  padding: 2px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.debug-menu__light-status {
+  color: #ffb4b4;
+  border-color: rgba(255, 98, 98, 0.45);
+}
+
+.debug-menu__light-selected {
+  color: #d8ecff;
+  border-color: rgba(94, 175, 255, 0.55);
+  background: rgba(39, 118, 255, 0.28);
 }
 
 .debug-menu__light-target {
@@ -232,6 +264,11 @@ canvas {
   gap: 2px;
   font-size: 12px;
   color: #cbd4de;
+}
+
+.debug-menu__checkbox-row {
+  grid-template-columns: 1fr auto;
+  align-items: center;
 }
 
 .debug-menu__value {

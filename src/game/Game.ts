@@ -251,6 +251,7 @@ export class Game {
       lights?: Array<{
         id?: string;
         type?: LightType;
+        enabled?: boolean;
         color?: string;
         groundColor?: string;
         intensity?: number;
@@ -279,7 +280,7 @@ export class Game {
       const lightId = light.id;
       const applyValue = (
         key: LightPropertyKey,
-        value: number | string | undefined
+        value: number | string | boolean | undefined
       ): void => {
         if (value === undefined) {
           return;
@@ -289,6 +290,7 @@ export class Game {
       };
 
       applyValue('type', light.type);
+      applyValue('enabled', light.enabled);
       applyValue('color', light.color);
       applyValue('groundColor', light.groundColor);
       applyValue('intensity', light.intensity);

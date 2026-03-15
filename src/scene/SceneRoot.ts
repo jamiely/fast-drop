@@ -59,8 +59,8 @@ export interface SceneBallSettlement {
 const GRAVITY = 7.6;
 const AIR_DAMPING = 0.998;
 const PLAYFIELD_RESTITUTION = 0.22;
-const PLAYFIELD_FRICTION = 0.92;
-const MOUND_OUTWARD_ACCELERATION = 2.8;
+const PLAYFIELD_FRICTION = 0.975;
+const MOUND_OUTWARD_ACCELERATION = 4.1;
 const JAR_AIR_DAMPING = 0.992;
 const CONTAINMENT_TOP_FACTOR = 0.55;
 const SETTLE_SPEED_EPSILON = 0.2;
@@ -332,7 +332,7 @@ export class SceneRoot {
   public updateLightValue(
     id: string,
     key: LightPropertyKey,
-    value: number | string
+    value: number | string | boolean
   ): void {
     this.lightingRig.setLightValue(id, key, value);
   }

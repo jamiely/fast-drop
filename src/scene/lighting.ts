@@ -23,6 +23,7 @@ export interface LightSnapshot {
   id: string;
   name: string;
   type: LightType;
+  enabled: boolean;
   color: string;
   groundColor: string;
   intensity: number;
@@ -41,6 +42,7 @@ export interface LightSnapshot {
 export type LightPropertyKey =
   | 'name'
   | 'type'
+  | 'enabled'
   | 'color'
   | 'groundColor'
   | 'intensity'
@@ -72,7 +74,7 @@ export interface LightingRig {
   setLightValue: (
     id: string,
     key: LightPropertyKey,
-    value: number | string
+    value: number | string | boolean
   ) => void;
   addLight: (type?: LightType) => LightSnapshot;
   setSelectedLight: (id: string | null) => void;
@@ -156,6 +158,7 @@ const syncEntryInstance = (
 ): void => {
   const { snapshot, light, target } = entry;
 
+  light.visible = snapshot.enabled;
   light.color.set(snapshot.color);
   light.intensity = snapshot.intensity;
 
@@ -186,6 +189,7 @@ const syncEntryInstance = (
     target &&
     (light instanceof DirectionalLight || light instanceof SpotLight)
   ) {
+    target.visible = snapshot.enabled;
     target.position.set(snapshot.targetX, snapshot.targetY, snapshot.targetZ);
   }
 
@@ -201,6 +205,7 @@ const createDefaultSnapshot = (
   id,
   name,
   type,
+  enabled: true,
   color: '#ffffff',
   groundColor: '#1b0f36',
   intensity: 1,
@@ -241,13 +246,20 @@ const syncLightHelpers = (
     entry.snapshot.type === 'point' ||
     entry.snapshot.type === 'spot';
 
-  entry.sourceHelper.visible = isPositionedLight;
+  const isSelected = entry.snapshot.id === selectedLightId;
+  entry.sourceHelper.visible = isPositionedLight && entry.snapshot.enabled;
   if (isPositionedLight) {
-    entry.sourceHelper.position.set(entry.snapshot.x, entry.snapshot.y, entry.snapshot.z);
+    entry.sourceHelper.position.set(
+      entry.snapshot.x,
+      entry.snapshot.y,
+      entry.snapshot.z
+    );
+    entry.sourceHelper.scale.setScalar(isSelected ? 1.65 : 1);
+
     const sourceMaterial = entry.sourceHelper.material as MeshBasicMaterial;
     sourceMaterial.color.set(entry.snapshot.color);
-    sourceMaterial.wireframe = entry.snapshot.id !== selectedLightId;
-    sourceMaterial.opacity = entry.snapshot.id === selectedLightId ? 0.95 : 1;
+    sourceMaterial.wireframe = !isSelected;
+    sourceMaterial.opacity = isSelected ? 0.98 : 0.5;
   }
 
   if (!entry.targetHelper) {
@@ -257,13 +269,14 @@ const syncLightHelpers = (
   const hasTarget =
     entry.snapshot.type === 'directional' || entry.snapshot.type === 'spot';
 
-  entry.targetHelper.visible = hasTarget;
+  entry.targetHelper.visible = hasTarget && entry.snapshot.enabled;
   if (hasTarget) {
     entry.targetHelper.position.set(
       entry.snapshot.targetX,
       entry.snapshot.targetY,
       entry.snapshot.targetZ
     );
+    entry.targetHelper.scale.setScalar(isSelected ? 1.45 : 1);
   }
 };
 
@@ -419,7 +432,7 @@ export const addLighting = (
 
   return {
     getSnapshot: () => entries.map((entry) => ({ ...entry.snapshot })),
-    setLightValue: (id, key, value) => {
+    setLightValue: (id, key, value: number | string | boolean) => {
       const entry = entries.find((candidate) => candidate.snapshot.id === id);
       if (!entry) {
         return;
@@ -447,13 +460,27 @@ export const addLighting = (
         return;
       }
 
+      if (key === 'enabled') {
+        entry.snapshot.enabled =
+          typeof value === 'boolean'
+            ? value
+            : Number.isFinite(Number(value))
+              ? Number(value) >= 0.5
+              : String(value).toLowerCase() === 'true';
+        syncEntryInstance(entry, selectedLightId);
+        return;
+      }
+
       if (key === 'color' || key === 'groundColor') {
         entry.snapshot[key] = toHexColor(String(value));
         syncEntryInstance(entry, selectedLightId);
         return;
       }
 
-      const numeric = toNumber(value, Number(entry.snapshot[key] ?? 0));
+      const numeric = toNumber(
+        typeof value === 'boolean' ? Number(value) : value,
+        Number(entry.snapshot[key] ?? 0)
+      );
       switch (key) {
         case 'intensity':
           entry.snapshot.intensity = clamp(numeric, 0, 8);

@@ -47,9 +47,9 @@ Storybook stories currently included:
   - speed controls
   - gameplay tuning (including jar spin speed, center dome diameter, ring diameter, drop cooldown, ball size, drop height, ring LED enable/speed/head count/trail/reverse chance)
   - camera tuning
-  - lighting rig tuning (move lights, change light type, add lights, and show light-source markers while debugging)
+  - lighting rig tuning (move lights, change light type, toggle each light on/off, add lights, and show light-source markers while debugging)
   - light legend showing each light id/name plus marker mapping (`●` source color, `◆` target)
-  - light helper emphasis: selected source marker is filled; non-selected source markers render as outline-only
+  - stronger light helper emphasis: selected source/target markers are larger and brighter; non-selected source markers render as dim outline-only
   - live numeric values + copyable JSON snapshot for sharing tuned settings (including lights)
   - preset save/load
 - Controls:
@@ -140,10 +140,10 @@ Implemented in this pass:
 - outer arcade enclosure removed,
 - added StorybookJS component stories for ball, bonus jar, center platform, outer ring, jar spinner, score panel, and round-complete dialog,
 - debug menu now shows live control values and a copyable JSON snapshot of current tuning for easy sharing,
-- debug menu lighting controls for moving lights, swapping light type, and adding extra lights.
+- debug menu lighting controls for moving lights, swapping light type, toggling light enabled/disabled, and adding extra lights.
 - debug camera wheel zoom in `?debug=1`, plus visible light-source markers while tuning lighting.
 - debug controls for center dome diameter and enabling/disabling outer ring LED chase.
-- debug lighting legend now maps each light id/name to visible source/target helper markers.
+- debug lighting legend now maps each light id/name to visible source/target helper markers and clearly tags the selected light.
 - optional shader-effects kill switch via URL (`?effects=0` / `?fx=0`) to reduce GPU load.
 - outer ring Storybook story now includes live LED chase controls (enable/speed/heads/trail/reverse chance).
 - added Storybook "Light Rig Lab" story for interactive light-source experimentation.

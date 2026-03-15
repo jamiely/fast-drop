@@ -48,6 +48,65 @@ describe('DOM systems and UI helpers', () => {
     expect(controls.togglePause).toHaveBeenCalled();
   });
 
+  it('updates light enabled toggle from debug menu', () => {
+    const host = document.createElement('div');
+    const controls = {
+      togglePause: vi.fn(),
+      stepFrame: vi.fn(),
+      addTime: vi.fn(),
+      addScore: vi.fn(),
+      spawnBall: vi.fn(),
+      setSpeedMultiplier: vi.fn(),
+      applyGameplayTuning: vi.fn(),
+      applyCameraTuning: vi.fn(),
+      getLightSnapshot: vi.fn(() => [
+        {
+          id: 'key',
+          name: 'Key',
+          type: 'directional' as const,
+          enabled: true,
+          color: '#ffffff',
+          groundColor: '#111111',
+          intensity: 1,
+          x: 0,
+          y: 5,
+          z: 0,
+          targetX: 0,
+          targetY: 0,
+          targetZ: 0,
+          distance: 12,
+          decay: 2,
+          angle: 0.6,
+          penumbra: 0.2
+        }
+      ]),
+      applyLightValue: vi.fn(),
+      addLight: vi.fn(),
+      setSelectedLight: vi.fn(),
+      savePreset: vi.fn(),
+      loadPreset: vi.fn()
+    };
+
+    const menu = createDebugMenu(host, true, controls);
+    const enabled = menu?.querySelector<HTMLInputElement>(
+      'input[data-light-input="enabled"]'
+    );
+    expect(enabled).toBeTruthy();
+
+    if (!enabled) {
+      return;
+    }
+
+    enabled.checked = false;
+    enabled.dispatchEvent(new Event('input', { bubbles: true }));
+
+    expect(controls.applyLightValue).toHaveBeenCalledWith(
+      'key',
+      'enabled',
+      false
+    );
+  });
+
   it('wires keyup and pointerup events in InputSystem', () => {
     let drops = 0;
     let playAgain = 0;
