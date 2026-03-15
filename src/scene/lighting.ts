@@ -2,9 +2,12 @@ import {
   AmbientLight,
   DirectionalLight,
   HemisphereLight,
+  Mesh,
+  MeshBasicMaterial,
   Object3D,
   PointLight,
   Scene,
+  SphereGeometry,
   SpotLight,
   type Light
 } from 'three';
@@ -56,6 +59,12 @@ interface LightEntry {
   snapshot: LightSnapshot;
   light: Light;
   target: Object3D | null;
+  sourceHelper: Mesh | null;
+  targetHelper: Mesh | null;
+}
+
+export interface LightingOptions {
+  showDebugHelpers?: boolean;
 }
 
 export interface LightingRig {
@@ -175,6 +184,8 @@ const syncEntryInstance = (entry: LightEntry): void => {
   ) {
     target.position.set(snapshot.targetX, snapshot.targetY, snapshot.targetZ);
   }
+
+  syncLightHelpers(entry);
 };
 
 const createDefaultSnapshot = (
@@ -202,7 +213,54 @@ const createDefaultSnapshot = (
   ...overrides
 });
 
-export const addLighting = (scene: Scene): LightingRig => {
+const createLightHelper = (color: string, scale = 0.06): Mesh => {
+  const material = new MeshBasicMaterial({
+    color,
+    transparent: true,
+    opacity: 0.9,
+    depthWrite: false
+  });
+  return new Mesh(new SphereGeometry(scale, 12, 12), material);
+};
+
+const syncLightHelpers = (entry: LightEntry): void => {
+  if (!entry.sourceHelper) {
+    return;
+  }
+
+  const isPositionedLight =
+    entry.snapshot.type === 'hemisphere' ||
+    entry.snapshot.type === 'directional' ||
+    entry.snapshot.type === 'point' ||
+    entry.snapshot.type === 'spot';
+
+  entry.sourceHelper.visible = isPositionedLight;
+  if (isPositionedLight) {
+    entry.sourceHelper.position.set(entry.snapshot.x, entry.snapshot.y, entry.snapshot.z);
+    (entry.sourceHelper.material as MeshBasicMaterial).color.set(entry.snapshot.color);
+  }
+
+  if (!entry.targetHelper) {
+    return;
+  }
+
+  const hasTarget =
+    entry.snapshot.type === 'directional' || entry.snapshot.type === 'spot';
+
+  entry.targetHelper.visible = hasTarget;
+  if (hasTarget) {
+    entry.targetHelper.position.set(
+      entry.snapshot.targetX,
+      entry.snapshot.targetY,
+      entry.snapshot.targetZ
+    );
+  }
+};
+
+export const addLighting = (
+  scene: Scene,
+  options: LightingOptions = {}
+): LightingRig => {
   const entries: LightEntry[] = [];
   let debugLightCount = 0;
 
@@ -219,7 +277,31 @@ export const addLighting = (scene: Scene): LightingRig => {
       scene.add(target);
     }
 
-    entries.push({ snapshot: normalized, light, target });
+    const sourceHelper = options.showDebugHelpers
+      ? createLightHelper(normalized.color, 0.07)
+      : null;
+    const targetHelper = options.showDebugHelpers
+      ? createLightHelper('#ffd166', 0.045)
+      : null;
+
+    if (sourceHelper) {
+      scene.add(sourceHelper);
+    }
+
+    if (targetHelper) {
+      scene.add(targetHelper);
+    }
+
+    const entry: LightEntry = {
+      snapshot: normalized,
+      light,
+      target,
+      sourceHelper,
+      targetHelper
+    };
+
+    syncLightHelpers(entry);
+    entries.push(entry);
     return normalized;
   };
 
@@ -242,6 +324,8 @@ export const addLighting = (scene: Scene): LightingRig => {
     if (entry.target) {
       scene.add(entry.target);
     }
+
+    syncLightHelpers(entry);
   };
 
   mountSnapshot(

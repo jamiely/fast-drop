@@ -29,7 +29,7 @@ Storybook stories currently included:
 - Ball (size/material/color controls)
 - Jar (bonus jar body/rim controls)
 - Center Platform (radius/bridge/material controls)
-- Outer Ring (diameter/material tuning)
+- Outer Ring (diameter/material + LED chase tuning)
 - Jar Spinner (orbit radius/spin speed tuning)
 - Score Panel (value/LED color/scale controls)
 - Round Complete Dialog (summary UI states)
@@ -42,14 +42,15 @@ Storybook stories currently included:
   - pause/resume + step
   - score/time mutators
   - speed controls
-  - gameplay tuning (including jar spin speed, ring diameter, drop cooldown, ball size, drop height, ring LED chase speed/head count/trail/reverse chance)
+  - gameplay tuning (including jar spin speed, center dome diameter, ring diameter, drop cooldown, ball size, drop height, ring LED enable/speed/head count/trail/reverse chance)
   - camera tuning
-  - lighting rig tuning (move lights, change light type, add lights)
+  - lighting rig tuning (move lights, change light type, add lights, and show light-source markers while debugging)
   - live numeric values + copyable JSON snapshot for sharing tuned settings (including lights)
   - preset save/load
 - Controls:
   - click/tap the page (outside UI controls) or press `Space` to drop
   - on round summary, press `Enter` or `Space` to play again
+  - in `?debug=1`, scroll wheel zooms camera in/out (outside debug UI elements)
 
 ## Scripts
 
@@ -133,6 +134,9 @@ Implemented in this pass:
 - added StorybookJS component stories for ball, bonus jar, center platform, outer ring, jar spinner, score panel, and round-complete dialog,
 - debug menu now shows live control values and a copyable JSON snapshot of current tuning for easy sharing,
 - debug menu lighting controls for moving lights, swapping light type, and adding extra lights.
+- debug camera wheel zoom in `?debug=1`, plus visible light-source markers while tuning lighting.
+- debug controls for center dome diameter and enabling/disabling outer ring LED chase.
+- outer ring Storybook story now includes live LED chase controls (enable/speed/heads/trail/reverse chance).
 
 ## Representative screenshots
 

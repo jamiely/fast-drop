@@ -1,8 +1,8 @@
 import {
-  AdditiveBlending,
   Color,
   Group,
   Mesh,
+  Object3D,
   MeshPhysicalMaterial,
   Scene,
   ShaderMaterial,
@@ -27,6 +27,10 @@ import {
   type LightType,
   type LightingRig
 } from './lighting';
+import {
+  OUTER_RING_LED_BASE_COLOR,
+  createOuterRingLedShaderMaterial
+} from './outerRingLed';
 
 interface ActiveBallVisual {
   id: number | null;
@@ -64,14 +68,6 @@ const MAX_BALL_AGE_SECONDS = 8;
 const MISSED_BALL_CLEANUP_Y = -3.5;
 const BALL_COLLISION_RESTITUTION = 0.45;
 const OUTER_RING_LED_REVERSE_CHECK_SECONDS = 2.4;
-const OUTER_RING_LED_BASE_COLOR = new Color('#1f3f99');
-const OUTER_RING_LED_PALETTE = [
-  new Color('#32f2ff'),
-  new Color('#7b73ff'),
-  new Color('#ff6bc9'),
-  new Color('#6fd9ff')
-];
-const OUTER_RING_LED_MAX_HEADS = 12;
 
 export class SceneRoot {
   public readonly renderer: WebGLRenderer | null;
@@ -87,6 +83,7 @@ export class SceneRoot {
   private readonly ballGroup: Group;
   private readonly activeBalls: ActiveBallVisual[] = [];
   private readonly playfieldMesh: Group;
+  private readonly moundMesh: Object3D;
   private readonly outerRingMesh: Mesh<TorusGeometry, MeshPhysicalMaterial>;
   private readonly outerRingLedOverlayMesh: Mesh<TorusGeometry, ShaderMaterial>;
   private readonly bonusJarIndices: Set<number>;
@@ -103,6 +100,8 @@ export class SceneRoot {
   private rimBounce = 0.46;
   private wallRestitution = 0.52;
   private floorRestitution = 0.42;
+  private centerDomeDiameterScale = 1;
+  private outerRingLedEnabled = true;
   private outerRingLedSpeed = 0.35;
   private outerRingLedHeadCount = 4;
   private outerRingLedTrail = 0.58;
@@ -112,7 +111,8 @@ export class SceneRoot {
     private readonly host: HTMLElement,
     jarCount: number,
     jarOrbitRadius = 2.2,
-    bonusBucketCount = 2
+    bonusBucketCount = 2,
+    showLightHelpers = false
   ) {
     this.scene = new Scene();
     this.scene.background = new Color('#170a2e');
@@ -133,14 +133,22 @@ export class SceneRoot {
       this.renderer = null;
     }
 
-    this.lightingRig = addLighting(this.scene);
+    this.lightingRig = addLighting(this.scene, {
+      showDebugHelpers: showLightHelpers
+    });
 
     this.playfieldDimensions = createPlayfieldDimensions(
       jarOrbitRadius,
       JAR_RADIUS
     );
     this.playfieldMesh = createPlayfieldBase(this.playfieldDimensions);
+
+    const mound = this.playfieldMesh.children[0];
     const outerRing = this.playfieldMesh.children[1];
+    if (!(mound instanceof Mesh)) {
+      throw new Error('[SceneRoot] Playfield mound mesh is missing');
+    }
+
     if (
       !(outerRing instanceof Mesh) ||
       !(outerRing.material instanceof MeshPhysicalMaterial)
@@ -148,13 +156,18 @@ export class SceneRoot {
       throw new Error('[SceneRoot] Playfield outer ring mesh is missing');
     }
 
+    this.moundMesh = mound;
     this.outerRingMesh = outerRing as Mesh<TorusGeometry, MeshPhysicalMaterial>;
     this.outerRingMesh.renderOrder = 1;
     this.scene.add(this.playfieldMesh);
 
     this.outerRingLedOverlayMesh = new Mesh(
       this.outerRingMesh.geometry.clone(),
-      this.createOuterRingLedShaderMaterial()
+      createOuterRingLedShaderMaterial({
+        headCount: this.outerRingLedHeadCount,
+        trail: this.outerRingLedTrail,
+        direction: this.outerRingLedDirection
+      })
     );
     this.outerRingLedOverlayMesh.rotation.copy(this.outerRingMesh.rotation);
     this.outerRingLedOverlayMesh.position.copy(this.outerRingMesh.position);
@@ -204,6 +217,12 @@ export class SceneRoot {
       return;
     }
 
+    if (key === 'centerDomeDiameterScale') {
+      this.centerDomeDiameterScale = Math.max(0.55, Math.min(1.8, value));
+      this.moundMesh.scale.set(this.centerDomeDiameterScale, 1, this.centerDomeDiameterScale);
+      return;
+    }
+
     if (key === 'dropPointX') {
       this.dropPoint.x = value;
       return;
@@ -249,6 +268,11 @@ export class SceneRoot {
 
     if (key === 'floorBounciness') {
       this.floorRestitution = Math.max(0.05, Math.min(0.95, value));
+      return;
+    }
+
+    if (key === 'outerRingLedEnabled') {
+      this.outerRingLedEnabled = value >= 0.5;
       return;
     }
 
@@ -456,89 +480,15 @@ export class SceneRoot {
     }
   }
 
-  private createOuterRingLedShaderMaterial(): ShaderMaterial {
-    return new ShaderMaterial({
-      transparent: true,
-      depthWrite: false,
-      depthTest: true,
-      polygonOffset: true,
-      polygonOffsetFactor: -2,
-      polygonOffsetUnits: -2,
-      blending: AdditiveBlending,
-      uniforms: {
-        uPhase: { value: 0 },
-        uHeadCount: { value: this.outerRingLedHeadCount },
-        uTrail: { value: this.outerRingLedTrail },
-        uDirection: { value: this.outerRingLedDirection },
-        uBaseColor: { value: OUTER_RING_LED_BASE_COLOR.clone() },
-        uPalette: { value: OUTER_RING_LED_PALETTE.map((color) => color.clone()) }
-      },
-      vertexShader: `
-        varying vec2 vUv;
-
-        void main() {
-          vUv = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        varying vec2 vUv;
-
-        uniform float uPhase;
-        uniform float uHeadCount;
-        uniform float uTrail;
-        uniform float uDirection;
-        uniform vec3 uBaseColor;
-        uniform vec3 uPalette[4];
-
-        float wrapSigned(float value) {
-          return mod(value + 0.5, 1.0) - 0.5;
-        }
-
-        void main() {
-          float headCount = clamp(uHeadCount, 1.0, ${OUTER_RING_LED_MAX_HEADS.toFixed(1)});
-          float sigma = 0.06 + (1.0 - clamp(uTrail, 0.05, 1.0)) * 0.18;
-
-          float intensity = 0.0;
-          float colorWeightTotal = 0.0;
-          vec3 weightedColor = vec3(0.0);
-
-          for (int i = 0; i < ${OUTER_RING_LED_MAX_HEADS}; i += 1) {
-            float index = float(i);
-            if (index >= headCount) {
-              break;
-            }
-
-            float headT = fract(uPhase + index / headCount);
-            float wrappedDelta = wrapSigned(vUv.x - headT);
-            float distanceToHead = abs(wrappedDelta);
-            float directionDelta = wrappedDelta * uDirection;
-            float tailMask = directionDelta < 0.0 ? 1.0 : 0.35;
-            float gaussian = exp(-(distanceToHead * distanceToHead) / (2.0 * sigma * sigma));
-            float contribution = gaussian * tailMask;
-
-            intensity += contribution;
-            vec3 paletteColor = uPalette[i % 4];
-            weightedColor += paletteColor * contribution;
-            colorWeightTotal += contribution;
-          }
-
-          float clampedIntensity = clamp(intensity, 0.0, 1.0);
-          vec3 mixedColor = uBaseColor;
-          if (colorWeightTotal > 0.0001) {
-            mixedColor = weightedColor / colorWeightTotal;
-          }
-
-          vec3 finalColor = mix(uBaseColor, mixedColor, 0.92) * (0.28 + clampedIntensity * 1.05);
-          float alpha = 0.08 + clampedIntensity * 0.44;
-
-          gl_FragColor = vec4(finalColor, alpha);
-        }
-      `
-    });
-  }
-
   private updateOuterRingLeds(dt: number): void {
+    this.outerRingLedOverlayMesh.visible = this.outerRingLedEnabled;
+
+    if (!this.outerRingLedEnabled) {
+      this.outerRingMesh.material.emissive.copy(OUTER_RING_LED_BASE_COLOR);
+      this.outerRingMesh.material.emissiveIntensity = 0.02;
+      return;
+    }
+
     this.outerRingLedReverseTimer += dt;
     if (this.outerRingLedReverseTimer >= OUTER_RING_LED_REVERSE_CHECK_SECONDS) {
       this.outerRingLedReverseTimer = 0;

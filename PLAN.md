@@ -11,6 +11,14 @@ Addendum (2026-03-14, completed):
 - [x] Add interactive controls for tuning sizes/colors/material feel.
 - [x] Update README usage docs.
 
+Addendum (2026-03-14 late pass, completed):
+
+- [x] Add debug controls for center dome diameter and outer-ring LED enable toggle.
+- [x] Add debug-mode mouse-wheel camera zoom (outside UI controls).
+- [x] Show light-source markers in debug mode while tuning lights.
+- [x] Bring outer-ring LED chase controls/effects into Storybook.
+- [x] Update TODO and README docs.
+
 Progress snapshot (2026-03-14):
 
 - [x] Phase A — Electron packaging hardening

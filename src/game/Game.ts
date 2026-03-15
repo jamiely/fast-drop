@@ -38,7 +38,8 @@ export class Game {
   private readonly scoringSystem: ScoringSystem;
   private readonly audioSystem: AudioSystem;
   private readonly orbitSystem: OrbitSystem;
-  private readonly debugEnabled: boolean;
+  private readonly debugEnabled =
+    new URLSearchParams(window.location.search).get('debug') === '1';
   private state: GameState;
   private physicsWorld: PhysicsWorld | null = null;
   private rafId = 0;
@@ -57,7 +58,8 @@ export class Game {
       host,
       this.runtimeConfig.jarCount,
       this.runtimeConfig.tuning.ringRadius,
-      this.runtimeConfig.bonusBucketCount
+      this.runtimeConfig.bonusBucketCount,
+      this.debugEnabled
     );
     this.sceneRoot.applyGameplayTuning(
       'outerRingDiameter',
@@ -71,8 +73,6 @@ export class Game {
       this.runtimeConfig.tuning.ringRadius,
       this.runtimeConfig.tuning.ringAngularSpeed
     );
-    this.debugEnabled =
-      new URLSearchParams(window.location.search).get('debug') === '1';
 
     createDebugMenu(host, this.debugEnabled, {
       togglePause: () => {
@@ -118,6 +118,30 @@ export class Game {
       },
       isRoundEnded: () => this.state.phase === 'ended'
     });
+
+    if (this.debugEnabled) {
+      window.addEventListener(
+        'wheel',
+        (event) => {
+          if (event.ctrlKey || event.metaKey) {
+            return;
+          }
+
+          if (event.target instanceof Element) {
+            const interactive = event.target.closest(
+              'button, input, select, textarea, label, a, [role="button"], .debug-menu, .summary-overlay'
+            );
+            if (interactive) {
+              return;
+            }
+          }
+
+          event.preventDefault();
+          this.applyDebugZoomDelta(event.deltaY);
+        },
+        { passive: false }
+      );
+    }
 
     window.addEventListener('resize', () => {
       this.sceneRoot.resize();
@@ -370,6 +394,21 @@ export class Game {
   private setSpeedMultiplier(multiplier: number): void {
     this.speedMultiplier = Math.max(0, multiplier);
     this.orbitSystem.setSpeedMultiplier(this.speedMultiplier);
+  }
+
+  private applyDebugZoomDelta(deltaY: number): void {
+    const delta = Math.sign(deltaY) * 0.2;
+    const nextDistance = Math.max(
+      3.6,
+      Math.min(11, this.runtimeConfig.camera.distance + delta)
+    );
+
+    if (Math.abs(nextDistance - this.runtimeConfig.camera.distance) <= 0.001) {
+      return;
+    }
+
+    this.runtimeConfig.camera.distance = nextDistance;
+    this.sceneRoot.applyCameraTuning(this.runtimeConfig.camera);
   }
 
   private step(dt: number, renderFrame = true): void {

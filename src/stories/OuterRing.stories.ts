@@ -1,10 +1,19 @@
 import type { Meta, StoryObj } from '@storybook/html';
 import { useArgs } from '@storybook/preview-api';
-import { Color, Mesh, MeshPhysicalMaterial, TorusGeometry } from 'three';
+import {
+  Color,
+  Mesh,
+  MeshPhysicalMaterial,
+  TorusGeometry
+} from 'three';
 import {
   createPlayfieldBase,
   createPlayfieldDimensions
 } from '../entities/Playfield';
+import {
+  OUTER_RING_LED_BASE_COLOR,
+  createOuterRingLedShaderMaterial
+} from '../scene/outerRingLed';
 import { renderThreePreview } from './threePreview';
 
 interface OuterRingStoryArgs {
@@ -14,6 +23,11 @@ interface OuterRingStoryArgs {
   ringColor: string;
   emissiveColor: string;
   emissiveIntensity: number;
+  ledEnabled: boolean;
+  ledSpeed: number;
+  ledHeadCount: number;
+  ledTrail: number;
+  ledReverseChance: number;
   cameraX: number;
   cameraY: number;
   cameraZ: number;
@@ -24,6 +38,7 @@ interface OuterRingStoryArgs {
 }
 
 const roundControlValue = (value: number) => Math.round(value * 1000) / 1000;
+const LED_REVERSE_CHECK_SECONDS = 2.4;
 
 const meta: Meta<OuterRingStoryArgs> = {
   title: 'Components/Outer Ring',
@@ -48,6 +63,59 @@ const meta: Meta<OuterRingStoryArgs> = {
       material.color = new Color(args.ringColor);
       material.emissive = new Color(args.emissiveColor);
       material.emissiveIntensity = args.emissiveIntensity;
+
+      const ledOverlay = new Mesh(
+        outerRing.geometry.clone(),
+        createOuterRingLedShaderMaterial({
+          headCount: args.ledHeadCount,
+          trail: args.ledTrail,
+          direction: 1
+        })
+      );
+      ledOverlay.rotation.copy(outerRing.rotation);
+      ledOverlay.position.copy(outerRing.position);
+      ledOverlay.scale.setScalar(1.0015);
+      ledOverlay.visible = args.ledEnabled;
+
+      let phase = 0;
+      let direction = 1;
+      let reverseTimer = 0;
+      let lastNow = performance.now();
+
+      ledOverlay.onBeforeRender = () => {
+        const now = performance.now();
+        const dt = Math.min(0.05, (now - lastNow) / 1000);
+        lastNow = now;
+
+        const ledMaterial = ledOverlay.material;
+        if (!args.ledEnabled) {
+          ledOverlay.visible = false;
+          material.emissive.copy(OUTER_RING_LED_BASE_COLOR);
+          material.emissiveIntensity = 0.02;
+          return;
+        }
+
+        ledOverlay.visible = true;
+        reverseTimer += dt;
+        if (reverseTimer >= LED_REVERSE_CHECK_SECONDS) {
+          reverseTimer = 0;
+          if (Math.random() <= args.ledReverseChance) {
+            direction *= -1;
+          }
+        }
+
+        phase += dt * args.ledSpeed * direction;
+
+        ledMaterial.uniforms.uPhase.value = phase;
+        ledMaterial.uniforms.uHeadCount.value = Math.round(args.ledHeadCount);
+        ledMaterial.uniforms.uTrail.value = args.ledTrail;
+        ledMaterial.uniforms.uDirection.value = direction;
+
+        material.emissive.copy(OUTER_RING_LED_BASE_COLOR);
+        material.emissiveIntensity = 0.08;
+      };
+
+      platform.add(ledOverlay);
     }
 
     return renderThreePreview(platform, {
@@ -98,6 +166,11 @@ const meta: Meta<OuterRingStoryArgs> = {
     ringColor: '#f3f7ff',
     emissiveColor: '#4e79ff',
     emissiveIntensity: 0.1,
+    ledEnabled: true,
+    ledSpeed: 0.35,
+    ledHeadCount: 4,
+    ledTrail: 0.58,
+    ledReverseChance: 0.2,
     cameraX: 0,
     cameraY: 1.2,
     cameraZ: 3.1,
@@ -117,6 +190,11 @@ const meta: Meta<OuterRingStoryArgs> = {
     emissiveIntensity: {
       control: { type: 'range', min: 0, max: 1, step: 0.01 }
     },
+    ledEnabled: { control: 'boolean' },
+    ledSpeed: { control: { type: 'range', min: 0.05, max: 2.5, step: 0.01 } },
+    ledHeadCount: { control: { type: 'range', min: 1, max: 12, step: 1 } },
+    ledTrail: { control: { type: 'range', min: 0.05, max: 1, step: 0.01 } },
+    ledReverseChance: { control: { type: 'range', min: 0, max: 1, step: 0.01 } },
     cameraX: { control: { type: 'range', min: -5, max: 5, step: 0.01 } },
     cameraY: { control: { type: 'range', min: -1, max: 5, step: 0.01 } },
     cameraZ: { control: { type: 'range', min: 0.5, max: 8, step: 0.01 } },
