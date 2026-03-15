@@ -1,4 +1,4 @@
-import { AdditiveBlending, Color, ShaderMaterial } from 'three';
+import { AdditiveBlending, Color, DoubleSide, ShaderMaterial } from 'three';
 
 export const OUTER_RING_LED_MAX_HEADS = 12;
 export const OUTER_RING_LED_BASE_COLOR = new Color('#1f3f99');
@@ -22,6 +22,7 @@ export const createOuterRingLedShaderMaterial = (
     transparent: true,
     depthWrite: false,
     depthTest: true,
+    side: DoubleSide,
     polygonOffset: true,
     polygonOffsetFactor: -2,
     polygonOffsetUnits: -2,
