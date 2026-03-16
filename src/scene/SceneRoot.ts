@@ -98,6 +98,7 @@ export class SceneRoot {
   private outerRingLedReverseTimer = 0;
 
   private dropPoint = { x: 0, z: 2.2, y: 2.3 };
+  private orbitRadius = 2.2;
   private jarDiameterScale = 1;
   private jarHeightScale = 1;
   private ballSizeScale = 1;
@@ -121,6 +122,7 @@ export class SceneRoot {
     shaderEffectsEnabled = true
   ) {
     this.shaderEffectsEnabled = shaderEffectsEnabled;
+    this.orbitRadius = Math.max(0.5, jarOrbitRadius);
     this.scene = new Scene();
     this.scene.background = new Color('#170a2e');
 
@@ -231,6 +233,9 @@ export class SceneRoot {
 
     this.ballGroup = new Group();
     this.scene.add(this.ballGroup);
+
+    this.syncJarScale();
+    this.updateCenterDomeScale();
   }
 
   public applyGameplayTuning(key: keyof GameplayTuning, value: number): void {
@@ -245,7 +250,13 @@ export class SceneRoot {
 
     if (key === 'centerDomeDiameterScale') {
       this.centerDomeDiameterScale = Math.max(0.55, Math.min(1.8, value));
-      this.moundMesh.scale.set(this.centerDomeDiameterScale, 1, this.centerDomeDiameterScale);
+      this.updateCenterDomeScale();
+      return;
+    }
+
+    if (key === 'ringRadius') {
+      this.orbitRadius = Math.max(0.5, value);
+      this.updateCenterDomeScale();
       return;
     }
 
@@ -491,7 +502,10 @@ export class SceneRoot {
         this.jarHeightScale,
         this.jarDiameterScale
       );
+      jar.position.y = this.getJarHeight() * 0.5;
     }
+
+    this.updateCenterDomeScale();
   }
 
   private updateOuterRingGeometry(diameter: number): void {
@@ -588,6 +602,24 @@ export class SceneRoot {
 
   private getContainmentTopY(): number {
     return this.getJarHeight() + this.getBallRadius() * CONTAINMENT_TOP_FACTOR;
+  }
+
+  private updateCenterDomeScale(): void {
+    const centerClearance = 0.06;
+    const maxRadiusBeforeJarContact = Math.max(
+      0.2,
+      this.orbitRadius - this.getJarRadius() - centerClearance
+    );
+    const maxScaleFromJarClearance = Math.max(
+      0.2,
+      maxRadiusBeforeJarContact / Math.max(0.001, this.playfieldDimensions.moundRadius)
+    );
+    const appliedScale = Math.min(
+      this.centerDomeDiameterScale,
+      maxScaleFromJarClearance
+    );
+
+    this.moundMesh.scale.set(appliedScale, 1, appliedScale);
   }
 
   private syncPlayfieldVisuals(): void {
