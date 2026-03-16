@@ -17,7 +17,7 @@ import {
   createJarPetalMesh,
   createPlayfieldBase,
   createPlayfieldDimensions,
-  getBridgeCenterRadiusForMound
+  getBridgeCenterRadius
 } from '../entities/Playfield';
 import { JAR_HEIGHT, JAR_RADIUS, createJarMesh } from '../entities/Jar';
 import { applyCameraTuning, createCamera } from './camera';
@@ -109,6 +109,7 @@ export class SceneRoot {
   private centerDomeDiameterScale = 1;
   private centerDomeSteepnessScale = 1;
   private centerDomeAppliedDiameterScale = 1;
+  private platformArmLengthScale = 1;
   private outerRingLedEnabled = true;
   private outerRingLedSpeed = 0.35;
   private outerRingLedHeadCount = 4;
@@ -260,6 +261,11 @@ export class SceneRoot {
     if (key === 'centerDomeSteepnessScale') {
       this.centerDomeSteepnessScale = Math.max(0.35, Math.min(3.5, value));
       this.updateCenterDomeScale();
+      return;
+    }
+
+    if (key === 'platformArmLengthScale') {
+      this.platformArmLengthScale = Math.max(0.3, Math.min(2.4, value));
       return;
     }
 
@@ -649,7 +655,6 @@ export class SceneRoot {
   }
 
   private syncPlayfieldVisuals(): void {
-    const moundRadius = this.getMoundRadius();
     const jarRadius = this.getJarRadius();
     const petalRadius = this.playfieldDimensions.petalRadius * this.jarDiameterScale;
 
@@ -666,12 +671,14 @@ export class SceneRoot {
       const dirX = jar.position.x / safeDistance;
       const dirZ = jar.position.z / safeDistance;
       const bridgeEndRadius = Math.max(
-        moundRadius + jarRadius * 0.9,
+        jarRadius * 0.9,
         distanceFromCenter - petalRadius * 0.98
       );
-      const bridgeLength = Math.max(jarRadius * 0.9, bridgeEndRadius - moundRadius);
-      const bridgeCenterRadius = getBridgeCenterRadiusForMound(
-        moundRadius,
+      const baseBridgeLength = Math.max(jarRadius * 0.9, bridgeEndRadius);
+      const bridgeLength = baseBridgeLength * this.platformArmLengthScale;
+      const bridgeStartRadius = bridgeEndRadius - bridgeLength;
+      const bridgeCenterRadius = getBridgeCenterRadius(
+        bridgeStartRadius,
         bridgeLength
       );
 

@@ -84,6 +84,10 @@ export class Game {
       'centerDomeSteepnessScale',
       this.runtimeConfig.tuning.centerDomeSteepnessScale
     );
+    this.sceneRoot.applyGameplayTuning(
+      'platformArmLengthScale',
+      this.runtimeConfig.tuning.platformArmLengthScale
+    );
     this.uiSystem = new UISystem(host);
     this.scoringSystem = new ScoringSystem();
     this.audioSystem = new AudioSystem();

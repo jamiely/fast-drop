@@ -14,6 +14,7 @@ export interface GameplayTuning {
   floorBounciness: number;
   centerDomeDiameterScale: number;
   centerDomeSteepnessScale: number;
+  platformArmLengthScale: number;
   outerRingLedEnabled: number;
   outerRingLedSpeed: number;
   outerRingLedHeadCount: number;
@@ -27,6 +28,7 @@ export interface CameraTuning {
   yaw: number;
   panX?: number;
   targetY: number;
+  targetZ?: number;
 }
 
 export interface RuntimeConfig {
@@ -65,6 +67,7 @@ export const gameConfig: RuntimeConfig = {
     floorBounciness: 0.42,
     centerDomeDiameterScale: 0.6,
     centerDomeSteepnessScale: 2,
+    platformArmLengthScale: 1,
     outerRingLedEnabled: 1,
     outerRingLedSpeed: 0.35,
     outerRingLedHeadCount: 4,
@@ -76,7 +79,8 @@ export const gameConfig: RuntimeConfig = {
     pitch: 3.8,
     yaw: 0,
     panX: 0,
-    targetY: 0.6
+    targetY: 0.6,
+    targetZ: 2.2
   }
 };
 

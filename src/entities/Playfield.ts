@@ -23,10 +23,10 @@ export interface PlayfieldDimensions {
   outerRingY: number;
 }
 
-export const getBridgeCenterRadiusForMound = (
-  moundRadius: number,
+export const getBridgeCenterRadius = (
+  bridgeStartRadius: number,
   bridgeLength: number
-): number => moundRadius + bridgeLength * 0.5;
+): number => bridgeStartRadius + bridgeLength * 0.5;
 
 const moundMaterial = new MeshPhysicalMaterial({
   color: '#69a8ff',
@@ -46,16 +46,6 @@ const petalMaterial = new MeshPhysicalMaterial({
   clearcoatRoughness: 0.12,
   emissive: '#c8d4ff',
   emissiveIntensity: 0.06
-});
-
-const bridgeMaterial = new MeshPhysicalMaterial({
-  color: '#5d99ff',
-  metalness: 0.12,
-  roughness: 0.2,
-  clearcoat: 1,
-  clearcoatRoughness: 0.1,
-  emissive: '#3158ff',
-  emissiveIntensity: 0.12
 });
 
 const outerRingMaterial = new MeshPhysicalMaterial({
@@ -82,13 +72,17 @@ export const createPlayfieldDimensions = (
   const petalThickness = jarRadius * 2 * 0.25;
   const petalTopY = 0;
 
+  const bridgeStartRadius = 0;
   const bridgeEndRadius = Math.max(
-    moundRadius + jarRadius * 0.9,
+    jarRadius * 0.9,
     jarOrbitRadius - petalRadius * 0.98
   );
-  const bridgeLength = Math.max(jarRadius * 0.9, bridgeEndRadius - moundRadius);
-  const bridgeCenterRadius = getBridgeCenterRadiusForMound(
-    moundRadius,
+  const bridgeLength = Math.max(
+    jarRadius * 0.9,
+    bridgeEndRadius - bridgeStartRadius
+  );
+  const bridgeCenterRadius = getBridgeCenterRadius(
+    bridgeStartRadius,
     bridgeLength
   );
   const bridgeWidth = jarRadius * 0.75;
@@ -161,7 +155,7 @@ export const createJarBridgeMesh = (dimensions: PlayfieldDimensions): Mesh => {
       dimensions.bridgeThickness,
       dimensions.bridgeLength
     ),
-    bridgeMaterial
+    moundMaterial
   );
   bridge.position.y = dimensions.petalTopY - dimensions.bridgeThickness * 0.5;
   return bridge;
