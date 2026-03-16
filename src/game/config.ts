@@ -69,7 +69,7 @@ export const gameConfig: RuntimeConfig = {
     centerDomeDiameterScale: 0.6,
     centerDomeSteepnessScale: 2,
     centerDomeHeightOffset: 0,
-    platformArmLengthScale: 0.3,
+    platformArmLengthScale: 0.15,
     outerRingLedEnabled: 1,
     outerRingLedSpeed: 0.35,
     outerRingLedHeadCount: 4,

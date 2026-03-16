@@ -109,7 +109,7 @@ export class SceneRoot {
   private centerDomeSteepnessScale = 1;
   private centerDomeHeightOffset = 0;
   private centerDomeAppliedDiameterScale = 1;
-  private platformArmLengthScale = 0.3;
+  private platformArmLengthScale = 0.15;
   private outerRingLedEnabled = true;
   private outerRingLedSpeed = 0.35;
   private outerRingLedHeadCount = 4;
