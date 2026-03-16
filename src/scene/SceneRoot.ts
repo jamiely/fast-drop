@@ -410,6 +410,7 @@ export class SceneRoot {
 
       if (activeBall.enteredJarIndex === null) {
         this.resolvePlayfieldCollision(activeBall, dt);
+        this.resolveOuterJarWallCollision(activeBall);
         this.resolveRimBounce(activeBall);
       }
 
@@ -748,6 +749,50 @@ export class SceneRoot {
     }
 
     return Math.max(moundHeightAtPoint, petalHeightAtPoint, bridgeHeightAtPoint);
+  }
+
+  private resolveOuterJarWallCollision(activeBall: ActiveBallVisual): void {
+    const y = activeBall.mesh.position.y;
+    const ballRadius = this.getBallRadius();
+    const jarHeight = this.getJarHeight();
+
+    if (y > jarHeight - ballRadius * 0.15 || y < ballRadius * 0.7) {
+      return;
+    }
+
+    const jarRadius = this.getJarRadius();
+    const targetDistance = jarRadius + ballRadius;
+
+    for (const jar of this.jars) {
+      const dx = activeBall.mesh.position.x - jar.position.x;
+      const dz = activeBall.mesh.position.z - jar.position.z;
+      const distanceXZ = Math.hypot(dx, dz);
+
+      if (distanceXZ >= targetDistance) {
+        continue;
+      }
+
+      const safeDistance = Math.max(0.0001, distanceXZ);
+      const fallbackDirectionX =
+        Math.abs(activeBall.velocityX) >= Math.abs(activeBall.velocityZ) ? 1 : 0;
+      const fallbackDirectionZ = fallbackDirectionX === 1 ? 0 : 1;
+      const nx = distanceXZ > 0.0001 ? dx / safeDistance : fallbackDirectionX;
+      const nz = distanceXZ > 0.0001 ? dz / safeDistance : fallbackDirectionZ;
+      const penetration = targetDistance - distanceXZ;
+
+      activeBall.mesh.position.x += nx * penetration;
+      activeBall.mesh.position.z += nz * penetration;
+
+      const radialVelocity =
+        activeBall.velocityX * nx + activeBall.velocityZ * nz;
+      if (radialVelocity < 0) {
+        this.registerBounce(-radialVelocity);
+        activeBall.velocityX -=
+          radialVelocity * (1 + this.wallRestitution) * nx;
+        activeBall.velocityZ -=
+          radialVelocity * (1 + this.wallRestitution) * nz;
+      }
+    }
   }
 
   private resolveRimBounce(activeBall: ActiveBallVisual): void {

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import { BALL_RADIUS } from '../../src/entities/Ball';
+import { JAR_HEIGHT, JAR_RADIUS } from '../../src/entities/Jar';
 import { SceneRoot } from '../../src/scene/SceneRoot';
 
 describe('SceneRoot', () => {
@@ -209,6 +210,56 @@ describe('SceneRoot', () => {
     }
 
     expect(settlements).toHaveLength(0);
+  });
+
+  it('pushes non-entered balls outward when they clip through a jar side wall', () => {
+    const host = document.createElement('div');
+    Object.defineProperty(host, 'clientWidth', { value: 800 });
+    Object.defineProperty(host, 'clientHeight', { value: 600 });
+
+    const root = new SceneRoot(host, 1);
+    root.spawnDropBall(0, 0, 11);
+
+    const ball = (
+      root as unknown as {
+        activeBalls: Array<{
+          mesh: { position: { x: number; y: number; z: number } };
+          velocityX: number;
+          velocityY: number;
+          velocityZ: number;
+          enteredJarIndex: number | null;
+        }>;
+      }
+    ).activeBalls[0];
+
+    if (!ball) {
+      throw new Error('Expected spawned ball');
+    }
+
+    ball.enteredJarIndex = null;
+    ball.mesh.position.x = JAR_RADIUS * 0.45;
+    ball.mesh.position.y = JAR_HEIGHT * 0.55;
+    ball.mesh.position.z = 0;
+    ball.velocityX = -1.1;
+    ball.velocityY = 0;
+    ball.velocityZ = 0;
+
+    root.update(1 / 60);
+
+    const jar = root.jars[0];
+    if (!jar) {
+      throw new Error('Expected jar');
+    }
+
+    const distanceFromJarCenter = Math.hypot(
+      ball.mesh.position.x - jar.position.x,
+      ball.mesh.position.z - jar.position.z
+    );
+
+    expect(distanceFromJarCenter).toBeGreaterThanOrEqual(
+      JAR_RADIUS + BALL_RADIUS - 0.001
+    );
+    expect(ball.velocityX).toBeGreaterThanOrEqual(0);
   });
 
   it('cleans up entered balls when jar lookup is invalid and applies top containment bounce', () => {
