@@ -16,8 +16,7 @@ import {
   createJarBridgeMesh,
   createJarPetalMesh,
   createPlayfieldBase,
-  createPlayfieldDimensions,
-  getBridgeCenterRadius
+  createPlayfieldDimensions
 } from '../entities/Playfield';
 import { JAR_HEIGHT, JAR_RADIUS, createJarMesh } from '../entities/Jar';
 import { applyCameraTuning, createCamera } from './camera';
@@ -670,17 +669,17 @@ export class SceneRoot {
       const safeDistance = Math.max(0.0001, distanceFromCenter);
       const dirX = jar.position.x / safeDistance;
       const dirZ = jar.position.z / safeDistance;
+      const bridgeAnchorRadius = this.getMoundRadius();
       const bridgeEndRadius = Math.max(
         jarRadius * 0.9,
         distanceFromCenter - petalRadius * 0.98
       );
-      const baseBridgeLength = Math.max(jarRadius * 0.9, bridgeEndRadius);
-      const bridgeLength = baseBridgeLength * this.platformArmLengthScale;
-      const bridgeStartRadius = bridgeEndRadius - bridgeLength;
-      const bridgeCenterRadius = getBridgeCenterRadius(
-        bridgeStartRadius,
-        bridgeLength
+      const baseBridgeLength = Math.max(
+        jarRadius * 0.35,
+        bridgeEndRadius - bridgeAnchorRadius
       );
+      const bridgeLength = baseBridgeLength * this.platformArmLengthScale;
+      const bridgeCenterRadius = bridgeAnchorRadius + bridgeLength * 0.5;
 
       bridge.scale.z = bridgeLength / this.playfieldDimensions.bridgeLength;
       bridge.position.x = dirX * bridgeCenterRadius;
