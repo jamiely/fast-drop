@@ -63,7 +63,7 @@ export const gameConfig: RuntimeConfig = {
     ballBounciness: 0.46,
     wallBounciness: 0.52,
     floorBounciness: 0.42,
-    centerDomeDiameterScale: 1,
+    centerDomeDiameterScale: 0.6,
     centerDomeSteepnessScale: 2,
     outerRingLedEnabled: 1,
     outerRingLedSpeed: 0.35,

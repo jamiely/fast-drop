@@ -16,7 +16,8 @@ import {
   createJarBridgeMesh,
   createJarPetalMesh,
   createPlayfieldBase,
-  createPlayfieldDimensions
+  createPlayfieldDimensions,
+  getBridgeCenterRadiusForMound
 } from '../entities/Playfield';
 import { JAR_HEIGHT, JAR_RADIUS, createJarMesh } from '../entities/Jar';
 import { applyCameraTuning, createCamera } from './camera';
@@ -648,7 +649,10 @@ export class SceneRoot {
   }
 
   private syncPlayfieldVisuals(): void {
-    const { bridgeCenterRadius } = this.playfieldDimensions;
+    const bridgeCenterRadius = getBridgeCenterRadiusForMound(
+      this.getMoundRadius(),
+      this.playfieldDimensions.bridgeLength
+    );
 
     for (const [index, jar] of this.jars.entries()) {
       jar.lookAt(0, jar.position.y, 0);
