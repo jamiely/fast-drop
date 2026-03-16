@@ -278,31 +278,32 @@ export const createDebugMenu = (
     </div>
     <div class="debug-menu__group">
       <h4>Gameplay tuning</h4>
-      <label>Ball bounce <span class="debug-menu__value" data-value-for="gameplay:ballBounciness">0.46</span><input type="range" min="0.1" max="0.9" step="0.01" value="0.46" data-gameplay="ballBounciness" /></label>
-      <label>Wall bounce <span class="debug-menu__value" data-value-for="gameplay:wallBounciness">0.52</span><input type="range" min="0.1" max="0.9" step="0.01" value="0.52" data-gameplay="wallBounciness" /></label>
-      <label>Floor bounce <span class="debug-menu__value" data-value-for="gameplay:floorBounciness">0.42</span><input type="range" min="0.1" max="0.9" step="0.01" value="0.42" data-gameplay="floorBounciness" /></label>
-      <label>Jar diameter <span class="debug-menu__value" data-value-for="gameplay:jarDiameterScale">1.50</span><input type="range" min="0.7" max="1.5" step="0.01" value="1.5" data-gameplay="jarDiameterScale" /></label>
-      <label>Jar height <span class="debug-menu__value" data-value-for="gameplay:jarHeightScale">1.40</span><input type="range" min="0.7" max="1.6" step="0.01" value="1.4" data-gameplay="jarHeightScale" /></label>
-      <label>Jar spin speed <span class="debug-menu__value" data-value-for="gameplay:ringAngularSpeed">0.70</span><input type="range" min="0" max="2.2" step="0.01" value="0.7" data-gameplay="ringAngularSpeed" /></label>
-      <label>Ball size <span class="debug-menu__value" data-value-for="gameplay:ballSizeScale">1.00</span><input type="range" min="0.6" max="1.8" step="0.01" value="1" data-gameplay="ballSizeScale" /></label>
-      <label>Center dome diameter <span class="debug-menu__value" data-value-for="gameplay:centerDomeDiameterScale">1.00</span><input type="range" min="0.55" max="1.8" step="0.01" value="1" data-gameplay="centerDomeDiameterScale" /></label>
-      <label>Ring diameter <span class="debug-menu__value" data-value-for="gameplay:outerRingDiameter">7.50</span><input type="range" min="3" max="8" step="0.1" value="7.5" data-gameplay="outerRingDiameter" /></label>
-      <label>Drop distance <span class="debug-menu__value" data-value-for="gameplay:dropPointZ">2.86</span><input type="range" min="1.2" max="3.2" step="0.05" value="2.86" data-gameplay="dropPointZ" /></label>
-      <label>Drop height <span class="debug-menu__value" data-value-for="gameplay:dropHeight">2.30</span><input type="range" min="1.2" max="4.2" step="0.05" value="2.3" data-gameplay="dropHeight" /></label>
-      <label>Drop cooldown (ms) <span class="debug-menu__value" data-value-for="gameplay:dropCooldownMs">80</span><input type="range" min="0" max="100" step="5" value="80" data-gameplay="dropCooldownMs" /></label>
+      <label>Ball bounce <span class="debug-menu__value" data-value-for="gameplay:ballBounciness">0.46</span><input type="range" min="0" max="1.2" step="0.01" value="0.46" data-gameplay="ballBounciness" /></label>
+      <label>Wall bounce <span class="debug-menu__value" data-value-for="gameplay:wallBounciness">0.52</span><input type="range" min="0" max="1.2" step="0.01" value="0.52" data-gameplay="wallBounciness" /></label>
+      <label>Floor bounce <span class="debug-menu__value" data-value-for="gameplay:floorBounciness">0.42</span><input type="range" min="0" max="1.2" step="0.01" value="0.42" data-gameplay="floorBounciness" /></label>
+      <label>Jar diameter <span class="debug-menu__value" data-value-for="gameplay:jarDiameterScale">1.50</span><input type="range" min="0.35" max="3.2" step="0.01" value="1.5" data-gameplay="jarDiameterScale" /></label>
+      <label>Jar height <span class="debug-menu__value" data-value-for="gameplay:jarHeightScale">1.40</span><input type="range" min="0.35" max="3.2" step="0.01" value="1.4" data-gameplay="jarHeightScale" /></label>
+      <label>Jar spin speed <span class="debug-menu__value" data-value-for="gameplay:ringAngularSpeed">0.70</span><input type="range" min="-3" max="3" step="0.01" value="0.7" data-gameplay="ringAngularSpeed" /></label>
+      <label>Ball size <span class="debug-menu__value" data-value-for="gameplay:ballSizeScale">1.00</span><input type="range" min="0.35" max="3.2" step="0.01" value="1" data-gameplay="ballSizeScale" /></label>
+      <label>Center dome diameter <span class="debug-menu__value" data-value-for="gameplay:centerDomeDiameterScale">1.00</span><input type="range" min="0.3" max="3.2" step="0.01" value="1" data-gameplay="centerDomeDiameterScale" /></label>
+      <label>Center dome steepness <span class="debug-menu__value" data-value-for="gameplay:centerDomeSteepnessScale">1.35</span><input type="range" min="0.35" max="3.5" step="0.01" value="1.35" data-gameplay="centerDomeSteepnessScale" /></label>
+      <label>Ring diameter <span class="debug-menu__value" data-value-for="gameplay:outerRingDiameter">7.50</span><input type="range" min="2" max="16" step="0.1" value="7.5" data-gameplay="outerRingDiameter" /></label>
+      <label>Drop distance <span class="debug-menu__value" data-value-for="gameplay:dropPointZ">2.86</span><input type="range" min="-6" max="6" step="0.05" value="2.86" data-gameplay="dropPointZ" /></label>
+      <label>Drop height <span class="debug-menu__value" data-value-for="gameplay:dropHeight">2.30</span><input type="range" min="0.4" max="8" step="0.05" value="2.3" data-gameplay="dropHeight" /></label>
+      <label>Drop cooldown (ms) <span class="debug-menu__value" data-value-for="gameplay:dropCooldownMs">80</span><input type="range" min="0" max="500" step="5" value="80" data-gameplay="dropCooldownMs" /></label>
       <label>Ring LED enabled <span class="debug-menu__value" data-value-for="gameplay:outerRingLedEnabled">1.00</span><input type="range" min="0" max="1" step="1" value="1" data-gameplay="outerRingLedEnabled" /></label>
-      <label>Ring LED speed <span class="debug-menu__value" data-value-for="gameplay:outerRingLedSpeed">0.35</span><input type="range" min="0.05" max="2.5" step="0.01" value="0.35" data-gameplay="outerRingLedSpeed" /></label>
-      <label>Ring LED heads <span class="debug-menu__value" data-value-for="gameplay:outerRingLedHeadCount">4.00</span><input type="range" min="1" max="12" step="1" value="4" data-gameplay="outerRingLedHeadCount" /></label>
-      <label>Ring LED trail <span class="debug-menu__value" data-value-for="gameplay:outerRingLedTrail">0.58</span><input type="range" min="0.05" max="1" step="0.01" value="0.58" data-gameplay="outerRingLedTrail" /></label>
+      <label>Ring LED speed <span class="debug-menu__value" data-value-for="gameplay:outerRingLedSpeed">0.35</span><input type="range" min="0" max="6" step="0.01" value="0.35" data-gameplay="outerRingLedSpeed" /></label>
+      <label>Ring LED heads <span class="debug-menu__value" data-value-for="gameplay:outerRingLedHeadCount">4.00</span><input type="range" min="1" max="24" step="1" value="4" data-gameplay="outerRingLedHeadCount" /></label>
+      <label>Ring LED trail <span class="debug-menu__value" data-value-for="gameplay:outerRingLedTrail">0.58</span><input type="range" min="0" max="1" step="0.01" value="0.58" data-gameplay="outerRingLedTrail" /></label>
       <label>Ring LED reverse chance <span class="debug-menu__value" data-value-for="gameplay:outerRingLedReverseChance">0.20</span><input type="range" min="0" max="1" step="0.01" value="0.2" data-gameplay="outerRingLedReverseChance" /></label>
     </div>
     <div class="debug-menu__group">
       <h4>Camera tuning</h4>
-      <label>Distance <span class="debug-menu__value" data-value-for="camera:distance">6.80</span><input type="range" min="4" max="16" step="0.1" value="6.8" data-camera="distance" /></label>
-      <label>Pitch <span class="debug-menu__value" data-value-for="camera:pitch">3.80</span><input type="range" min="2" max="6" step="0.1" value="3.8" data-camera="pitch" /></label>
-      <label>Yaw <span class="debug-menu__value" data-value-for="camera:yaw">0.00</span><input type="range" min="-2" max="2" step="0.1" value="0" data-camera="yaw" /></label>
-      <label>Pan X <span class="debug-menu__value" data-value-for="camera:panX">0.00</span><input type="range" min="-6" max="6" step="0.1" value="0" data-camera="panX" /></label>
-      <label>Target Y <span class="debug-menu__value" data-value-for="camera:targetY">0.60</span><input type="range" min="0" max="2" step="0.05" value="0.6" data-camera="targetY" /></label>
+      <label>Distance <span class="debug-menu__value" data-value-for="camera:distance">6.80</span><input type="range" min="2" max="30" step="0.1" value="6.8" data-camera="distance" /></label>
+      <label>Pitch <span class="debug-menu__value" data-value-for="camera:pitch">3.80</span><input type="range" min="-1" max="10" step="0.1" value="3.8" data-camera="pitch" /></label>
+      <label>Yaw <span class="debug-menu__value" data-value-for="camera:yaw">0.00</span><input type="range" min="-4" max="4" step="0.1" value="0" data-camera="yaw" /></label>
+      <label>Pan X <span class="debug-menu__value" data-value-for="camera:panX">0.00</span><input type="range" min="-14" max="14" step="0.1" value="0" data-camera="panX" /></label>
+      <label>Target Y <span class="debug-menu__value" data-value-for="camera:targetY">0.60</span><input type="range" min="-3" max="6" step="0.05" value="0.6" data-camera="targetY" /></label>
     </div>
     <div class="debug-menu__group">
       <h4>Lighting</h4>
@@ -330,10 +331,10 @@ export const createDebugMenu = (
       <label>Color <span class="debug-menu__value" data-value-for="light:color">#ffffff</span>
         <input type="color" value="#ffffff" data-light-input="color" />
       </label>
-      <label>Intensity <span class="debug-menu__value" data-value-for="light:intensity">1.00</span><input type="range" min="0" max="8" step="0.05" value="1" data-light-input="intensity" /></label>
-      <label>X <span class="debug-menu__value" data-value-for="light:x">0.00</span><input type="range" min="-8" max="8" step="0.1" value="0" data-light-input="x" /></label>
-      <label>Y <span class="debug-menu__value" data-value-for="light:y">5.00</span><input type="range" min="-2" max="10" step="0.1" value="5" data-light-input="y" /></label>
-      <label>Z <span class="debug-menu__value" data-value-for="light:z">0.00</span><input type="range" min="-8" max="8" step="0.1" value="0" data-light-input="z" /></label>
+      <label>Intensity <span class="debug-menu__value" data-value-for="light:intensity">1.00</span><input type="range" min="0" max="24" step="0.05" value="1" data-light-input="intensity" /></label>
+      <label>X <span class="debug-menu__value" data-value-for="light:x">0.00</span><input type="range" min="-24" max="24" step="0.1" value="0" data-light-input="x" /></label>
+      <label>Y <span class="debug-menu__value" data-value-for="light:y">5.00</span><input type="range" min="-10" max="24" step="0.1" value="5" data-light-input="y" /></label>
+      <label>Z <span class="debug-menu__value" data-value-for="light:z">0.00</span><input type="range" min="-24" max="24" step="0.1" value="0" data-light-input="z" /></label>
     </div>
     <div class="debug-menu__group">
       <h4>Current values</h4>

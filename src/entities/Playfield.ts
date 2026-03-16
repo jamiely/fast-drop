@@ -71,7 +71,7 @@ export const createPlayfieldDimensions = (
     jarOrbitRadius * 0.82,
     jarOrbitRadius - jarRadius * 1.15
   );
-  const moundHeight = jarOrbitRadius * 0.11;
+  const moundHeight = jarOrbitRadius * 0.16;
 
   const petalRadius = jarRadius * 1.15;
   const petalThickness = jarRadius * 2 * 0.25;

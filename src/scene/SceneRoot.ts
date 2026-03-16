@@ -106,6 +106,8 @@ export class SceneRoot {
   private wallRestitution = 0.52;
   private floorRestitution = 0.42;
   private centerDomeDiameterScale = 1;
+  private centerDomeSteepnessScale = 1;
+  private centerDomeAppliedDiameterScale = 1;
   private outerRingLedEnabled = true;
   private outerRingLedSpeed = 0.35;
   private outerRingLedHeadCount = 4;
@@ -249,7 +251,13 @@ export class SceneRoot {
     }
 
     if (key === 'centerDomeDiameterScale') {
-      this.centerDomeDiameterScale = Math.max(0.55, Math.min(1.8, value));
+      this.centerDomeDiameterScale = Math.max(0.3, Math.min(3.2, value));
+      this.updateCenterDomeScale();
+      return;
+    }
+
+    if (key === 'centerDomeSteepnessScale') {
+      this.centerDomeSteepnessScale = Math.max(0.35, Math.min(3.5, value));
       this.updateCenterDomeScale();
       return;
     }
@@ -276,35 +284,35 @@ export class SceneRoot {
     }
 
     if (key === 'jarDiameterScale') {
-      this.jarDiameterScale = Math.max(0.6, value);
+      this.jarDiameterScale = Math.max(0.35, value);
       this.syncJarScale();
       return;
     }
 
     if (key === 'jarHeightScale') {
-      this.jarHeightScale = Math.max(0.6, value);
+      this.jarHeightScale = Math.max(0.35, value);
       this.syncJarScale();
       return;
     }
 
     if (key === 'ballSizeScale') {
-      this.ballSizeScale = Math.max(0.55, Math.min(1.9, value));
+      this.ballSizeScale = Math.max(0.35, Math.min(3.2, value));
       this.syncBallScale();
       return;
     }
 
     if (key === 'ballBounciness') {
-      this.rimBounce = Math.max(0.05, Math.min(0.95, value));
+      this.rimBounce = Math.max(0, Math.min(1.2, value));
       return;
     }
 
     if (key === 'wallBounciness') {
-      this.wallRestitution = Math.max(0.05, Math.min(0.95, value));
+      this.wallRestitution = Math.max(0, Math.min(1.2, value));
       return;
     }
 
     if (key === 'floorBounciness') {
-      this.floorRestitution = Math.max(0.05, Math.min(0.95, value));
+      this.floorRestitution = Math.max(0, Math.min(1.2, value));
       return;
     }
 
@@ -314,12 +322,12 @@ export class SceneRoot {
     }
 
     if (key === 'outerRingLedSpeed') {
-      this.outerRingLedSpeed = Math.max(0.05, Math.min(2.5, value));
+      this.outerRingLedSpeed = Math.max(0, Math.min(6, value));
       return;
     }
 
     if (key === 'outerRingLedHeadCount') {
-      this.outerRingLedHeadCount = Math.max(1, Math.min(12, Math.round(value)));
+      this.outerRingLedHeadCount = Math.max(1, Math.min(24, Math.round(value)));
       return;
     }
 
@@ -605,6 +613,14 @@ export class SceneRoot {
     return this.getJarHeight() + this.getBallRadius() * CONTAINMENT_TOP_FACTOR;
   }
 
+  private getMoundRadius(): number {
+    return this.playfieldDimensions.moundRadius * this.centerDomeAppliedDiameterScale;
+  }
+
+  private getMoundHeight(): number {
+    return this.playfieldDimensions.moundHeight * this.centerDomeSteepnessScale;
+  }
+
   private updateCenterDomeScale(): void {
     const centerClearance = 0.06;
     const maxRadiusBeforeJarContact = Math.max(
@@ -615,12 +631,16 @@ export class SceneRoot {
       0.2,
       maxRadiusBeforeJarContact / Math.max(0.001, this.playfieldDimensions.moundRadius)
     );
-    const appliedScale = Math.min(
+    this.centerDomeAppliedDiameterScale = Math.min(
       this.centerDomeDiameterScale,
       maxScaleFromJarClearance
     );
 
-    this.moundMesh.scale.set(appliedScale, 1, appliedScale);
+    this.moundMesh.scale.set(
+      this.centerDomeAppliedDiameterScale,
+      this.centerDomeSteepnessScale,
+      this.centerDomeAppliedDiameterScale
+    );
   }
 
   private syncPlayfieldVisuals(): void {
@@ -685,7 +705,8 @@ export class SceneRoot {
       activeBall.mesh.position.x,
       activeBall.mesh.position.z
     );
-    const { moundRadius, moundHeight } = this.playfieldDimensions;
+    const moundRadius = this.getMoundRadius();
+    const moundHeight = this.getMoundHeight();
     if (radiusFromCenter >= moundRadius) {
       return;
     }
@@ -701,14 +722,11 @@ export class SceneRoot {
   }
 
   private getSupportHeightAt(x: number, z: number): number {
-    const {
-      moundRadius,
-      moundHeight,
-      petalTopY,
-      petalRadius,
-      bridgeWidth,
-      bridgeLength
-    } = this.playfieldDimensions;
+    const { petalTopY, petalRadius, bridgeWidth, bridgeLength } =
+      this.playfieldDimensions;
+
+    const moundRadius = this.getMoundRadius();
+    const moundHeight = this.getMoundHeight();
 
     const radiusFromCenter = Math.hypot(x, z);
     const moundHeightAtPoint =

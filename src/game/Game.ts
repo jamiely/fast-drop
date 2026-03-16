@@ -76,6 +76,14 @@ export class Game {
       'jarHeightScale',
       this.runtimeConfig.tuning.jarHeightScale
     );
+    this.sceneRoot.applyGameplayTuning(
+      'centerDomeDiameterScale',
+      this.runtimeConfig.tuning.centerDomeDiameterScale
+    );
+    this.sceneRoot.applyGameplayTuning(
+      'centerDomeSteepnessScale',
+      this.runtimeConfig.tuning.centerDomeSteepnessScale
+    );
     this.uiSystem = new UISystem(host);
     this.scoringSystem = new ScoringSystem();
     this.audioSystem = new AudioSystem();

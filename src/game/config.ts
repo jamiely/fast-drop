@@ -13,6 +13,7 @@ export interface GameplayTuning {
   wallBounciness: number;
   floorBounciness: number;
   centerDomeDiameterScale: number;
+  centerDomeSteepnessScale: number;
   outerRingLedEnabled: number;
   outerRingLedSpeed: number;
   outerRingLedHeadCount: number;
@@ -63,6 +64,7 @@ export const gameConfig: RuntimeConfig = {
     wallBounciness: 0.52,
     floorBounciness: 0.42,
     centerDomeDiameterScale: 1,
+    centerDomeSteepnessScale: 1.35,
     outerRingLedEnabled: 1,
     outerRingLedSpeed: 0.35,
     outerRingLedHeadCount: 4,
