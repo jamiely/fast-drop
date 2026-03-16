@@ -68,6 +68,14 @@ export class Game {
       'outerRingDiameter',
       this.runtimeConfig.tuning.outerRingDiameter
     );
+    this.sceneRoot.applyGameplayTuning(
+      'jarDiameterScale',
+      this.runtimeConfig.tuning.jarDiameterScale
+    );
+    this.sceneRoot.applyGameplayTuning(
+      'jarHeightScale',
+      this.runtimeConfig.tuning.jarHeightScale
+    );
     this.uiSystem = new UISystem(host);
     this.scoringSystem = new ScoringSystem();
     this.audioSystem = new AudioSystem();
