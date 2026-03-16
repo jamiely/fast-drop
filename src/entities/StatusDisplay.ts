@@ -91,33 +91,41 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
     context.fillStyle = '#16326a';
     context.font = 'bold 58px Arial';
     context.textAlign = 'center';
-    context.fillText('TIME', canvas.width * 0.31, 86);
+    context.fillText('TIME', canvas.width * 0.31, 104);
     context.font = 'bold 40px Arial';
-    context.fillText('REMAINING', canvas.width * 0.31, 126);
+    context.fillText('REMAINING', canvas.width * 0.31, 146);
 
     context.font = 'bold 58px Arial';
-    context.fillText('BALLS', canvas.width * 0.75, 86);
+    context.fillText('BALLS', canvas.width * 0.75, 104);
     context.font = 'bold 40px Arial';
-    context.fillText('REMAINING', canvas.width * 0.75, 126);
+    context.fillText('REMAINING', canvas.width * 0.75, 146);
 
     const timerX = canvas.width * 0.29;
-    const timerY = canvas.height * 0.3 + 120;
+    const timerY = canvas.height * 0.3 + 142;
     const timerRadius = 146;
 
     context.lineWidth = 34;
     context.lineCap = 'round';
 
-    context.strokeStyle = '#f0525f';
+    const startAngle = -Math.PI * 0.5;
+    const elapsedArc = Math.PI * 2 * elapsed;
+    context.strokeStyle = '#2edd76';
     context.beginPath();
     context.arc(timerX, timerY, timerRadius, 0, Math.PI * 2);
     context.stroke();
 
-    const startAngle = -Math.PI * 0.5;
-    const greenArc = Math.PI * 2 * progress;
-    context.strokeStyle = '#2edd76';
-    context.beginPath();
-    context.arc(timerX, timerY, timerRadius, startAngle, startAngle + greenArc);
-    context.stroke();
+    if (elapsedArc > 0.001) {
+      context.strokeStyle = '#f0525f';
+      context.beginPath();
+      context.arc(
+        timerX,
+        timerY,
+        timerRadius,
+        startAngle,
+        startAngle + elapsedArc
+      );
+      context.stroke();
+    }
 
     context.fillStyle = '#e0fbff';
     context.beginPath();

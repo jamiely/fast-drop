@@ -85,11 +85,11 @@ export const gameConfig: RuntimeConfig = {
     outerRingLedReverseChance: 0.2
   },
   camera: {
-    distance: 6.8,
-    pitch: 3.8,
+    distance: 6,
+    pitch: 2.1,
     yaw: 0,
     panX: 0,
-    targetY: 0.6,
+    targetY: 1.45,
     targetZ: 2.2
   }
 };

@@ -9,8 +9,8 @@ describe('scene helpers', () => {
 
     expect(camera.fov).toBe(55);
     expect(camera.aspect).toBeCloseTo(16 / 9);
-    expect(camera.position.y).toBeCloseTo(3.8);
-    expect(camera.position.z).toBeCloseTo(6.8);
+    expect(camera.position.y).toBeCloseTo(2.1);
+    expect(camera.position.z).toBeCloseTo(6);
   });
 
   it('adds ambient and directional lighting to the scene', () => {

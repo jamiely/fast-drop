@@ -305,11 +305,11 @@ export const createDebugMenu = (
     </div>
     <div class="debug-menu__group">
       <h4>Camera tuning</h4>
-      <label>Distance <span class="debug-menu__value" data-value-for="camera:distance">6.80</span><input type="range" min="2" max="30" step="0.1" value="6.8" data-camera="distance" /></label>
-      <label>Pitch <span class="debug-menu__value" data-value-for="camera:pitch">3.80</span><input type="range" min="-1" max="10" step="0.1" value="3.8" data-camera="pitch" /></label>
+      <label>Distance <span class="debug-menu__value" data-value-for="camera:distance">6.00</span><input type="range" min="2" max="30" step="0.1" value="6" data-camera="distance" /></label>
+      <label>Pitch <span class="debug-menu__value" data-value-for="camera:pitch">2.10</span><input type="range" min="-1" max="10" step="0.1" value="2.1" data-camera="pitch" /></label>
       <label>Yaw <span class="debug-menu__value" data-value-for="camera:yaw">0.00</span><input type="range" min="-4" max="4" step="0.1" value="0" data-camera="yaw" /></label>
       <label>Pan X <span class="debug-menu__value" data-value-for="camera:panX">0.00</span><input type="range" min="-14" max="14" step="0.1" value="0" data-camera="panX" /></label>
-      <label>Target Y <span class="debug-menu__value" data-value-for="camera:targetY">0.60</span><input type="range" min="-3" max="6" step="0.05" value="0.6" data-camera="targetY" /></label>
+      <label>Target Y <span class="debug-menu__value" data-value-for="camera:targetY">1.45</span><input type="range" min="-3" max="6" step="0.05" value="1.45" data-camera="targetY" /></label>
     </div>
     <div class="debug-menu__group">
       <h4>Lighting</h4>
