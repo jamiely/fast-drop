@@ -210,6 +210,17 @@ export class Game {
   }
 
   private applyGameplayTuning(key: keyof GameplayTuning, value: number): void {
+    const applyDropPointToRing = (): void => {
+      const linkedDropPoint = this.projectDropPointToRing(
+        this.runtimeConfig.tuning.dropPointX,
+        this.runtimeConfig.tuning.dropPointZ
+      );
+      this.runtimeConfig.tuning.dropPointX = linkedDropPoint.x;
+      this.runtimeConfig.tuning.dropPointZ = linkedDropPoint.z;
+      this.sceneRoot.applyGameplayTuning('dropPointX', linkedDropPoint.x);
+      this.sceneRoot.applyGameplayTuning('dropPointZ', linkedDropPoint.z);
+    };
+
     this.runtimeConfig.tuning[key] = value;
     this.sceneRoot.applyGameplayTuning(key, value);
 
@@ -219,6 +230,12 @@ export class Game {
 
     if (key === 'ringRadius') {
       this.orbitSystem.setRadius(value);
+      applyDropPointToRing();
+      return;
+    }
+
+    if (key === 'dropPointX' || key === 'dropPointZ') {
+      applyDropPointToRing();
       return;
     }
 
@@ -229,8 +246,25 @@ export class Game {
     ) {
       const nextOrbitRadius = this.sceneRoot.getRecommendedOrbitRadius();
       this.runtimeConfig.tuning.ringRadius = nextOrbitRadius;
+      this.sceneRoot.applyGameplayTuning('ringRadius', nextOrbitRadius);
       this.orbitSystem.setRadius(nextOrbitRadius);
+      applyDropPointToRing();
     }
+  }
+
+  private projectDropPointToRing(x: number, z: number): { x: number; z: number } {
+    const radius = Math.max(0.5, this.runtimeConfig.tuning.ringRadius);
+    const length = Math.hypot(x, z);
+
+    if (length <= 0.0001) {
+      return { x: 0, z: radius };
+    }
+
+    const scale = radius / length;
+    return {
+      x: x * scale,
+      z: z * scale
+    };
   }
 
   private savePreset(): void {

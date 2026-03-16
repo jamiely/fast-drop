@@ -7,6 +7,7 @@ const gameMocks = vi.hoisted(() => {
   const audioPlay = vi.fn();
   const orbitUpdate = vi.fn();
   const orbitSetPaused = vi.fn();
+  const orbitSetRadius = vi.fn();
   const sceneResize = vi.fn();
   const sceneRender = vi.fn();
   const sceneSpawnDropBall = vi.fn();
@@ -36,6 +37,9 @@ const gameMocks = vi.hoisted(() => {
     stepFrames: (frames: number) => void;
     restartRound?: () => void;
   } | null = null;
+  let debugControls: {
+    applyGameplayTuning: (key: string, value: number) => void;
+  } | null = null;
 
   return {
     uiRender,
@@ -43,6 +47,7 @@ const gameMocks = vi.hoisted(() => {
     audioPlay,
     orbitUpdate,
     orbitSetPaused,
+    orbitSetRadius,
     sceneResize,
     sceneRender,
     sceneSpawnDropBall,
@@ -91,6 +96,19 @@ const gameMocks = vi.hoisted(() => {
         throw new Error('Missing test bridge');
       }
       return bridge;
+    },
+    setDebugControls: (controls: {
+      applyGameplayTuning: (key: string, value: number) => void;
+    }): void => {
+      debugControls = controls;
+    },
+    getDebugControls: (): {
+      applyGameplayTuning: (key: string, value: number) => void;
+    } => {
+      if (!debugControls) {
+        throw new Error('Missing debug controls');
+      }
+      return debugControls;
     }
   };
 });
@@ -149,11 +167,11 @@ vi.mock('../../src/systems/OrbitSystem', () => ({
   OrbitSystem: class {
     public update = gameMocks.orbitUpdate;
     public setPaused = gameMocks.orbitSetPaused;
+    public setRadius = gameMocks.orbitSetRadius;
     public togglePause(): boolean {
       return false;
     }
     public setBaseSpeed(): void {}
-    public setRadius(): void {}
     public setSpeedMultiplier(): void {}
   }
 }));
@@ -177,7 +195,16 @@ vi.mock('../../src/physics/PhysicsWorld', () => ({
 }));
 
 vi.mock('../../src/ui/debugMenu', () => ({
-  createDebugMenu: gameMocks.createDebugMenu
+  createDebugMenu: (
+    host: HTMLElement,
+    debugEnabled: boolean,
+    controls: {
+      applyGameplayTuning: (key: string, value: number) => void;
+    }
+  ) => {
+    gameMocks.createDebugMenu(host, debugEnabled, controls);
+    gameMocks.setDebugControls(controls);
+  }
 }));
 
 vi.mock('../../src/testhooks/testBridge', () => ({
@@ -215,6 +242,50 @@ describe('Game', () => {
       true,
       expect.any(Object)
     );
+  });
+
+  it('keeps drop point linked to jar orbit radius', async () => {
+    window.history.pushState({}, '', '/?debug=1');
+    const { Game } = await import('../../src/game/Game');
+
+    const game = new Game(document.createElement('div'));
+    await game.init();
+
+    gameMocks.sceneApplyGameplayTuning.mockClear();
+    gameMocks.orbitSetRadius.mockClear();
+
+    gameMocks
+      .getDebugControls()
+      .applyGameplayTuning('dropPointX', 1.43);
+
+    const linkedDropXCall = gameMocks.sceneApplyGameplayTuning.mock.calls
+      .slice()
+      .reverse()
+      .find(([key]) => key === 'dropPointX');
+    const linkedDropZCall = gameMocks.sceneApplyGameplayTuning.mock.calls
+      .slice()
+      .reverse()
+      .find(([key]) => key === 'dropPointZ');
+
+    expect(linkedDropXCall?.[1]).toBeCloseTo(1.2790, 4);
+    expect(linkedDropZCall?.[1]).toBeCloseTo(2.5581, 4);
+
+    gameMocks
+      .getDebugControls()
+      .applyGameplayTuning('ringRadius', 4);
+
+    const relinkedDropXCall = gameMocks.sceneApplyGameplayTuning.mock.calls
+      .slice()
+      .reverse()
+      .find(([key]) => key === 'dropPointX');
+    const relinkedDropZCall = gameMocks.sceneApplyGameplayTuning.mock.calls
+      .slice()
+      .reverse()
+      .find(([key]) => key === 'dropPointZ');
+
+    expect(gameMocks.orbitSetRadius).toHaveBeenCalledWith(4);
+    expect(relinkedDropXCall?.[1]).toBeCloseTo(1.7889, 4);
+    expect(relinkedDropZCall?.[1]).toBeCloseTo(3.5777, 4);
   });
 
   it('initializes systems and reacts to drops and step bridge calls', async () => {
