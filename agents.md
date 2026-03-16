@@ -2,6 +2,7 @@
 
 - Commit after each change.
 - Push to remote after committing (when remote access is available).
+- Push frequently during active work (at least after each logical checkpoint) so remote stays current.
 - Commit often in small, logical checkpoints (prefer multiple small commits over one large commit).
 - If work spans multiple tasks, commit at least after each completed sub-task before moving on.
 - Before each commit, consider whether `README.md` or `docs/` should be updated.
