@@ -121,8 +121,9 @@ export class SceneRoot {
   private outerRingLedTrail = 0.58;
   private outerRingLedReverseChance = 0.2;
   private statusDisplayX = 0;
-  private statusDisplayY = 1.45;
-  private statusDisplayZ = 1.2;
+  private statusDisplayY = 2.25;
+  private statusDisplayZ = 2.2;
+  private statusDisplayScale = 1;
   private readonly shaderEffectsEnabled: boolean;
 
   public constructor(
@@ -322,6 +323,12 @@ export class SceneRoot {
 
     if (key === 'statusDisplayZ') {
       this.statusDisplayZ = value;
+      this.syncStatusDisplayPlacement();
+      return;
+    }
+
+    if (key === 'statusDisplayScale') {
+      this.statusDisplayScale = Math.max(0.2, Math.min(3, value));
       this.syncStatusDisplayPlacement();
       return;
     }
@@ -584,6 +591,7 @@ export class SceneRoot {
       this.statusDisplayY,
       this.statusDisplayZ
     );
+    this.statusDisplay.setScale(this.statusDisplayScale);
   }
 
   private syncJarScale(): void {

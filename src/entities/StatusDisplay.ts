@@ -23,6 +23,7 @@ export interface StatusDisplayData {
 export interface StatusDisplayVisual {
   group: Group;
   setPlacement: (x: number, y: number, z: number) => void;
+  setScale: (value: number) => void;
   updateData: (data: StatusDisplayData) => void;
 }
 
@@ -210,6 +211,9 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
     group,
     setPlacement: (x: number, y: number, z: number) => {
       group.position.set(x, y, z);
+    },
+    setScale: (value: number) => {
+      group.scale.setScalar(Math.max(0.2, value));
     },
     updateData: (data: StatusDisplayData) => {
       const signature = [

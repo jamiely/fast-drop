@@ -8,6 +8,7 @@ export interface GameplayTuning {
   statusDisplayX: number;
   statusDisplayY: number;
   statusDisplayZ: number;
+  statusDisplayScale: number;
   dropCooldownMs: number;
   jarDiameterScale: number;
   jarHeightScale: number;
@@ -63,8 +64,9 @@ export const gameConfig: RuntimeConfig = {
     dropPointZ: 2.2 + DEFAULT_JAR_DIAMETER,
     dropHeight: 2.5,
     statusDisplayX: 0,
-    statusDisplayY: 1.45,
-    statusDisplayZ: 1.2,
+    statusDisplayY: 2.25,
+    statusDisplayZ: 2.2,
+    statusDisplayScale: 1,
     dropCooldownMs: 80,
     jarDiameterScale: 1.5,
     jarHeightScale: 1.4,

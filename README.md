@@ -46,7 +46,7 @@ Storybook stories currently included:
   - pause/resume + step
   - score/time mutators
   - speed controls
-  - gameplay tuning (including jar spin speed, center dome diameter/steepness/height, ring diameter, ball size, drop height, screen display X/Y/Z placement, drop cooldown, ring LED enable/speed/head count/trail/reverse chance)
+  - gameplay tuning (including jar spin speed, center dome diameter/steepness/height, ring diameter, ball size, drop height, screen display X/Y/Z placement + size, drop cooldown, ring LED enable/speed/head count/trail/reverse chance)
   - camera tuning (distance/pitch/yaw + lateral pan X, with wider zoom-out range)
   - lighting rig tuning (move lights, change light type, toggle each light on/off, add lights, and show light-source markers while debugging)
   - light legend showing each light id/name plus marker mapping (`●` source color, `◆` target)
