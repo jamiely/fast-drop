@@ -97,11 +97,11 @@ export class SceneRoot {
   private outerRingLedDirection = 1;
   private outerRingLedReverseTimer = 0;
 
-  private dropPoint = { x: 0, z: 2.2, y: 2.3 };
+  private dropPoint = { x: 0, z: 2.2, y: 2.5 };
   private orbitRadius = 2.2;
   private jarDiameterScale = 1;
   private jarHeightScale = 1;
-  private ballSizeScale = 1;
+  private ballSizeScale = 2;
   private rimBounce = 0.46;
   private wallRestitution = 0.52;
   private floorRestitution = 0.42;
@@ -510,6 +510,19 @@ export class SceneRoot {
     this.renderer?.render(this.scene, this.camera);
   }
 
+  public getRecommendedOrbitRadius(): number {
+    const bridgeAnchorRadius = this.getMoundRadius();
+    const jarRadius = this.getJarRadius();
+    const petalRadius = this.playfieldDimensions.petalRadius * this.jarDiameterScale;
+    const baseArmLength = Math.max(jarRadius * 0.35, this.playfieldDimensions.bridgeLength);
+    const targetArmLength = baseArmLength * this.platformArmLengthScale;
+
+    return Math.max(
+      0.5,
+      bridgeAnchorRadius + targetArmLength + petalRadius * 0.98
+    );
+  }
+
   private syncJarScale(): void {
     for (const jar of this.jars) {
       jar.scale.set(
@@ -674,11 +687,10 @@ export class SceneRoot {
         jarRadius * 0.9,
         distanceFromCenter - petalRadius * 0.98
       );
-      const baseBridgeLength = Math.max(
+      const bridgeLength = Math.max(
         jarRadius * 0.35,
         bridgeEndRadius - bridgeAnchorRadius
       );
-      const bridgeLength = baseBridgeLength * this.platformArmLengthScale;
       const bridgeCenterRadius = bridgeAnchorRadius + bridgeLength * 0.5;
 
       bridge.scale.z = bridgeLength / this.playfieldDimensions.bridgeLength;

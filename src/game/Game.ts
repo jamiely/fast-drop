@@ -64,30 +64,6 @@ export class Game {
       this.debugEnabled,
       this.shaderEffectsEnabled
     );
-    this.sceneRoot.applyGameplayTuning(
-      'outerRingDiameter',
-      this.runtimeConfig.tuning.outerRingDiameter
-    );
-    this.sceneRoot.applyGameplayTuning(
-      'jarDiameterScale',
-      this.runtimeConfig.tuning.jarDiameterScale
-    );
-    this.sceneRoot.applyGameplayTuning(
-      'jarHeightScale',
-      this.runtimeConfig.tuning.jarHeightScale
-    );
-    this.sceneRoot.applyGameplayTuning(
-      'centerDomeDiameterScale',
-      this.runtimeConfig.tuning.centerDomeDiameterScale
-    );
-    this.sceneRoot.applyGameplayTuning(
-      'centerDomeSteepnessScale',
-      this.runtimeConfig.tuning.centerDomeSteepnessScale
-    );
-    this.sceneRoot.applyGameplayTuning(
-      'platformArmLengthScale',
-      this.runtimeConfig.tuning.platformArmLengthScale
-    );
     this.uiSystem = new UISystem(host);
     this.scoringSystem = new ScoringSystem();
     this.audioSystem = new AudioSystem();
@@ -96,6 +72,10 @@ export class Game {
       this.runtimeConfig.tuning.ringRadius,
       this.runtimeConfig.tuning.ringAngularSpeed
     );
+
+    for (const [key, value] of Object.entries(this.runtimeConfig.tuning)) {
+      this.applyGameplayTuning(key as keyof GameplayTuning, Number(value));
+    }
 
     createDebugMenu(host, this.debugEnabled, {
       togglePause: () => {
@@ -239,6 +219,17 @@ export class Game {
 
     if (key === 'ringRadius') {
       this.orbitSystem.setRadius(value);
+      return;
+    }
+
+    if (
+      key === 'platformArmLengthScale' ||
+      key === 'centerDomeDiameterScale' ||
+      key === 'jarDiameterScale'
+    ) {
+      const nextOrbitRadius = this.sceneRoot.getRecommendedOrbitRadius();
+      this.runtimeConfig.tuning.ringRadius = nextOrbitRadius;
+      this.orbitSystem.setRadius(nextOrbitRadius);
     }
   }
 

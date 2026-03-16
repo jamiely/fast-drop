@@ -112,6 +112,9 @@ vi.mock('../../src/scene/SceneRoot', () => ({
     public readonly consumeBounceCount = gameMocks.sceneConsumeBounceCount;
     public readonly hasUnresolvedBalls = gameMocks.sceneHasUnresolvedBalls;
     public readonly resetRound = gameMocks.sceneResetRound;
+    public getRecommendedOrbitRadius(): number {
+      return 2.86;
+    }
   }
 }));
 
