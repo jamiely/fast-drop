@@ -107,6 +107,7 @@ export class SceneRoot {
   private floorRestitution = 0.42;
   private centerDomeDiameterScale = 1;
   private centerDomeSteepnessScale = 1;
+  private centerDomeHeightOffset = 0;
   private centerDomeAppliedDiameterScale = 1;
   private platformArmLengthScale = 0.3;
   private outerRingLedEnabled = true;
@@ -263,8 +264,14 @@ export class SceneRoot {
       return;
     }
 
+    if (key === 'centerDomeHeightOffset') {
+      this.centerDomeHeightOffset = Math.max(-1.2, Math.min(1.2, value));
+      this.updateCenterDomeScale();
+      return;
+    }
+
     if (key === 'platformArmLengthScale') {
-      this.platformArmLengthScale = Math.max(0.3, Math.min(2.4, value));
+      this.platformArmLengthScale = Math.max(0.05, Math.min(2.4, value));
       return;
     }
 
@@ -516,9 +523,11 @@ export class SceneRoot {
       0,
       moundRadius - this.getBridgeDomeIntersectionDepth()
     );
-    const jarRadius = this.getJarRadius();
     const petalRadius = this.playfieldDimensions.petalRadius * this.jarDiameterScale;
-    const baseArmLength = Math.max(jarRadius * 0.35, this.playfieldDimensions.bridgeLength);
+    const baseArmLength = Math.max(
+      this.getMinimumBridgeLength(),
+      this.playfieldDimensions.bridgeLength
+    );
     const targetArmLength = baseArmLength * this.platformArmLengthScale;
 
     return Math.max(
@@ -648,10 +657,18 @@ export class SceneRoot {
     return this.playfieldDimensions.moundHeight * this.centerDomeSteepnessScale;
   }
 
+  private getMoundYOffset(): number {
+    return this.centerDomeHeightOffset;
+  }
+
   private getBridgeDomeIntersectionDepth(): number {
     const moundRadius = this.getMoundRadius();
     const preferredDepth = Math.max(0.05, moundRadius * 0.12);
     return Math.min(preferredDepth, moundRadius * 0.45);
+  }
+
+  private getMinimumBridgeLength(): number {
+    return Math.max(0.03, this.getJarRadius() * 0.08);
   }
 
   private updateCenterDomeScale(): void {
@@ -674,6 +691,7 @@ export class SceneRoot {
       this.centerDomeSteepnessScale,
       this.centerDomeAppliedDiameterScale
     );
+    this.moundMesh.position.y = this.getMoundHeight() * 0.5 + this.getMoundYOffset();
   }
 
   private syncPlayfieldVisuals(): void {
@@ -701,7 +719,7 @@ export class SceneRoot {
         distanceFromCenter - petalRadius * 0.98
       );
       const bridgeLength = Math.max(
-        jarRadius * 0.35,
+        this.getMinimumBridgeLength(),
         bridgeEndRadius - bridgeAnchorRadius
       );
       const bridgeCenterRadius = bridgeAnchorRadius + bridgeLength * 0.5;
@@ -775,11 +793,13 @@ export class SceneRoot {
 
     const moundRadius = this.getMoundRadius();
     const moundHeight = this.getMoundHeight();
+    const moundYOffset = this.getMoundYOffset();
 
     const radiusFromCenter = Math.hypot(x, z);
     const moundHeightAtPoint =
       radiusFromCenter <= moundRadius
-        ? Math.max(0, moundHeight * (1 - radiusFromCenter / moundRadius))
+        ? Math.max(0, moundHeight * (1 - radiusFromCenter / moundRadius)) +
+          moundYOffset
         : Number.NEGATIVE_INFINITY;
 
     let petalHeightAtPoint = Number.NEGATIVE_INFINITY;

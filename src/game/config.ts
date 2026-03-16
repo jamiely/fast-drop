@@ -14,6 +14,7 @@ export interface GameplayTuning {
   floorBounciness: number;
   centerDomeDiameterScale: number;
   centerDomeSteepnessScale: number;
+  centerDomeHeightOffset: number;
   platformArmLengthScale: number;
   outerRingLedEnabled: number;
   outerRingLedSpeed: number;
@@ -67,6 +68,7 @@ export const gameConfig: RuntimeConfig = {
     floorBounciness: 0.42,
     centerDomeDiameterScale: 0.6,
     centerDomeSteepnessScale: 2,
+    centerDomeHeightOffset: 0,
     platformArmLengthScale: 0.3,
     outerRingLedEnabled: 1,
     outerRingLedSpeed: 0.35,
