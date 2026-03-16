@@ -108,7 +108,7 @@ export class SceneRoot {
   private centerDomeDiameterScale = 1;
   private centerDomeSteepnessScale = 1;
   private centerDomeAppliedDiameterScale = 1;
-  private platformArmLengthScale = 1;
+  private platformArmLengthScale = 0.3;
   private outerRingLedEnabled = true;
   private outerRingLedSpeed = 0.35;
   private outerRingLedHeadCount = 4;
@@ -511,7 +511,11 @@ export class SceneRoot {
   }
 
   public getRecommendedOrbitRadius(): number {
-    const bridgeAnchorRadius = this.getMoundRadius();
+    const moundRadius = this.getMoundRadius();
+    const bridgeAnchorRadius = Math.max(
+      0,
+      moundRadius - this.getBridgeDomeIntersectionDepth()
+    );
     const jarRadius = this.getJarRadius();
     const petalRadius = this.playfieldDimensions.petalRadius * this.jarDiameterScale;
     const baseArmLength = Math.max(jarRadius * 0.35, this.playfieldDimensions.bridgeLength);
@@ -644,6 +648,12 @@ export class SceneRoot {
     return this.playfieldDimensions.moundHeight * this.centerDomeSteepnessScale;
   }
 
+  private getBridgeDomeIntersectionDepth(): number {
+    const moundRadius = this.getMoundRadius();
+    const preferredDepth = Math.max(0.05, moundRadius * 0.12);
+    return Math.min(preferredDepth, moundRadius * 0.45);
+  }
+
   private updateCenterDomeScale(): void {
     const centerClearance = 0.06;
     const maxRadiusBeforeJarContact = Math.max(
@@ -682,7 +692,10 @@ export class SceneRoot {
       const safeDistance = Math.max(0.0001, distanceFromCenter);
       const dirX = jar.position.x / safeDistance;
       const dirZ = jar.position.z / safeDistance;
-      const bridgeAnchorRadius = this.getMoundRadius();
+      const bridgeAnchorRadius = Math.max(
+        0,
+        this.getMoundRadius() - this.getBridgeDomeIntersectionDepth()
+      );
       const bridgeEndRadius = Math.max(
         jarRadius * 0.9,
         distanceFromCenter - petalRadius * 0.98
