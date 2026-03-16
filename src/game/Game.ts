@@ -77,6 +77,8 @@ export class Game {
       this.applyGameplayTuning(key as keyof GameplayTuning, Number(value));
     }
 
+    this.syncStatusDisplayFromState();
+
     createDebugMenu(host, this.debugEnabled, {
       togglePause: () => {
         this.paused = this.orbitSystem.togglePause();
@@ -207,6 +209,22 @@ export class Game {
       settledAtSeconds: gameConfig.timeStartSeconds - this.state.timeRemaining,
       centerOffsetNormalized: settlement.centerOffsetNormalized
     };
+  }
+
+  private syncStatusDisplayFromState(): void {
+    const sceneRoot = this.sceneRoot as SceneRoot & {
+      setStatusDisplayState?: (
+        timeRemaining: number,
+        timeTotal: number,
+        ballsRemaining: number
+      ) => void;
+    };
+
+    sceneRoot.setStatusDisplayState?.(
+      this.state.timeRemaining,
+      this.runtimeConfig.timeStartSeconds,
+      this.state.ballsRemaining
+    );
   }
 
   private applyGameplayTuning(key: keyof GameplayTuning, value: number): void {
@@ -364,6 +382,7 @@ export class Game {
     this.paused = false;
     this.orbitSystem.setPaused(false);
     this.sceneRoot.resetRound();
+    this.syncStatusDisplayFromState();
     this.uiSystem.render(this.state);
   }
 
@@ -420,6 +439,7 @@ export class Game {
       ...this.state,
       timeRemaining: Math.max(0, seconds)
     };
+    this.syncStatusDisplayFromState();
     this.uiSystem.render(this.state);
   }
 
@@ -436,6 +456,7 @@ export class Game {
       ...this.state,
       ballsRemaining: Math.max(0, Math.floor(remaining))
     };
+    this.syncStatusDisplayFromState();
     this.uiSystem.render(this.state);
   }
 
@@ -506,6 +527,7 @@ export class Game {
     }
 
     this.physicsWorld?.step();
+    this.syncStatusDisplayFromState();
 
     if (renderFrame) {
       this.uiSystem.render(this.state);

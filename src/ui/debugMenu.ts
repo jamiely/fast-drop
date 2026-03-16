@@ -292,6 +292,9 @@ export const createDebugMenu = (
       <label>Ring diameter <span class="debug-menu__value" data-value-for="gameplay:outerRingDiameter">7.50</span><input type="range" min="2" max="16" step="0.1" value="7.5" data-gameplay="outerRingDiameter" /></label>
       <label>Drop distance <span class="debug-menu__value" data-value-for="gameplay:dropPointZ">2.86</span><input type="range" min="-6" max="6" step="0.05" value="2.86" data-gameplay="dropPointZ" /></label>
       <label>Drop height <span class="debug-menu__value" data-value-for="gameplay:dropHeight">2.50</span><input type="range" min="0.4" max="8" step="0.05" value="2.5" data-gameplay="dropHeight" /></label>
+      <label>Display X <span class="debug-menu__value" data-value-for="gameplay:statusDisplayX">0.00</span><input type="range" min="-4" max="4" step="0.01" value="0" data-gameplay="statusDisplayX" /></label>
+      <label>Display Y <span class="debug-menu__value" data-value-for="gameplay:statusDisplayY">1.45</span><input type="range" min="0.2" max="4" step="0.01" value="1.45" data-gameplay="statusDisplayY" /></label>
+      <label>Display Z <span class="debug-menu__value" data-value-for="gameplay:statusDisplayZ">1.20</span><input type="range" min="-4" max="4" step="0.01" value="1.2" data-gameplay="statusDisplayZ" /></label>
       <label>Drop cooldown (ms) <span class="debug-menu__value" data-value-for="gameplay:dropCooldownMs">80</span><input type="range" min="0" max="500" step="5" value="80" data-gameplay="dropCooldownMs" /></label>
       <label>Ring LED enabled <span class="debug-menu__value" data-value-for="gameplay:outerRingLedEnabled">1.00</span><input type="range" min="0" max="1" step="1" value="1" data-gameplay="outerRingLedEnabled" /></label>
       <label>Ring LED speed <span class="debug-menu__value" data-value-for="gameplay:outerRingLedSpeed">0.35</span><input type="range" min="0" max="6" step="0.01" value="0.35" data-gameplay="outerRingLedSpeed" /></label>

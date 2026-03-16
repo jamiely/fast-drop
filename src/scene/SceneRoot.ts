@@ -19,6 +19,10 @@ import {
   createPlayfieldDimensions
 } from '../entities/Playfield';
 import { JAR_HEIGHT, JAR_RADIUS, createJarMesh } from '../entities/Jar';
+import {
+  createStatusDisplay,
+  type StatusDisplayVisual
+} from '../entities/StatusDisplay';
 import { applyCameraTuning, createCamera } from './camera';
 import {
   addLighting,
@@ -90,6 +94,7 @@ export class SceneRoot {
   private readonly outerRingMesh: Mesh<TorusGeometry, MeshPhysicalMaterial>;
   private readonly outerRingLedOverlayMesh: Mesh<TorusGeometry, ShaderMaterial> | null;
   private readonly bonusJarIndices: Set<number>;
+  private readonly statusDisplay: StatusDisplayVisual;
   private readonly lightingRig: LightingRig;
   private missedBallCountSinceLastUpdate = 0;
   private bounceCountSinceLastUpdate = 0;
@@ -115,6 +120,9 @@ export class SceneRoot {
   private outerRingLedHeadCount = 4;
   private outerRingLedTrail = 0.58;
   private outerRingLedReverseChance = 0.2;
+  private statusDisplayX = 0;
+  private statusDisplayY = 1.45;
+  private statusDisplayZ = 1.2;
   private readonly shaderEffectsEnabled: boolean;
 
   public constructor(
@@ -238,6 +246,10 @@ export class SceneRoot {
     this.ballGroup = new Group();
     this.scene.add(this.ballGroup);
 
+    this.statusDisplay = createStatusDisplay();
+    this.scene.add(this.statusDisplay.group);
+    this.syncStatusDisplayPlacement();
+
     this.syncJarScale();
     this.updateCenterDomeScale();
   }
@@ -293,6 +305,24 @@ export class SceneRoot {
 
     if (key === 'dropHeight') {
       this.dropPoint.y = value;
+      return;
+    }
+
+    if (key === 'statusDisplayX') {
+      this.statusDisplayX = value;
+      this.syncStatusDisplayPlacement();
+      return;
+    }
+
+    if (key === 'statusDisplayY') {
+      this.statusDisplayY = value;
+      this.syncStatusDisplayPlacement();
+      return;
+    }
+
+    if (key === 'statusDisplayZ') {
+      this.statusDisplayZ = value;
+      this.syncStatusDisplayPlacement();
       return;
     }
 
@@ -376,6 +406,18 @@ export class SceneRoot {
 
   public setSelectedDebugLight(id: string | null): void {
     this.lightingRig.setSelectedLight(id);
+  }
+
+  public setStatusDisplayState(
+    timeRemaining: number,
+    timeTotal: number,
+    ballsRemaining: number
+  ): void {
+    this.statusDisplay.updateData({
+      timeRemaining,
+      timeTotal,
+      ballsRemaining
+    });
   }
 
   public spawnDropBall(
@@ -533,6 +575,14 @@ export class SceneRoot {
     return Math.max(
       0.5,
       bridgeAnchorRadius + targetArmLength + petalRadius * 0.98
+    );
+  }
+
+  private syncStatusDisplayPlacement(): void {
+    this.statusDisplay.setPlacement(
+      this.statusDisplayX,
+      this.statusDisplayY,
+      this.statusDisplayZ
     );
   }
 

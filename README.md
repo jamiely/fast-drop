@@ -33,6 +33,7 @@ Storybook stories currently included:
 - Light Rig Lab (interactive light source/type/position/intensity experimentation)
 - Jar Spinner (orbit radius/spin speed tuning)
 - Score Panel (value/LED color/scale controls)
+- Status Display (timer ring + balls remaining display with placement controls)
 - Round Complete Dialog (summary UI states)
 
 ## Debug / camera / gameplay tuning toggles
@@ -45,7 +46,7 @@ Storybook stories currently included:
   - pause/resume + step
   - score/time mutators
   - speed controls
-  - gameplay tuning (including jar spin speed, center dome diameter/steepness/height, ring diameter, drop cooldown, ball size, drop height, ring LED enable/speed/head count/trail/reverse chance)
+  - gameplay tuning (including jar spin speed, center dome diameter/steepness/height, ring diameter, ball size, drop height, screen display X/Y/Z placement, drop cooldown, ring LED enable/speed/head count/trail/reverse chance)
   - camera tuning (distance/pitch/yaw + lateral pan X, with wider zoom-out range)
   - lighting rig tuning (move lights, change light type, toggle each light on/off, add lights, and show light-source markers while debugging)
   - light legend showing each light id/name plus marker mapping (`●` source color, `◆` target)
@@ -101,7 +102,7 @@ To reduce flakiness in CI, Playwright also runs with `1` worker and `1` retry wh
   - `npm run test`
   - `npm run coverage` (enforces global 90% minimum for statements/branches/functions/lines)
   - `npm run test:e2e`
-- Coverage excludes runtime-heavy orchestration/render/audio UI files (`Game.ts`, `SceneRoot.ts`, `scene/lighting.ts`, `ui/debugMenu.ts`, `systems/AudioSystem.ts`, `systems/OrbitSystem.ts`, `ui/hud.ts`, `stories/**`) and pure type-only modules from threshold accounting so the 90% gate targets deterministic unit-testable logic.
+- Coverage excludes runtime-heavy orchestration/render/audio UI files (`Game.ts`, `SceneRoot.ts`, `scene/lighting.ts`, `ui/debugMenu.ts`, `systems/AudioSystem.ts`, `systems/OrbitSystem.ts`, `ui/hud.ts`, `entities/StatusDisplay.ts`, `stories/**`) and pure type-only modules from threshold accounting so the 90% gate targets deterministic unit-testable logic.
 
 ## CI/CD
 
@@ -130,6 +131,7 @@ Implemented in this pass:
 - click-anywhere drop input (outside UI controls),
 - visual style refresh inspired by the neon reference image,
 - decorative outer ring around the jar orbit,
+- in-world status display above the jars (left timer ring shifts from green to red with a needle, right side shows balls remaining),
 - LED chase effect on the outer ring with moving multi-color heads, soft gradient blending, and trailing glow,
 - center dome now receives a subtle shader-based animated reflection driven by the outer-ring LED phase,
 - material/lighting polish pass (metallic center, glass jars, red rubber balls),

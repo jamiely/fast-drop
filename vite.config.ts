@@ -31,6 +31,7 @@ export default defineConfig({
         'src/systems/AudioSystem.ts',
         'src/systems/OrbitSystem.ts',
         'src/ui/hud.ts',
+        'src/entities/StatusDisplay.ts',
         'src/stories/**'
       ],
       reporter: ['text', 'text-summary', 'json-summary', 'html', 'lcov'],
