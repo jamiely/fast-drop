@@ -24,16 +24,6 @@ export interface PlayfieldDimensions {
 }
 
 const moundMaterial = new MeshPhysicalMaterial({
-  color: '#d8e7ff',
-  metalness: 0.9,
-  roughness: 0.18,
-  clearcoat: 1,
-  clearcoatRoughness: 0.04,
-  emissive: '#4f86ff',
-  emissiveIntensity: 0.16
-});
-
-const petalMaterial = new MeshPhysicalMaterial({
   color: '#69a8ff',
   metalness: 0.12,
   roughness: 0.2,
@@ -41,6 +31,16 @@ const petalMaterial = new MeshPhysicalMaterial({
   clearcoatRoughness: 0.1,
   emissive: '#355eff',
   emissiveIntensity: 0.14
+});
+
+const petalMaterial = new MeshPhysicalMaterial({
+  color: '#f4f1e8',
+  metalness: 0.2,
+  roughness: 0.28,
+  clearcoat: 1,
+  clearcoatRoughness: 0.12,
+  emissive: '#c8d4ff',
+  emissiveIntensity: 0.06
 });
 
 const bridgeMaterial = new MeshPhysicalMaterial({

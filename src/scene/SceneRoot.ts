@@ -514,6 +514,10 @@ export class SceneRoot {
       jar.position.y = this.getJarHeight() * 0.5;
     }
 
+    for (const petal of this.petals) {
+      petal.scale.set(this.jarDiameterScale, 1, this.jarDiameterScale);
+    }
+
     this.updateCenterDomeScale();
   }
 
