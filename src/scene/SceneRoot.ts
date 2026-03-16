@@ -649,10 +649,9 @@ export class SceneRoot {
   }
 
   private syncPlayfieldVisuals(): void {
-    const bridgeCenterRadius = getBridgeCenterRadiusForMound(
-      this.getMoundRadius(),
-      this.playfieldDimensions.bridgeLength
-    );
+    const moundRadius = this.getMoundRadius();
+    const jarRadius = this.getJarRadius();
+    const petalRadius = this.playfieldDimensions.petalRadius * this.jarDiameterScale;
 
     for (const [index, jar] of this.jars.entries()) {
       jar.lookAt(0, jar.position.y, 0);
@@ -666,7 +665,17 @@ export class SceneRoot {
       const safeDistance = Math.max(0.0001, distanceFromCenter);
       const dirX = jar.position.x / safeDistance;
       const dirZ = jar.position.z / safeDistance;
+      const bridgeEndRadius = Math.max(
+        moundRadius + jarRadius * 0.9,
+        distanceFromCenter - petalRadius * 0.98
+      );
+      const bridgeLength = Math.max(jarRadius * 0.9, bridgeEndRadius - moundRadius);
+      const bridgeCenterRadius = getBridgeCenterRadiusForMound(
+        moundRadius,
+        bridgeLength
+      );
 
+      bridge.scale.z = bridgeLength / this.playfieldDimensions.bridgeLength;
       bridge.position.x = dirX * bridgeCenterRadius;
       bridge.position.z = dirZ * bridgeCenterRadius;
       bridge.rotation.y = Math.atan2(dirX, dirZ);
@@ -743,22 +752,23 @@ export class SceneRoot {
         : Number.NEGATIVE_INFINITY;
 
     let petalHeightAtPoint = Number.NEGATIVE_INFINITY;
+    const effectivePetalRadius = petalRadius * this.jarDiameterScale;
 
     for (const petal of this.petals) {
       const dx = x - petal.position.x;
       const dz = z - petal.position.z;
       const distanceFromPetalCenter = Math.hypot(dx, dz);
 
-      if (distanceFromPetalCenter <= petalRadius) {
+      if (distanceFromPetalCenter <= effectivePetalRadius) {
         petalHeightAtPoint = Math.max(petalHeightAtPoint, petalTopY);
       }
     }
 
     let bridgeHeightAtPoint = Number.NEGATIVE_INFINITY;
-    const halfBridgeWidth = bridgeWidth * 0.5;
-    const halfBridgeLength = bridgeLength * 0.5;
 
     for (const bridge of this.bridges) {
+      const halfBridgeWidth = (bridgeWidth * bridge.scale.x) * 0.5;
+      const halfBridgeLength = (bridgeLength * bridge.scale.z) * 0.5;
       const cosY = Math.cos(bridge.rotation.y);
       const sinY = Math.sin(bridge.rotation.y);
       const localX =
