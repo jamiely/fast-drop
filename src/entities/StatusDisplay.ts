@@ -134,20 +134,31 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
 
     const needleAngle = startAngle + Math.PI * 2 * elapsed;
     const needleLength = timerRadius - 18;
-    context.strokeStyle = '#ff3b56';
-    context.lineWidth = 12;
+
+    const needleTipX = timerX + Math.cos(needleAngle) * needleLength;
+    const needleTipY = timerY + Math.sin(needleAngle) * needleLength;
+
+    context.strokeStyle = '#4a4a4a';
+    context.lineWidth = 16;
     context.beginPath();
     context.moveTo(timerX, timerY);
-    context.lineTo(
-      timerX + Math.cos(needleAngle) * needleLength,
-      timerY + Math.sin(needleAngle) * needleLength
-    );
+    context.lineTo(needleTipX, needleTipY);
     context.stroke();
 
-    context.fillStyle = '#b11e36';
+    context.strokeStyle = '#d3d3d3';
+    context.lineWidth = 10;
+    context.beginPath();
+    context.moveTo(timerX, timerY);
+    context.lineTo(needleTipX, needleTipY);
+    context.stroke();
+
+    context.fillStyle = '#d3d3d3';
+    context.strokeStyle = '#4a4a4a';
+    context.lineWidth = 4;
     context.beginPath();
     context.arc(timerX, timerY, 14, 0, Math.PI * 2);
     context.fill();
+    context.stroke();
 
     const ballsX = canvas.width * 0.75;
     const ballsY = timerY;
