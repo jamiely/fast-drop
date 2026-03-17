@@ -544,7 +544,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
     context.textAlign = 'center';
     context.textBaseline = 'middle';
     const ballsLabel = String(ballsCount).padStart(2, '0');
-    const ballsLabelY = ballsY - ballsRadius + 14;
+    const ballsLabelY = ballsY - ballsRadius + 34;
     context.strokeText(ballsLabel, ballsX, ballsLabelY);
     context.fillText(ballsLabel, ballsX, ballsLabelY);
 
