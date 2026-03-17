@@ -16,6 +16,10 @@ const MAX_BALL_ICONS = 50;
 const BALL_RADIUS = 11;
 const BALL_GRAVITY = 980;
 const RELEASE_INTERVAL_MS = 85;
+const LINEAR_DAMPING = 0.9;
+const RESTITUTION = 0.12;
+const SLEEP_SPEED = 14;
+const SLEEP_FRAMES_REQUIRED = 14;
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 
@@ -35,8 +39,11 @@ export interface StatusDisplayVisual {
 interface SphereBall {
   x: number;
   y: number;
+  z: number;
   vx: number;
   vy: number;
+  vz: number;
+  sleepFrames: number;
 }
 
 interface FallingBall {
@@ -92,28 +99,34 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
     typeof performance !== 'undefined' ? performance.now() : Date.now();
 
   const makePackedBalls = (count: number, containerRadius: number): SphereBall[] => {
-    const candidates: Array<{ x: number; y: number }> = [];
+    const candidates: Array<{ x: number; y: number; z: number }> = [];
     const spacing = BALL_RADIUS * 1.9;
-    let row = 0;
 
     for (let y = -containerRadius; y <= containerRadius; y += spacing) {
-      const offset = row % 2 === 0 ? 0 : spacing * 0.5;
-      for (let x = -containerRadius; x <= containerRadius; x += spacing) {
-        const px = x + offset;
-        if (Math.hypot(px, y) <= containerRadius - BALL_RADIUS - 5) {
-          candidates.push({ x: px, y });
+      for (let z = -containerRadius; z <= containerRadius; z += spacing) {
+        for (let x = -containerRadius; x <= containerRadius; x += spacing) {
+          if (Math.hypot(x, y, z) <= containerRadius - BALL_RADIUS - 4) {
+            candidates.push({ x, y, z });
+          }
         }
       }
-      row += 1;
     }
 
-    candidates.sort((left, right) => right.y - left.y || Math.abs(left.x) - Math.abs(right.x));
+    candidates.sort(
+      (left, right) =>
+        right.y - left.y ||
+        Math.hypot(left.x, left.z) - Math.hypot(right.x, right.z) ||
+        left.z - right.z
+    );
 
     return candidates.slice(0, count).map((candidate) => ({
-      x: candidate.x + (Math.random() - 0.5) * 1.2,
-      y: candidate.y + (Math.random() - 0.5) * 1.2,
-      vx: (Math.random() - 0.5) * 8,
-      vy: Math.random() * 6
+      x: candidate.x + (Math.random() - 0.5) * 0.8,
+      y: candidate.y + (Math.random() - 0.5) * 0.8,
+      z: candidate.z + (Math.random() - 0.5) * 0.8,
+      vx: (Math.random() - 0.5) * 2,
+      vy: Math.random() * 2,
+      vz: (Math.random() - 0.5) * 2,
+      sleepFrames: 0
     }));
   };
 
@@ -124,21 +137,27 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
   let lastReleaseAtMs = 0;
   let lastFrameAtMs: number | null = null;
 
-  const drawBall = (x: number, y: number, radiusScale: number, alpha = 1) => {
+  const drawBall = (
+    x: number,
+    y: number,
+    radiusScale: number,
+    alpha = 1,
+    depthTint = 0
+  ) => {
     if (!context) {
       return;
     }
 
     const radius = BALL_RADIUS * radiusScale;
     const gradient = context.createRadialGradient(
-      x - radius * 0.4,
+      x - radius * 0.42,
       y - radius * 0.5,
-      radius * 0.2,
+      radius * 0.18,
       x,
       y,
       radius
     );
-    gradient.addColorStop(0, '#ffd2dc');
+    gradient.addColorStop(0, '#ffd8e1');
     gradient.addColorStop(1, '#d62b4d');
 
     context.globalAlpha = alpha;
@@ -146,6 +165,14 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
     context.beginPath();
     context.arc(x, y, radius, 0, Math.PI * 2);
     context.fill();
+
+    if (depthTint > 0.01) {
+      context.fillStyle = `rgba(23, 33, 62, ${clamp01(depthTint * 0.35)})`;
+      context.beginPath();
+      context.arc(x, y, radius, 0, Math.PI * 2);
+      context.fill();
+    }
+
     context.globalAlpha = 1;
   };
 
@@ -159,7 +186,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
 
     for (let index = 0; index < sphereBalls.length; index += 1) {
       const ball = sphereBalls[index];
-      const score = ball.y - Math.abs(ball.x) * 0.8;
+      const score = ball.y - (Math.abs(ball.x) + Math.abs(ball.z)) * 0.9;
       if (score > bestScore) {
         bestScore = score;
         selectedIndex = index;
@@ -168,10 +195,10 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
 
     const [selected] = sphereBalls.splice(selectedIndex, 1);
     fallingBalls.push({
-      x: selected.x * 0.4,
+      x: selected.x * 0.35 + selected.z * 0.1,
       y: innerRadius - BALL_RADIUS - 2,
-      vx: selected.x * -0.7,
-      vy: 130
+      vx: selected.x * -0.35,
+      vy: 125
     });
 
     pendingReleaseCount -= 1;
@@ -181,24 +208,47 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
     const maxDistance = innerRadius - BALL_RADIUS;
 
     for (const ball of sphereBalls) {
-      ball.vy += BALL_GRAVITY * dt;
-      ball.vx *= 0.995;
-      ball.vy *= 0.995;
-      ball.x += ball.vx * dt;
-      ball.y += ball.vy * dt;
+      const speed = Math.hypot(ball.vx, ball.vy, ball.vz);
+      const canSleep = pendingReleaseCount === 0 && fallingBalls.length === 0;
+      const isSleeping = canSleep && ball.sleepFrames >= SLEEP_FRAMES_REQUIRED;
 
-      const distance = Math.hypot(ball.x, ball.y);
+      if (!isSleeping) {
+        ball.vy += BALL_GRAVITY * dt;
+        ball.vx *= LINEAR_DAMPING;
+        ball.vy *= LINEAR_DAMPING;
+        ball.vz *= LINEAR_DAMPING;
+        ball.x += ball.vx * dt;
+        ball.y += ball.vy * dt;
+        ball.z += ball.vz * dt;
+      }
+
+      const distance = Math.hypot(ball.x, ball.y, ball.z);
       if (distance > maxDistance) {
         const nx = ball.x / Math.max(0.0001, distance);
         const ny = ball.y / Math.max(0.0001, distance);
+        const nz = ball.z / Math.max(0.0001, distance);
         ball.x = nx * maxDistance;
         ball.y = ny * maxDistance;
+        ball.z = nz * maxDistance;
 
-        const velocityAlongNormal = ball.vx * nx + ball.vy * ny;
+        const velocityAlongNormal = ball.vx * nx + ball.vy * ny + ball.vz * nz;
         if (velocityAlongNormal > 0) {
-          ball.vx -= velocityAlongNormal * nx * 1.45;
-          ball.vy -= velocityAlongNormal * ny * 1.45;
+          ball.vx -= velocityAlongNormal * nx * (1 + RESTITUTION);
+          ball.vy -= velocityAlongNormal * ny * (1 + RESTITUTION);
+          ball.vz -= velocityAlongNormal * nz * (1 + RESTITUTION);
         }
+      }
+
+      if (speed < SLEEP_SPEED && pendingReleaseCount === 0) {
+        ball.sleepFrames += 1;
+      } else {
+        ball.sleepFrames = 0;
+      }
+
+      if (ball.sleepFrames >= SLEEP_FRAMES_REQUIRED) {
+        ball.vx = 0;
+        ball.vy = 0;
+        ball.vz = 0;
       }
     }
 
@@ -209,7 +259,8 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
 
         const dx = right.x - left.x;
         const dy = right.y - left.y;
-        const distance = Math.hypot(dx, dy);
+        const dz = right.z - left.z;
+        const distance = Math.hypot(dx, dy, dz);
         const minimumDistance = BALL_RADIUS * 2;
 
         if (distance >= minimumDistance || distance <= 0.0001) {
@@ -218,23 +269,33 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
 
         const nx = dx / distance;
         const ny = dy / distance;
+        const nz = dz / distance;
         const overlap = minimumDistance - distance;
 
         left.x -= nx * overlap * 0.5;
         left.y -= ny * overlap * 0.5;
+        left.z -= nz * overlap * 0.5;
         right.x += nx * overlap * 0.5;
         right.y += ny * overlap * 0.5;
+        right.z += nz * overlap * 0.5;
 
         const relativeVelocity =
-          (right.vx - left.vx) * nx + (right.vy - left.vy) * ny;
+          (right.vx - left.vx) * nx +
+          (right.vy - left.vy) * ny +
+          (right.vz - left.vz) * nz;
 
         if (relativeVelocity < 0) {
-          const impulse = -relativeVelocity * 0.35;
+          const impulse = -relativeVelocity * 0.2;
           left.vx -= nx * impulse;
           left.vy -= ny * impulse;
+          left.vz -= nz * impulse;
           right.vx += nx * impulse;
           right.vy += ny * impulse;
+          right.vz += nz * impulse;
         }
+
+        left.sleepFrames = 0;
+        right.sleepFrames = 0;
       }
     }
   };
@@ -406,14 +467,17 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
     context.arc(ballsX, ballsY, sphereInnerRadius, 0, Math.PI * 2);
     context.clip();
 
-    const sortedSphereBalls = [...sphereBalls].sort((left, right) => left.y - right.y);
+    const sortedSphereBalls = [...sphereBalls].sort(
+      (left, right) => left.z - right.z || left.y - right.y
+    );
     for (const ball of sortedSphereBalls) {
-      const normalizedDistance = clamp01(
-        Math.hypot(ball.x, ball.y) / Math.max(1, sphereInnerRadius)
-      );
-      const depthScale = 1 - normalizedDistance;
-      const radiusScale = 0.78 + depthScale * 0.28;
-      drawBall(ballsX + ball.x, ballsY + ball.y, radiusScale);
+      const depth = clamp01((ball.z + sphereInnerRadius) / (sphereInnerRadius * 2));
+      const perspective = 0.84 + depth * 0.32;
+      const drawX = ballsX + ball.x * perspective;
+      const drawY = ballsY + ball.y * perspective;
+      const radiusScale = 0.76 + depth * 0.38;
+      const depthTint = 1 - depth;
+      drawBall(drawX, drawY, radiusScale, 1, depthTint);
     }
 
     const sphereShade = context.createRadialGradient(
