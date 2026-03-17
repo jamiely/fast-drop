@@ -25,7 +25,7 @@ export class ScoringSystem implements ScoringSystemContract {
         1,
         Math.round(baseValue * centerBonusMultiplier + streakBonus)
       ),
-      bonusTimeDelta: event.isBonusJar ? gameConfig.bonusTimeSeconds : 0
+      bonusTimeDelta: 0
     };
   }
 

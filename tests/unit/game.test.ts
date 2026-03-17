@@ -334,7 +334,7 @@ describe('Game', () => {
     ]);
     gameMocks.sceneConsumeBounceCount.mockReturnValueOnce(1);
     gameMocks.sceneConsumeMissedBallCount.mockReturnValueOnce(2);
-    gameMocks.scoring.mockReturnValueOnce({ scoreDelta: 7, bonusTimeDelta: 3 });
+    gameMocks.scoring.mockReturnValueOnce({ scoreDelta: 7, bonusTimeDelta: 0 });
 
     gameMocks.getBridge().stepFrames(1);
 
@@ -345,7 +345,7 @@ describe('Game', () => {
       misses: number;
     };
     expect(latestState.score).toBe(7);
-    expect(latestState.timeRemaining).toBeGreaterThan(30);
+    expect(latestState.timeRemaining).toBeLessThanOrEqual(30);
     expect(latestState.hits).toBe(1);
     expect(latestState.misses).toBe(2);
     expect(gameMocks.audioPlay).toHaveBeenCalledWith('ball-settled');

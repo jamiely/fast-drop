@@ -333,6 +333,11 @@ export class SceneRoot {
       return;
     }
 
+    if (key === 'statusDisplayBallScale') {
+      this.statusDisplay.setBallsSphereScale(Math.max(0.5, Math.min(3.5, value)));
+      return;
+    }
+
     if (key === 'jarDiameterScale') {
       this.jarDiameterScale = Math.max(0.35, value);
       this.syncJarScale();

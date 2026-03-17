@@ -13,7 +13,7 @@ const SCREEN_WIDTH = 2.45;
 const SCREEN_HEIGHT = 1.18;
 
 const MAX_BALL_ICONS = 50;
-const BALL_RADIUS = 11;
+const BASE_BALL_RADIUS = 11;
 const BALL_GRAVITY = 980;
 const RELEASE_INTERVAL_MS = 85;
 const LINEAR_DAMPING = 0.9;
@@ -33,6 +33,7 @@ export interface StatusDisplayVisual {
   group: Group;
   setPlacement: (x: number, y: number, z: number) => void;
   setScale: (value: number) => void;
+  setBallsSphereScale: (value: number) => void;
   updateData: (data: StatusDisplayData) => void;
 }
 
@@ -98,14 +99,18 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
   const getNowMs = () =>
     typeof performance !== 'undefined' ? performance.now() : Date.now();
 
-  const makePackedBalls = (count: number, containerRadius: number): SphereBall[] => {
+  const makePackedBalls = (
+    count: number,
+    containerRadius: number,
+    ballRadius: number
+  ): SphereBall[] => {
     const candidates: Array<{ x: number; y: number; z: number }> = [];
-    const spacing = BALL_RADIUS * 1.9;
+    const spacing = ballRadius * 1.9;
 
     for (let y = -containerRadius; y <= containerRadius; y += spacing) {
       for (let z = -containerRadius; z <= containerRadius; z += spacing) {
         for (let x = -containerRadius; x <= containerRadius; x += spacing) {
-          if (Math.hypot(x, y, z) <= containerRadius - BALL_RADIUS - 4) {
+          if (Math.hypot(x, y, z) <= containerRadius - ballRadius - 4) {
             candidates.push({ x, y, z });
           }
         }
@@ -136,6 +141,10 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
   let lastBallsRemaining = MAX_BALL_ICONS;
   let lastReleaseAtMs = 0;
   let lastFrameAtMs: number | null = null;
+  let ballsSphereScale = 2;
+  let lastAppliedSphereScale = ballsSphereScale;
+
+  const getBallRadius = () => BASE_BALL_RADIUS * ballsSphereScale;
 
   const drawBall = (
     x: number,
@@ -148,7 +157,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       return;
     }
 
-    const radius = BALL_RADIUS * radiusScale;
+    const radius = getBallRadius() * radiusScale;
     const gradient = context.createRadialGradient(
       x - radius * 0.42,
       y - radius * 0.5,
@@ -176,7 +185,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
     context.globalAlpha = 1;
   };
 
-  const releaseOneBall = (innerRadius: number) => {
+  const releaseOneBall = (innerRadius: number, ballRadius: number) => {
     if (pendingReleaseCount <= 0 || sphereBalls.length <= 0) {
       return;
     }
@@ -196,7 +205,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
     const [selected] = sphereBalls.splice(selectedIndex, 1);
     fallingBalls.push({
       x: selected.x * 0.35 + selected.z * 0.1,
-      y: innerRadius - BALL_RADIUS - 2,
+      y: innerRadius - ballRadius - 2,
       vx: selected.x * -0.35,
       vy: 125
     });
@@ -204,8 +213,8 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
     pendingReleaseCount -= 1;
   };
 
-  const simulateSphere = (dt: number, innerRadius: number) => {
-    const maxDistance = innerRadius - BALL_RADIUS;
+  const simulateSphere = (dt: number, innerRadius: number, ballRadius: number) => {
+    const maxDistance = innerRadius - ballRadius;
 
     for (const ball of sphereBalls) {
       const speed = Math.hypot(ball.vx, ball.vy, ball.vz);
@@ -261,7 +270,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
         const dy = right.y - left.y;
         const dz = right.z - left.z;
         const distance = Math.hypot(dx, dy, dz);
-        const minimumDistance = BALL_RADIUS * 2;
+        const minimumDistance = ballRadius * 2;
 
         if (distance >= minimumDistance || distance <= 0.0001) {
           continue;
@@ -412,15 +421,22 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       0,
       Math.min(MAX_BALL_ICONS, Math.floor(data.ballsRemaining))
     );
+    const ballRadius = getBallRadius();
 
     if (lastFrameAtMs === null) {
       lastFrameAtMs = nowMs;
-      sphereBalls = makePackedBalls(ballsCount, sphereInnerRadius);
+      sphereBalls = makePackedBalls(ballsCount, sphereInnerRadius, ballRadius);
       lastBallsRemaining = ballsCount;
+      lastAppliedSphereScale = ballsSphereScale;
     }
 
-    if (ballsCount > sphereBalls.length) {
-      sphereBalls = makePackedBalls(ballsCount, sphereInnerRadius);
+    if (Math.abs(lastAppliedSphereScale - ballsSphereScale) > 0.0001) {
+      sphereBalls = makePackedBalls(ballsCount, sphereInnerRadius, ballRadius);
+      fallingBalls = [];
+      pendingReleaseCount = 0;
+      lastAppliedSphereScale = ballsSphereScale;
+    } else if (ballsCount > sphereBalls.length) {
+      sphereBalls = makePackedBalls(ballsCount, sphereInnerRadius, ballRadius);
       fallingBalls = [];
       pendingReleaseCount = 0;
     } else if (ballsCount < lastBallsRemaining) {
@@ -432,12 +448,12 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
     lastFrameAtMs = nowMs;
 
     if (pendingReleaseCount > 0 && nowMs - lastReleaseAtMs >= RELEASE_INTERVAL_MS) {
-      releaseOneBall(sphereInnerRadius);
+      releaseOneBall(sphereInnerRadius, ballRadius);
       lastReleaseAtMs = nowMs;
     }
 
-    simulateSphere(dt * 0.5, sphereInnerRadius);
-    simulateSphere(dt * 0.5, sphereInnerRadius);
+    simulateSphere(dt * 0.5, sphereInnerRadius, ballRadius);
+    simulateSphere(dt * 0.5, sphereInnerRadius, ballRadius);
     simulateFalling(dt, ballsRadius);
 
     context.lineWidth = 18;
@@ -550,6 +566,9 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
     },
     setScale: (value: number) => {
       group.scale.setScalar(Math.max(0.2, value));
+    },
+    setBallsSphereScale: (value: number) => {
+      ballsSphereScale = Math.max(0.5, Math.min(3.5, value));
     },
     updateData: (data: StatusDisplayData) => {
       draw(data, getNowMs());

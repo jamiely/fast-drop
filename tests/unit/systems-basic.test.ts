@@ -3,7 +3,7 @@ import { AudioSystem } from '../../src/systems/AudioSystem';
 import { ScoringSystem } from '../../src/systems/ScoringSystem';
 
 describe('basic systems', () => {
-  it('applies jar value, center weighting, streak bonus, and bonus time', () => {
+  it('applies jar value, center weighting, and streak bonus', () => {
     const scoring = new ScoringSystem();
 
     const first = scoring.onBallSettled({
@@ -24,7 +24,7 @@ describe('basic systems', () => {
 
     expect(first.scoreDelta).toBeGreaterThan(100);
     expect(second.scoreDelta).toBeGreaterThan(first.scoreDelta);
-    expect(second.bonusTimeDelta).toBe(3);
+    expect(second.bonusTimeDelta).toBe(0);
   });
 
   it('logs audio placeholder events when no audio context exists', () => {
