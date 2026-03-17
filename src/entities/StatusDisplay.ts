@@ -4,6 +4,7 @@ import {
   ExtrudeGeometry,
   Group,
   Mesh,
+  MeshBasicMaterial,
   MeshPhysicalMaterial,
   Shape,
   ShapeGeometry,
@@ -124,13 +125,9 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
   const screenShape = createRoundedRectShape(SCREEN_WIDTH, SCREEN_HEIGHT, 0.11);
   const screen = new Mesh(
     new ShapeGeometry(screenShape, 20),
-    new MeshPhysicalMaterial({
+    new MeshBasicMaterial({
       map: texture,
-      color: texture ? new Color('#ffffff') : new Color('#9be6ff'),
-      roughness: 0.54,
-      metalness: 0,
-      emissive: texture ? new Color('#ffffff') : new Color('#52b5ff'),
-      emissiveIntensity: texture ? 0.32 : 0.25
+      color: texture ? new Color('#ffffff') : new Color('#9be6ff')
     })
   );
 
