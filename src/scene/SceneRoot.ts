@@ -133,7 +133,7 @@ export class SceneRoot {
   private outerRingLedReverseChance = 0.2;
   private statusDisplayX = 0;
   private statusDisplayY = 2.25;
-  private statusDisplayZ = 2.2;
+  private statusDisplayZ = 1.9;
   private statusDisplayScale = 1.3;
   private readonly shaderEffectsEnabled: boolean;
 

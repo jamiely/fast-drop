@@ -105,7 +105,7 @@ const meta: Meta<StatusDisplayStoryArgs> = {
     jarOrbitRadius: 2.86,
     displayX: 0,
     displayY: 2.25,
-    displayZ: 2.2,
+    displayZ: 1.9,
     cameraX: 0,
     cameraY: 1.8,
     cameraZ: 6.4,

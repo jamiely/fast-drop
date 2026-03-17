@@ -294,7 +294,7 @@ export const createDebugMenu = (
       <label>Drop height <span class="debug-menu__value" data-value-for="gameplay:dropHeight">3.25</span><input type="range" min="0.4" max="8" step="0.05" value="3.25" data-gameplay="dropHeight" /></label>
       <label>Display X <span class="debug-menu__value" data-value-for="gameplay:statusDisplayX">0.00</span><input type="range" min="-4" max="4" step="0.01" value="0" data-gameplay="statusDisplayX" /></label>
       <label>Display Y <span class="debug-menu__value" data-value-for="gameplay:statusDisplayY">2.25</span><input type="range" min="0.2" max="4" step="0.01" value="2.25" data-gameplay="statusDisplayY" /></label>
-      <label>Display Z <span class="debug-menu__value" data-value-for="gameplay:statusDisplayZ">2.20</span><input type="range" min="-4" max="4" step="0.01" value="2.2" data-gameplay="statusDisplayZ" /></label>
+      <label>Display Z <span class="debug-menu__value" data-value-for="gameplay:statusDisplayZ">1.90</span><input type="range" min="-4" max="4" step="0.01" value="1.9" data-gameplay="statusDisplayZ" /></label>
       <label>Display size <span class="debug-menu__value" data-value-for="gameplay:statusDisplayScale">1.30</span><input type="range" min="0.2" max="3" step="0.01" value="1.3" data-gameplay="statusDisplayScale" /></label>
       <label>Display ball size <span class="debug-menu__value" data-value-for="gameplay:statusDisplayBallScale">2.00</span><input type="range" min="0.5" max="3.5" step="0.01" value="2" data-gameplay="statusDisplayBallScale" /></label>
       <label>Drop cooldown (ms) <span class="debug-menu__value" data-value-for="gameplay:dropCooldownMs">80</span><input type="range" min="0" max="500" step="5" value="80" data-gameplay="dropCooldownMs" /></label>
