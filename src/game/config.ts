@@ -67,7 +67,7 @@ export const gameConfig: RuntimeConfig = {
     statusDisplayX: 0,
     statusDisplayY: 2.25,
     statusDisplayZ: 2.2,
-    statusDisplayScale: 1,
+    statusDisplayScale: 1.3,
     statusDisplayBallScale: 2,
     dropCooldownMs: 80,
     jarDiameterScale: 1.5,

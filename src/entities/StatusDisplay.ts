@@ -1,16 +1,44 @@
 import {
-  BoxGeometry,
   CanvasTexture,
   Color,
+  ExtrudeGeometry,
   Group,
   Mesh,
   MeshPhysicalMaterial,
-  PlaneGeometry,
+  Shape,
+  ShapeGeometry,
   SRGBColorSpace
 } from 'three';
 
 const SCREEN_WIDTH = 2.45;
 const SCREEN_HEIGHT = 1.18;
+const HOUSING_WIDTH = SCREEN_WIDTH * 1.14;
+const HOUSING_HEIGHT = SCREEN_HEIGHT * 1.24;
+const HOUSING_DEPTH = 0.14;
+const CORNER_RADIUS = 0.16;
+
+const createRoundedRectShape = (
+  width: number,
+  height: number,
+  radius: number
+): Shape => {
+  const halfWidth = width * 0.5;
+  const halfHeight = height * 0.5;
+  const safeRadius = Math.min(radius, halfWidth * 0.9, halfHeight * 0.9);
+  const shape = new Shape();
+
+  shape.moveTo(-halfWidth + safeRadius, -halfHeight);
+  shape.lineTo(halfWidth - safeRadius, -halfHeight);
+  shape.quadraticCurveTo(halfWidth, -halfHeight, halfWidth, -halfHeight + safeRadius);
+  shape.lineTo(halfWidth, halfHeight - safeRadius);
+  shape.quadraticCurveTo(halfWidth, halfHeight, halfWidth - safeRadius, halfHeight);
+  shape.lineTo(-halfWidth + safeRadius, halfHeight);
+  shape.quadraticCurveTo(-halfWidth, halfHeight, -halfWidth, halfHeight - safeRadius);
+  shape.lineTo(-halfWidth, -halfHeight + safeRadius);
+  shape.quadraticCurveTo(-halfWidth, -halfHeight, -halfWidth + safeRadius, -halfHeight);
+
+  return shape;
+};
 
 const MAX_BALL_ICONS = 50;
 const BASE_BALL_RADIUS = 11;
@@ -57,8 +85,20 @@ interface FallingBall {
 export const createStatusDisplay = (): StatusDisplayVisual => {
   const group = new Group();
 
+  const housingShape = createRoundedRectShape(
+    HOUSING_WIDTH,
+    HOUSING_HEIGHT,
+    CORNER_RADIUS
+  );
+  const housingGeometry = new ExtrudeGeometry(housingShape, {
+    depth: HOUSING_DEPTH,
+    bevelEnabled: false,
+    curveSegments: 16
+  });
+  housingGeometry.translate(0, 0, -HOUSING_DEPTH * 0.5);
+
   const housing = new Mesh(
-    new BoxGeometry(SCREEN_WIDTH * 1.14, SCREEN_HEIGHT * 1.24, 0.11),
+    housingGeometry,
     new MeshPhysicalMaterial({
       color: '#2b2a72',
       metalness: 0.22,
@@ -81,20 +121,56 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
     texture.needsUpdate = true;
   }
 
+  const screenShape = createRoundedRectShape(SCREEN_WIDTH, SCREEN_HEIGHT, 0.11);
   const screen = new Mesh(
-    new PlaneGeometry(SCREEN_WIDTH, SCREEN_HEIGHT),
+    new ShapeGeometry(screenShape, 20),
     new MeshPhysicalMaterial({
       map: texture,
       color: texture ? new Color('#ffffff') : new Color('#9be6ff'),
-      roughness: 0.6,
+      roughness: 0.54,
       metalness: 0,
       emissive: texture ? new Color('#ffffff') : new Color('#52b5ff'),
       emissiveIntensity: texture ? 0.32 : 0.25
     })
   );
-  screen.position.z = 0.058;
 
-  group.add(housing, screen);
+  const bezelShape = createRoundedRectShape(
+    HOUSING_WIDTH * 0.96,
+    HOUSING_HEIGHT * 0.94,
+    CORNER_RADIUS * 0.95
+  );
+  const bezelCutout = createRoundedRectShape(
+    SCREEN_WIDTH * 1.04,
+    SCREEN_HEIGHT * 1.06,
+    0.125
+  );
+  bezelShape.holes.push(bezelCutout);
+
+  const bezelGeometry = new ExtrudeGeometry(bezelShape, {
+    depth: 0.02,
+    bevelEnabled: false,
+    curveSegments: 14
+  });
+  bezelGeometry.translate(0, 0, -0.01);
+
+  const bezel = new Mesh(
+    bezelGeometry,
+    new MeshPhysicalMaterial({
+      color: '#1d1b58',
+      metalness: 0.44,
+      roughness: 0.22,
+      clearcoat: 1,
+      clearcoatRoughness: 0.15,
+      emissive: '#272277',
+      emissiveIntensity: 0.12
+    })
+  );
+
+  const housingFrontZ = HOUSING_DEPTH * 0.5;
+  screen.position.z = housingFrontZ - 0.03;
+  bezel.position.z = housingFrontZ - 0.006;
+
+  group.add(housing, screen, bezel);
 
   const getNowMs = () =>
     typeof performance !== 'undefined' ? performance.now() : Date.now();

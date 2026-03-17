@@ -20,6 +20,20 @@ test('shows debug menu when debug flag is enabled', async ({ page }) => {
   await expect(page.getByText('Debug Menu')).toBeVisible();
 });
 
+test('uses 1.3 as default status display scale', async ({ page }) => {
+  await page.goto('/?debug=1');
+
+  const displayScale = page.locator(
+    'input[data-gameplay="statusDisplayScale"]'
+  );
+  await expect(displayScale).toHaveValue('1.3');
+
+  await page.getByRole('button', { name: 'Copy values' }).click();
+  await expect(page.locator('.debug-menu textarea')).toHaveValue(
+    /"statusDisplayScale": 1.3/
+  );
+});
+
 test('debug controls mutate HUD state when debug is enabled', async ({
   page
 }) => {

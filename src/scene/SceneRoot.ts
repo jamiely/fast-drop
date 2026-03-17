@@ -12,6 +12,13 @@ import {
 import type { CameraTuning, GameplayTuning } from '../game/config';
 import { BALL_RADIUS, createBallMesh } from '../entities/Ball';
 import {
+  createDropButtonVisual,
+  createDropTubeVisual,
+  createOuterEnclosure,
+  type DropButtonVisual,
+  type DropTubeVisual
+} from '../entities/ArcadeShell';
+import {
   type PlayfieldDimensions,
   createJarBridgeMesh,
   createJarPetalMesh,
@@ -95,12 +102,16 @@ export class SceneRoot {
   private readonly outerRingLedOverlayMesh: Mesh<TorusGeometry, ShaderMaterial> | null;
   private readonly bonusJarIndices: Set<number>;
   private readonly statusDisplay: StatusDisplayVisual;
+  private readonly dropTube: DropTubeVisual;
+  private readonly dropButton: DropButtonVisual;
+  private readonly enclosure: Group;
   private readonly lightingRig: LightingRig;
   private missedBallCountSinceLastUpdate = 0;
   private bounceCountSinceLastUpdate = 0;
   private outerRingLedPhase = 0;
   private outerRingLedDirection = 1;
   private outerRingLedReverseTimer = 0;
+  private dropButtonLightPulse = 0;
 
   private dropPoint = { x: 0, z: 2.2, y: 2.5 };
   private orbitRadius = 2.2;
@@ -123,7 +134,7 @@ export class SceneRoot {
   private statusDisplayX = 0;
   private statusDisplayY = 2.25;
   private statusDisplayZ = 2.2;
-  private statusDisplayScale = 1;
+  private statusDisplayScale = 1.3;
   private readonly shaderEffectsEnabled: boolean;
 
   public constructor(
@@ -198,6 +209,19 @@ export class SceneRoot {
     this.outerRingMesh.renderOrder = 1;
     this.scene.add(this.playfieldMesh);
 
+    this.enclosure = createOuterEnclosure(this.playfieldDimensions.outerRingRadius + 0.34);
+    this.scene.add(this.enclosure);
+
+    this.dropTube = createDropTubeVisual(this.getBallRadius(), this.dropPoint.y);
+    this.dropTube.group.position.x = this.dropPoint.x;
+    this.dropTube.group.position.z = this.dropPoint.z;
+    this.scene.add(this.dropTube.group);
+
+    this.dropButton = createDropButtonVisual();
+    this.dropButton.group.position.set(0, 0.07, this.playfieldDimensions.outerRingRadius - 0.2);
+    this.scene.add(this.dropButton.group);
+    this.syncDropButtonPlacement();
+
     if (this.shaderEffectsEnabled) {
       this.outerRingLedOverlayMesh = new Mesh(
         this.outerRingMesh.geometry.clone(),
@@ -262,6 +286,8 @@ export class SceneRoot {
 
     if (key === 'outerRingDiameter') {
       this.updateOuterRingGeometry(value);
+      this.syncEnclosureToOuterRingDiameter(value);
+      this.syncDropButtonPlacement();
       return;
     }
 
@@ -296,16 +322,19 @@ export class SceneRoot {
 
     if (key === 'dropPointX') {
       this.dropPoint.x = value;
+      this.dropTube.group.position.x = this.dropPoint.x;
       return;
     }
 
     if (key === 'dropPointZ') {
       this.dropPoint.z = value;
+      this.dropTube.group.position.z = this.dropPoint.z;
       return;
     }
 
     if (key === 'dropHeight') {
       this.dropPoint.y = value;
+      this.dropTube.setDropHeight(this.dropPoint.y);
       return;
     }
 
@@ -353,6 +382,7 @@ export class SceneRoot {
     if (key === 'ballSizeScale') {
       this.ballSizeScale = Math.max(0.35, Math.min(3.2, value));
       this.syncBallScale();
+      this.dropTube.syncToBallRadius(this.getBallRadius());
       return;
     }
 
@@ -459,6 +489,9 @@ export class SceneRoot {
       settledOffsetY: 0,
       settledOffsetZ: 0
     });
+
+    this.dropButtonLightPulse = 1;
+    this.dropButton.setLitIntensity(this.dropButtonLightPulse);
   }
 
   public update(dt: number): SceneBallSettlement[] {
@@ -466,6 +499,9 @@ export class SceneRoot {
 
     this.syncPlayfieldVisuals();
     this.updateOuterRingLeds(dt);
+
+    this.dropButtonLightPulse = Math.max(0, this.dropButtonLightPulse - dt * 3.4);
+    this.dropButton.setLitIntensity(this.dropButtonLightPulse);
 
     for (let index = this.activeBalls.length - 1; index >= 0; index -= 1) {
       const activeBall = this.activeBalls[index];
@@ -633,6 +669,24 @@ export class SceneRoot {
       this.outerRingLedOverlayMesh.geometry.dispose();
       this.outerRingLedOverlayMesh.geometry = nextGeometry.clone();
     }
+  }
+
+  private syncEnclosureToOuterRingDiameter(diameter: number): void {
+    const safeDiameter = Math.max(0.6, diameter);
+    const radius = safeDiameter * 0.5 + 0.34;
+    this.scene.remove(this.enclosure);
+    this.enclosure.clear();
+    const nextEnclosure = createOuterEnclosure(radius);
+    for (const child of [...nextEnclosure.children]) {
+      nextEnclosure.remove(child);
+      this.enclosure.add(child);
+    }
+    this.scene.add(this.enclosure);
+  }
+
+  private syncDropButtonPlacement(): void {
+    const ringRadius = this.outerRingMesh.geometry.parameters.radius ?? 3.75;
+    this.dropButton.group.position.set(0, 0.07, ringRadius - 0.2);
   }
 
   private syncBallScale(): void {

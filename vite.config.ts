@@ -32,6 +32,7 @@ export default defineConfig({
         'src/systems/OrbitSystem.ts',
         'src/ui/hud.ts',
         'src/entities/StatusDisplay.ts',
+        'src/entities/ArcadeShell.ts',
         'src/stories/**'
       ],
       reporter: ['text', 'text-summary', 'json-summary', 'html', 'lcov'],

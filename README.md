@@ -102,7 +102,7 @@ To reduce flakiness in CI, Playwright also runs with `1` worker and `1` retry wh
   - `npm run test`
   - `npm run coverage` (enforces global 90% minimum for statements/branches/functions/lines)
   - `npm run test:e2e`
-- Coverage excludes runtime-heavy orchestration/render/audio UI files (`Game.ts`, `SceneRoot.ts`, `scene/lighting.ts`, `ui/debugMenu.ts`, `systems/AudioSystem.ts`, `systems/OrbitSystem.ts`, `ui/hud.ts`, `entities/StatusDisplay.ts`, `stories/**`) and pure type-only modules from threshold accounting so the 90% gate targets deterministic unit-testable logic.
+- Coverage excludes runtime-heavy orchestration/render/audio UI files (`Game.ts`, `SceneRoot.ts`, `scene/lighting.ts`, `ui/debugMenu.ts`, `systems/AudioSystem.ts`, `systems/OrbitSystem.ts`, `ui/hud.ts`, `entities/StatusDisplay.ts`, `entities/ArcadeShell.ts`, `stories/**`) and pure type-only modules from threshold accounting so the 90% gate targets deterministic unit-testable logic.
 
 ## CI/CD
 
@@ -132,14 +132,15 @@ Implemented in this pass:
 - visual style refresh inspired by the neon reference image,
 - decorative outer ring around the jar orbit,
 - in-world status display above the jars (left timer ring shifts from green to red with a needle, right side shows balls remaining),
+- status display visual refresh: rounded monitor-style bezel, recessed screen, and larger default scale (1.3),
 - LED chase effect on the outer ring with moving multi-color heads, soft gradient blending, and trailing glow,
 - center dome now receives a subtle shader-based animated reflection driven by the outer-ring LED phase,
 - material/lighting polish pass (metallic center, glass jars, red rubber balls),
+- visual shell pass: transparent outer enclosure around the playfield, glass drop tube linked to ball diameter, and a front red LED "DROP" arcade button that pulses on each drop,
 - audio polish pass with dynamic-range compression and event throttling to reduce clipping/stacking,
 - improved HUD/summary readability polish and mobile-safe-area spacing,
 - mobile viewport-fit polish for dynamic viewport units (`dvh`/`svh`) so layout scales better on phones,
 - ball size updated to 0.157 reference diameter (relative to jar diameter scaling),
-- outer arcade enclosure removed,
 - added StorybookJS component stories for ball, bonus jar, center platform, outer ring, jar spinner, score panel, and round-complete dialog,
 - debug menu now shows live control values and a copyable JSON snapshot of current tuning for easy sharing,
 - debug menu lighting controls for moving lights, swapping light type, toggling light enabled/disabled, and adding extra lights.

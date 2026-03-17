@@ -1,5 +1,13 @@
 # TODO
 
+- [x] Give the display rounded corners.
+- [x] Prevent the LED ring from being visible through the center dome.
+- [x] Add a glass drop tube with an opening above the drop zone, linked to ball diameter so balls appear to drop from the tube.
+- [x] Add a red circular front "DROP" LED button between the viewer and the outer ring that lights on each drop.
+- [x] Make the display feel more like a monitor with a slightly recessed screen.
+- [x] Show the game through a plastic/glass enclosure with the outer ring inside it.
+- [x] Change display size to 1.3.
+
 - [x] Make sure it scales to fit in mobile (and other) viewports.
 - [x] Disable shader effects with a query string param (`?effects=0` or `?fx=0`) for lower-end devices.
 - [x] Allow clicking/pressing anywhere (on mobile) to drop a ball.
