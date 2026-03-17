@@ -537,15 +537,16 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
     context.arc(ballsX, ballsY, sphereInnerRadius, Math.PI * 0.08, Math.PI * 0.92);
     context.stroke();
 
-    context.fillStyle = '#16326a';
-    context.strokeStyle = '#e0fbff';
-    context.lineWidth = 3;
-    context.font = 'bold 40px Arial';
+    context.fillStyle = '#e54161';
+    context.strokeStyle = '#ffffff';
+    context.lineWidth = 5;
+    context.font = 'bold 80px Arial';
     context.textAlign = 'center';
     context.textBaseline = 'middle';
     const ballsLabel = String(ballsCount).padStart(2, '0');
-    context.strokeText(ballsLabel, ballsX, ballsY - ballsRadius - 26);
-    context.fillText(ballsLabel, ballsX, ballsY - ballsRadius - 26);
+    const ballsLabelY = ballsY - ballsRadius + 14;
+    context.strokeText(ballsLabel, ballsX, ballsLabelY);
+    context.fillText(ballsLabel, ballsX, ballsLabelY);
 
     texture.needsUpdate = true;
   };
