@@ -123,8 +123,23 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
   }
 
   const screenShape = createRoundedRectShape(SCREEN_WIDTH, SCREEN_HEIGHT, 0.11);
+  const screenGeometry = new ShapeGeometry(screenShape, 20);
+  screenGeometry.computeBoundingBox();
+  const screenBounds = screenGeometry.boundingBox;
+  const screenPosition = screenGeometry.getAttribute('position');
+  const screenUv = screenGeometry.getAttribute('uv');
+  if (screenBounds) {
+    const width = Math.max(0.0001, screenBounds.max.x - screenBounds.min.x);
+    const height = Math.max(0.0001, screenBounds.max.y - screenBounds.min.y);
+    for (let index = 0; index < screenPosition.count; index += 1) {
+      const u = (screenPosition.getX(index) - screenBounds.min.x) / width;
+      const v = (screenPosition.getY(index) - screenBounds.min.y) / height;
+      screenUv.setXY(index, u, v);
+    }
+    screenUv.needsUpdate = true;
+  }
   const screen = new Mesh(
-    new ShapeGeometry(screenShape, 20),
+    screenGeometry,
     new MeshBasicMaterial({
       map: texture,
       color: texture ? new Color('#ffffff') : new Color('#9be6ff')
