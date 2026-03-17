@@ -164,8 +164,8 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
   );
 
   const housingFrontZ = HOUSING_DEPTH * 0.5;
-  screen.position.z = housingFrontZ - 0.03;
-  bezel.position.z = housingFrontZ - 0.006;
+  screen.position.z = housingFrontZ + 0.001;
+  bezel.position.z = housingFrontZ + 0.004;
 
   group.add(housing, screen, bezel);
 
