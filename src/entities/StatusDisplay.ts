@@ -12,6 +12,11 @@ import {
 const SCREEN_WIDTH = 2.45;
 const SCREEN_HEIGHT = 1.18;
 
+const MAX_BALL_ICONS = 50;
+const BALL_RADIUS = 11;
+const BALL_GRAVITY = 980;
+const RELEASE_INTERVAL_MS = 85;
+
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 
 export interface StatusDisplayData {
@@ -25,6 +30,20 @@ export interface StatusDisplayVisual {
   setPlacement: (x: number, y: number, z: number) => void;
   setScale: (value: number) => void;
   updateData: (data: StatusDisplayData) => void;
+}
+
+interface SphereBall {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+}
+
+interface FallingBall {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
 }
 
 export const createStatusDisplay = (): StatusDisplayVisual => {
@@ -69,48 +88,168 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
 
   group.add(housing, screen);
 
-  const MAX_BALL_ICONS = 50;
-
-  interface DroppingBallAnimation {
-    x: number;
-    fromY: number;
-    toY: number;
-    startedAtMs: number;
-    durationMs: number;
-  }
-
-  let lastSignature = '';
-  let lastBallsRemaining = MAX_BALL_ICONS;
-  const droppingBallAnimations: DroppingBallAnimation[] = [];
-
   const getNowMs = () =>
     typeof performance !== 'undefined' ? performance.now() : Date.now();
 
-  const createBallSlots = (
-    centerX: number,
-    centerY: number,
-    radius: number
-  ): Array<{ x: number; y: number }> => {
-    const slots: Array<{ x: number; y: number }> = [];
-    const spacing = 24;
-
+  const makePackedBalls = (count: number, containerRadius: number): SphereBall[] => {
+    const candidates: Array<{ x: number; y: number }> = [];
+    const spacing = BALL_RADIUS * 1.9;
     let row = 0;
-    for (let y = -radius; y <= radius; y += spacing) {
+
+    for (let y = -containerRadius; y <= containerRadius; y += spacing) {
       const offset = row % 2 === 0 ? 0 : spacing * 0.5;
-      for (let x = -radius; x <= radius; x += spacing) {
-        const slotX = x + offset;
-        if (Math.hypot(slotX, y) <= radius - 12) {
-          slots.push({
-            x: centerX + slotX,
-            y: centerY + y
-          });
+      for (let x = -containerRadius; x <= containerRadius; x += spacing) {
+        const px = x + offset;
+        if (Math.hypot(px, y) <= containerRadius - BALL_RADIUS - 5) {
+          candidates.push({ x: px, y });
         }
       }
       row += 1;
     }
 
-    slots.sort((left, right) => left.y - right.y || left.x - right.x);
-    return slots.slice(0, MAX_BALL_ICONS);
+    candidates.sort((left, right) => right.y - left.y || Math.abs(left.x) - Math.abs(right.x));
+
+    return candidates.slice(0, count).map((candidate) => ({
+      x: candidate.x + (Math.random() - 0.5) * 1.2,
+      y: candidate.y + (Math.random() - 0.5) * 1.2,
+      vx: (Math.random() - 0.5) * 8,
+      vy: Math.random() * 6
+    }));
+  };
+
+  let sphereBalls: SphereBall[] = [];
+  let fallingBalls: FallingBall[] = [];
+  let pendingReleaseCount = 0;
+  let lastBallsRemaining = MAX_BALL_ICONS;
+  let lastReleaseAtMs = 0;
+  let lastFrameAtMs: number | null = null;
+
+  const drawBall = (x: number, y: number, radiusScale: number, alpha = 1) => {
+    if (!context) {
+      return;
+    }
+
+    const radius = BALL_RADIUS * radiusScale;
+    const gradient = context.createRadialGradient(
+      x - radius * 0.4,
+      y - radius * 0.5,
+      radius * 0.2,
+      x,
+      y,
+      radius
+    );
+    gradient.addColorStop(0, '#ffd2dc');
+    gradient.addColorStop(1, '#d62b4d');
+
+    context.globalAlpha = alpha;
+    context.fillStyle = gradient;
+    context.beginPath();
+    context.arc(x, y, radius, 0, Math.PI * 2);
+    context.fill();
+    context.globalAlpha = 1;
+  };
+
+  const releaseOneBall = (innerRadius: number) => {
+    if (pendingReleaseCount <= 0 || sphereBalls.length <= 0) {
+      return;
+    }
+
+    let selectedIndex = 0;
+    let bestScore = -Number.MAX_VALUE;
+
+    for (let index = 0; index < sphereBalls.length; index += 1) {
+      const ball = sphereBalls[index];
+      const score = ball.y - Math.abs(ball.x) * 0.8;
+      if (score > bestScore) {
+        bestScore = score;
+        selectedIndex = index;
+      }
+    }
+
+    const [selected] = sphereBalls.splice(selectedIndex, 1);
+    fallingBalls.push({
+      x: selected.x * 0.4,
+      y: innerRadius - BALL_RADIUS - 2,
+      vx: selected.x * -0.7,
+      vy: 130
+    });
+
+    pendingReleaseCount -= 1;
+  };
+
+  const simulateSphere = (dt: number, innerRadius: number) => {
+    const maxDistance = innerRadius - BALL_RADIUS;
+
+    for (const ball of sphereBalls) {
+      ball.vy += BALL_GRAVITY * dt;
+      ball.vx *= 0.995;
+      ball.vy *= 0.995;
+      ball.x += ball.vx * dt;
+      ball.y += ball.vy * dt;
+
+      const distance = Math.hypot(ball.x, ball.y);
+      if (distance > maxDistance) {
+        const nx = ball.x / Math.max(0.0001, distance);
+        const ny = ball.y / Math.max(0.0001, distance);
+        ball.x = nx * maxDistance;
+        ball.y = ny * maxDistance;
+
+        const velocityAlongNormal = ball.vx * nx + ball.vy * ny;
+        if (velocityAlongNormal > 0) {
+          ball.vx -= velocityAlongNormal * nx * 1.45;
+          ball.vy -= velocityAlongNormal * ny * 1.45;
+        }
+      }
+    }
+
+    for (let i = 0; i < sphereBalls.length; i += 1) {
+      for (let j = i + 1; j < sphereBalls.length; j += 1) {
+        const left = sphereBalls[i];
+        const right = sphereBalls[j];
+
+        const dx = right.x - left.x;
+        const dy = right.y - left.y;
+        const distance = Math.hypot(dx, dy);
+        const minimumDistance = BALL_RADIUS * 2;
+
+        if (distance >= minimumDistance || distance <= 0.0001) {
+          continue;
+        }
+
+        const nx = dx / distance;
+        const ny = dy / distance;
+        const overlap = minimumDistance - distance;
+
+        left.x -= nx * overlap * 0.5;
+        left.y -= ny * overlap * 0.5;
+        right.x += nx * overlap * 0.5;
+        right.y += ny * overlap * 0.5;
+
+        const relativeVelocity =
+          (right.vx - left.vx) * nx + (right.vy - left.vy) * ny;
+
+        if (relativeVelocity < 0) {
+          const impulse = -relativeVelocity * 0.35;
+          left.vx -= nx * impulse;
+          left.vy -= ny * impulse;
+          right.vx += nx * impulse;
+          right.vy += ny * impulse;
+        }
+      }
+    }
+  };
+
+  const simulateFalling = (dt: number, outerRadius: number) => {
+    for (let index = fallingBalls.length - 1; index >= 0; index -= 1) {
+      const ball = fallingBalls[index];
+      ball.vy += BALL_GRAVITY * dt;
+      ball.x += ball.vx * dt;
+      ball.y += ball.vy * dt;
+
+      if (ball.y > outerRadius + 92) {
+        fallingBalls.splice(index, 1);
+      }
+    }
   };
 
   const draw = (data: StatusDisplayData, nowMs = getNowMs()) => {
@@ -205,6 +344,41 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
     const ballsX = canvas.width * 0.75;
     const ballsY = timerY;
     const ballsRadius = 146;
+    const sphereInnerRadius = ballsRadius - 22;
+    const holeHalfWidth = 24;
+
+    const ballsCount = Math.max(
+      0,
+      Math.min(MAX_BALL_ICONS, Math.floor(data.ballsRemaining))
+    );
+
+    if (lastFrameAtMs === null) {
+      lastFrameAtMs = nowMs;
+      sphereBalls = makePackedBalls(ballsCount, sphereInnerRadius);
+      lastBallsRemaining = ballsCount;
+    }
+
+    if (ballsCount > sphereBalls.length) {
+      sphereBalls = makePackedBalls(ballsCount, sphereInnerRadius);
+      fallingBalls = [];
+      pendingReleaseCount = 0;
+    } else if (ballsCount < lastBallsRemaining) {
+      pendingReleaseCount += lastBallsRemaining - ballsCount;
+    }
+    lastBallsRemaining = ballsCount;
+
+    const dt = Math.min(0.05, Math.max(0.001, (nowMs - lastFrameAtMs) / 1000));
+    lastFrameAtMs = nowMs;
+
+    if (pendingReleaseCount > 0 && nowMs - lastReleaseAtMs >= RELEASE_INTERVAL_MS) {
+      releaseOneBall(sphereInnerRadius);
+      lastReleaseAtMs = nowMs;
+    }
+
+    simulateSphere(dt * 0.5, sphereInnerRadius);
+    simulateSphere(dt * 0.5, sphereInnerRadius);
+    simulateFalling(dt, ballsRadius);
+
     context.lineWidth = 18;
     context.strokeStyle = '#1a4291';
     context.beginPath();
@@ -212,101 +386,86 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
     context.stroke();
 
     const ballsBg = context.createRadialGradient(
-      ballsX,
-      ballsY - 20,
-      14,
+      ballsX - 30,
+      ballsY - 38,
+      18,
       ballsX,
       ballsY,
       ballsRadius
     );
-    ballsBg.addColorStop(0, '#d8fbff');
-    ballsBg.addColorStop(1, '#9be3ff');
+    ballsBg.addColorStop(0, '#e4fbff');
+    ballsBg.addColorStop(0.7, '#b5ecff');
+    ballsBg.addColorStop(1, '#95dfff');
     context.fillStyle = ballsBg;
     context.beginPath();
     context.arc(ballsX, ballsY, ballsRadius - 10, 0, Math.PI * 2);
     context.fill();
 
-    const ballsCount = Math.max(
-      0,
-      Math.min(MAX_BALL_ICONS, Math.floor(data.ballsRemaining))
+    context.save();
+    context.beginPath();
+    context.arc(ballsX, ballsY, sphereInnerRadius, 0, Math.PI * 2);
+    context.clip();
+
+    const sortedSphereBalls = [...sphereBalls].sort((left, right) => left.y - right.y);
+    for (const ball of sortedSphereBalls) {
+      const normalizedDistance = clamp01(
+        Math.hypot(ball.x, ball.y) / Math.max(1, sphereInnerRadius)
+      );
+      const depthScale = 1 - normalizedDistance;
+      const radiusScale = 0.78 + depthScale * 0.28;
+      drawBall(ballsX + ball.x, ballsY + ball.y, radiusScale);
+    }
+
+    const sphereShade = context.createRadialGradient(
+      ballsX + 16,
+      ballsY + 14,
+      20,
+      ballsX,
+      ballsY,
+      sphereInnerRadius
     );
-    const ballSlots = createBallSlots(ballsX, ballsY, ballsRadius - 20);
+    sphereShade.addColorStop(0, 'rgba(255,255,255,0)');
+    sphereShade.addColorStop(1, 'rgba(18,53,104,0.2)');
+    context.fillStyle = sphereShade;
+    context.beginPath();
+    context.arc(ballsX, ballsY, sphereInnerRadius, 0, Math.PI * 2);
+    context.fill();
 
-    if (ballsCount < lastBallsRemaining) {
-      const removedCount = Math.min(lastBallsRemaining - ballsCount, 6);
-      for (let index = 0; index < removedCount; index += 1) {
-        const slotIndex = Math.min(ballSlots.length - 1, ballsCount + index);
-        const slot = ballSlots[slotIndex];
-        droppingBallAnimations.push({
-          x: slot.x,
-          fromY: slot.y,
-          toY: ballsY + ballsRadius + 64,
-          startedAtMs: nowMs + index * 40,
-          durationMs: 320
-        });
-      }
-    } else if (ballsCount > lastBallsRemaining) {
-      droppingBallAnimations.length = 0;
-    }
-    lastBallsRemaining = ballsCount;
+    context.restore();
 
-    for (let index = 0; index < ballsCount; index += 1) {
-      const slot = ballSlots[index];
-      const miniGradient = context.createRadialGradient(
-        slot.x - 3,
-        slot.y - 5,
-        2,
-        slot.x,
-        slot.y,
-        10
-      );
-      miniGradient.addColorStop(0, '#ffc1cd');
-      miniGradient.addColorStop(1, '#d62b4d');
-      context.fillStyle = miniGradient;
-      context.beginPath();
-      context.arc(slot.x, slot.y, 8, 0, Math.PI * 2);
-      context.fill();
+    context.fillStyle = '#0f2650';
+    context.beginPath();
+    context.ellipse(
+      ballsX,
+      ballsY + sphereInnerRadius - 1,
+      holeHalfWidth,
+      11,
+      0,
+      0,
+      Math.PI * 2
+    );
+    context.fill();
+
+    for (const ball of fallingBalls) {
+      const alpha = clamp01(1 - (ball.y - sphereInnerRadius) / 240);
+      drawBall(ballsX + ball.x, ballsY + ball.y, 0.95, alpha);
     }
 
-    for (let index = droppingBallAnimations.length - 1; index >= 0; index -= 1) {
-      const animation = droppingBallAnimations[index];
-      const progress = clamp01(
-        (nowMs - animation.startedAtMs) / animation.durationMs
-      );
-      if (progress >= 1) {
-        droppingBallAnimations.splice(index, 1);
-        continue;
-      }
-
-      const eased = progress * progress;
-      const y = animation.fromY + (animation.toY - animation.fromY) * eased;
-      context.globalAlpha = 1 - progress * 0.75;
-      const miniGradient = context.createRadialGradient(
-        animation.x - 3,
-        y - 5,
-        2,
-        animation.x,
-        y,
-        10
-      );
-      miniGradient.addColorStop(0, '#ffc1cd');
-      miniGradient.addColorStop(1, '#d62b4d');
-      context.fillStyle = miniGradient;
-      context.beginPath();
-      context.arc(animation.x, y, 8, 0, Math.PI * 2);
-      context.fill();
-      context.globalAlpha = 1;
-    }
+    context.strokeStyle = '#7fd2f6';
+    context.lineWidth = 3;
+    context.beginPath();
+    context.arc(ballsX, ballsY, sphereInnerRadius, Math.PI * 0.08, Math.PI * 0.92);
+    context.stroke();
 
     context.fillStyle = '#16326a';
     context.strokeStyle = '#e0fbff';
-    context.lineWidth = 4;
-    context.font = 'bold 72px Arial';
+    context.lineWidth = 3;
+    context.font = 'bold 40px Arial';
     context.textAlign = 'center';
     context.textBaseline = 'middle';
     const ballsLabel = String(ballsCount).padStart(2, '0');
-    context.strokeText(ballsLabel, ballsX, ballsY - 4);
-    context.fillText(ballsLabel, ballsX, ballsY - 4);
+    context.strokeText(ballsLabel, ballsX, ballsY - ballsRadius - 26);
+    context.fillText(ballsLabel, ballsX, ballsY - ballsRadius - 26);
 
     texture.needsUpdate = true;
   };
@@ -329,23 +488,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       group.scale.setScalar(Math.max(0.2, value));
     },
     updateData: (data: StatusDisplayData) => {
-      const nowMs = getNowMs();
-      const signature = [
-        data.timeRemaining.toFixed(2),
-        data.timeTotal.toFixed(2),
-        Math.floor(data.ballsRemaining)
-      ].join('|');
-
-      const hasActiveDropAnimation = droppingBallAnimations.some(
-        (animation) => nowMs - animation.startedAtMs < animation.durationMs
-      );
-
-      if (signature === lastSignature && !hasActiveDropAnimation) {
-        return;
-      }
-
-      lastSignature = signature;
-      draw(data, nowMs);
+      draw(data, getNowMs());
     }
   };
 };
