@@ -63,7 +63,7 @@ export const gameConfig: RuntimeConfig = {
     outerRingDiameter: 7.5,
     dropPointX: 0,
     dropPointZ: 2.2 + DEFAULT_JAR_DIAMETER,
-    dropHeight: 2.5,
+    dropHeight: 3,
     statusDisplayX: 0,
     statusDisplayY: 2.25,
     statusDisplayZ: 2.2,
