@@ -69,9 +69,51 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
 
   group.add(housing, screen);
 
-  let lastSignature = '';
+  const MAX_BALL_ICONS = 50;
 
-  const draw = (data: StatusDisplayData) => {
+  interface DroppingBallAnimation {
+    x: number;
+    fromY: number;
+    toY: number;
+    startedAtMs: number;
+    durationMs: number;
+  }
+
+  let lastSignature = '';
+  let lastBallsRemaining = MAX_BALL_ICONS;
+  const droppingBallAnimations: DroppingBallAnimation[] = [];
+
+  const getNowMs = () =>
+    typeof performance !== 'undefined' ? performance.now() : Date.now();
+
+  const createBallSlots = (
+    centerX: number,
+    centerY: number,
+    radius: number
+  ): Array<{ x: number; y: number }> => {
+    const slots: Array<{ x: number; y: number }> = [];
+    const spacing = 24;
+
+    let row = 0;
+    for (let y = -radius; y <= radius; y += spacing) {
+      const offset = row % 2 === 0 ? 0 : spacing * 0.5;
+      for (let x = -radius; x <= radius; x += spacing) {
+        const slotX = x + offset;
+        if (Math.hypot(slotX, y) <= radius - 12) {
+          slots.push({
+            x: centerX + slotX,
+            y: centerY + y
+          });
+        }
+      }
+      row += 1;
+    }
+
+    slots.sort((left, right) => left.y - right.y || left.x - right.x);
+    return slots.slice(0, MAX_BALL_ICONS);
+  };
+
+  const draw = (data: StatusDisplayData, nowMs = getNowMs()) => {
     if (!context || !texture) {
       return;
     }
@@ -184,47 +226,99 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
     context.arc(ballsX, ballsY, ballsRadius - 10, 0, Math.PI * 2);
     context.fill();
 
-    context.fillStyle = '#e54161';
-    context.strokeStyle = '#ffffff';
-    context.lineWidth = 6;
-    context.font = 'bold 132px Arial';
-    context.textAlign = 'center';
-    context.textBaseline = 'middle';
-    const ballsLabel = String(Math.max(0, Math.floor(data.ballsRemaining)));
-    context.strokeText(ballsLabel, ballsX, ballsY - 6);
-    context.fillText(ballsLabel, ballsX, ballsY - 6);
+    const ballsCount = Math.max(
+      0,
+      Math.min(MAX_BALL_ICONS, Math.floor(data.ballsRemaining))
+    );
+    const ballSlots = createBallSlots(ballsX, ballsY, ballsRadius - 20);
 
-    const miniBalls = [
-      { x: ballsX - 58, y: ballsY + 104 },
-      { x: ballsX - 24, y: ballsY + 118 },
-      { x: ballsX + 8, y: ballsY + 103 },
-      { x: ballsX + 38, y: ballsY + 122 }
-    ];
-    for (const ball of miniBalls) {
+    if (ballsCount < lastBallsRemaining) {
+      const removedCount = Math.min(lastBallsRemaining - ballsCount, 6);
+      for (let index = 0; index < removedCount; index += 1) {
+        const slotIndex = Math.min(ballSlots.length - 1, ballsCount + index);
+        const slot = ballSlots[slotIndex];
+        droppingBallAnimations.push({
+          x: slot.x,
+          fromY: slot.y,
+          toY: ballsY + ballsRadius + 64,
+          startedAtMs: nowMs + index * 40,
+          durationMs: 320
+        });
+      }
+    } else if (ballsCount > lastBallsRemaining) {
+      droppingBallAnimations.length = 0;
+    }
+    lastBallsRemaining = ballsCount;
+
+    for (let index = 0; index < ballsCount; index += 1) {
+      const slot = ballSlots[index];
       const miniGradient = context.createRadialGradient(
-        ball.x - 6,
-        ball.y - 8,
+        slot.x - 3,
+        slot.y - 5,
         2,
-        ball.x,
-        ball.y,
-        16
+        slot.x,
+        slot.y,
+        10
       );
-      miniGradient.addColorStop(0, '#ff9cb0');
+      miniGradient.addColorStop(0, '#ffc1cd');
       miniGradient.addColorStop(1, '#d62b4d');
       context.fillStyle = miniGradient;
       context.beginPath();
-      context.arc(ball.x, ball.y, 16, 0, Math.PI * 2);
+      context.arc(slot.x, slot.y, 8, 0, Math.PI * 2);
       context.fill();
     }
+
+    for (let index = droppingBallAnimations.length - 1; index >= 0; index -= 1) {
+      const animation = droppingBallAnimations[index];
+      const progress = clamp01(
+        (nowMs - animation.startedAtMs) / animation.durationMs
+      );
+      if (progress >= 1) {
+        droppingBallAnimations.splice(index, 1);
+        continue;
+      }
+
+      const eased = progress * progress;
+      const y = animation.fromY + (animation.toY - animation.fromY) * eased;
+      context.globalAlpha = 1 - progress * 0.75;
+      const miniGradient = context.createRadialGradient(
+        animation.x - 3,
+        y - 5,
+        2,
+        animation.x,
+        y,
+        10
+      );
+      miniGradient.addColorStop(0, '#ffc1cd');
+      miniGradient.addColorStop(1, '#d62b4d');
+      context.fillStyle = miniGradient;
+      context.beginPath();
+      context.arc(animation.x, y, 8, 0, Math.PI * 2);
+      context.fill();
+      context.globalAlpha = 1;
+    }
+
+    context.fillStyle = '#16326a';
+    context.strokeStyle = '#e0fbff';
+    context.lineWidth = 4;
+    context.font = 'bold 72px Arial';
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    const ballsLabel = String(ballsCount).padStart(2, '0');
+    context.strokeText(ballsLabel, ballsX, ballsY - 4);
+    context.fillText(ballsLabel, ballsX, ballsY - 4);
 
     texture.needsUpdate = true;
   };
 
-  draw({
-    timeRemaining: 30,
-    timeTotal: 30,
-    ballsRemaining: 50
-  });
+  draw(
+    {
+      timeRemaining: 30,
+      timeTotal: 30,
+      ballsRemaining: 50
+    },
+    getNowMs()
+  );
 
   return {
     group,
@@ -235,18 +329,23 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       group.scale.setScalar(Math.max(0.2, value));
     },
     updateData: (data: StatusDisplayData) => {
+      const nowMs = getNowMs();
       const signature = [
         data.timeRemaining.toFixed(2),
         data.timeTotal.toFixed(2),
         Math.floor(data.ballsRemaining)
       ].join('|');
 
-      if (signature === lastSignature) {
+      const hasActiveDropAnimation = droppingBallAnimations.some(
+        (animation) => nowMs - animation.startedAtMs < animation.durationMs
+      );
+
+      if (signature === lastSignature && !hasActiveDropAnimation) {
         return;
       }
 
       lastSignature = signature;
-      draw(data);
+      draw(data, nowMs);
     }
   };
 };
