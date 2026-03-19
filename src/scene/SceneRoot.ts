@@ -112,6 +112,7 @@ export class SceneRoot {
   private outerRingLedDirection = 1;
   private outerRingLedReverseTimer = 0;
   private dropButtonLightPulse = 0;
+  private dropButtonPress = 0;
 
   private dropPoint = { x: 0, z: 2.2, y: 2.5 };
   private orbitRadius = 2.2;
@@ -491,7 +492,9 @@ export class SceneRoot {
     });
 
     this.dropButtonLightPulse = 1;
+    this.dropButtonPress = 1;
     this.dropButton.setLitIntensity(this.dropButtonLightPulse);
+    this.dropButton.setPressAmount(this.dropButtonPress);
   }
 
   public update(dt: number): SceneBallSettlement[] {
@@ -501,7 +504,9 @@ export class SceneRoot {
     this.updateOuterRingLeds(dt);
 
     this.dropButtonLightPulse = Math.max(0, this.dropButtonLightPulse - dt * 3.4);
+    this.dropButtonPress = Math.max(0, this.dropButtonPress - dt * 8.5);
     this.dropButton.setLitIntensity(this.dropButtonLightPulse);
+    this.dropButton.setPressAmount(this.dropButtonPress);
 
     for (let index = this.activeBalls.length - 1; index >= 0; index -= 1) {
       const activeBall = this.activeBalls[index];
@@ -687,6 +692,7 @@ export class SceneRoot {
   private syncDropButtonPlacement(): void {
     const ringRadius = this.outerRingMesh.geometry.parameters.radius ?? 3.75;
     this.dropButton.group.position.set(0, 0.07, ringRadius - 0.2);
+    this.dropButton.group.rotation.y = Math.PI;
   }
 
   private syncBallScale(): void {

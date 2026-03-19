@@ -33,6 +33,7 @@ const createDropLabelTexture = (): CanvasTexture => {
 export interface DropButtonVisual {
   group: Group;
   setLitIntensity: (value: number) => void;
+  setPressAmount: (value: number) => void;
 }
 
 export const createDropButtonVisual = (): DropButtonVisual => {
@@ -59,7 +60,9 @@ export const createDropButtonVisual = (): DropButtonVisual => {
   });
 
   const cap = new Mesh(new CylinderGeometry(0.34, 0.38, 0.12, 52), capMaterial);
-  cap.position.y = 0.09;
+  const capRestY = 0.09;
+  const capPressTravel = 0.04;
+  cap.position.y = capRestY;
 
   group.add(base, cap);
 
@@ -67,6 +70,10 @@ export const createDropButtonVisual = (): DropButtonVisual => {
     group,
     setLitIntensity: (value: number) => {
       capMaterial.emissiveIntensity = 0.35 + Math.max(0, Math.min(1, value)) * 1.8;
+    },
+    setPressAmount: (value: number) => {
+      const amount = Math.max(0, Math.min(1, value));
+      cap.position.y = capRestY - capPressTravel * amount;
     }
   };
 };
