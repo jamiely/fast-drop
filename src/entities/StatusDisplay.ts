@@ -898,11 +898,9 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       const resultRadius = 94;
       const resultSlideDistance = resultRadius * 2.2;
       const resultTopStartY = -resultRadius - 8;
-      const scoreDividedByTen = Math.max(0, data.score) / 10;
-      const roundedScore =
-        Math.ceil(scoreDividedByTen / ENDED_SCORE_INCREMENT) *
-        ENDED_SCORE_INCREMENT;
-      const totalScoreSteps = Math.floor(roundedScore / ENDED_SCORE_INCREMENT);
+      const enteredCountForScore = Math.max(0, Math.floor(data.ballsEntered));
+      const roundedScore = enteredCountForScore * ENDED_SCORE_INCREMENT;
+      const totalScoreSteps = enteredCountForScore;
       const scoreRevealStartAtMs =
         (roundEndedAtMs ?? nowMs) +
         ENDED_TIMER_HIDE_DELAY_MS +
@@ -955,29 +953,30 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       } else if (totalScoreSteps <= 0) {
         drawResultCircle(resultCenterY, 0);
       } else {
-        const completedSteps = Math.floor(scoreRevealElapsedMs / ENDED_SCORE_STEP_MS);
+        const totalAnimationMs = Math.max(
+          ENDED_SCORE_SLIDE_MS,
+          totalScoreSteps * ENDED_SCORE_STEP_MS
+        );
+        const linearProgress = clamp01(scoreRevealElapsedMs / totalAnimationMs);
+        const easedProgress = 1 - (1 - linearProgress) ** 3;
+        const stepFloat = easedProgress * totalScoreSteps;
+        const completedSteps = Math.floor(stepFloat);
 
-        if (completedSteps >= totalScoreSteps) {
+        if (linearProgress >= 1 || completedSteps >= totalScoreSteps) {
           drawResultCircle(resultCenterY, roundedScore);
         } else {
-          const stepProgressMs =
-            scoreRevealElapsedMs - completedSteps * ENDED_SCORE_STEP_MS;
-          const toValue = (completedSteps + 1) * ENDED_SCORE_INCREMENT;
+          const toStep = Math.min(totalScoreSteps, completedSteps + 1);
+          const toValue = toStep * ENDED_SCORE_INCREMENT;
+          const slideProgress = clamp01(stepFloat - completedSteps);
+          const fromValue = completedSteps * ENDED_SCORE_INCREMENT;
+          const fromContent: 'great' | number =
+            completedSteps <= 0 ? 'great' : fromValue;
+          const fromY = resultCenterY + slideProgress * resultSlideDistance;
+          const toY =
+            resultTopStartY + (resultCenterY - resultTopStartY) * slideProgress;
 
-          if (stepProgressMs < ENDED_SCORE_SLIDE_MS) {
-            const slideProgress = clamp01(stepProgressMs / ENDED_SCORE_SLIDE_MS);
-            const fromValue = completedSteps * ENDED_SCORE_INCREMENT;
-            const fromContent: 'great' | number =
-              completedSteps <= 0 ? 'great' : fromValue;
-            const fromY = resultCenterY + slideProgress * resultSlideDistance;
-            const toY =
-              resultTopStartY + (resultCenterY - resultTopStartY) * slideProgress;
-
-            drawResultCircle(fromY, fromContent, 1 - slideProgress * 0.25);
-            drawResultCircle(toY, toValue, 0.8 + slideProgress * 0.2);
-          } else {
-            drawResultCircle(resultCenterY, toValue);
-          }
+          drawResultCircle(fromY, fromContent, 1 - slideProgress * 0.25);
+          drawResultCircle(toY, toValue, 0.8 + slideProgress * 0.2);
         }
       }
 

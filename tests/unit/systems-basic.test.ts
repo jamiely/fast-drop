@@ -3,7 +3,7 @@ import { AudioSystem } from '../../src/systems/AudioSystem';
 import { ScoringSystem } from '../../src/systems/ScoringSystem';
 
 describe('basic systems', () => {
-  it('applies jar value, center weighting, and streak bonus', () => {
+  it('awards a flat +10 score for each settled ball', () => {
     const scoring = new ScoringSystem();
 
     const first = scoring.onBallSettled({
@@ -22,8 +22,8 @@ describe('basic systems', () => {
       centerOffsetNormalized: 0.05
     });
 
-    expect(first.scoreDelta).toBeGreaterThan(100);
-    expect(second.scoreDelta).toBeGreaterThan(first.scoreDelta);
+    expect(first.scoreDelta).toBe(10);
+    expect(second.scoreDelta).toBe(10);
     expect(second.bonusTimeDelta).toBe(0);
   });
 
