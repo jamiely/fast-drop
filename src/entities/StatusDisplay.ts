@@ -55,6 +55,10 @@ const ENDED_DROP_GRAVITY = 920;
 const ENDED_BALL_RADIUS_SCALE = 0.9;
 const ENDED_JAR_SLEEP_SPEED = 28;
 const ENDED_JAR_SLEEP_FRAMES = 14;
+const ENDED_SCORE_REVEAL_DELAY_MS = 2000;
+const ENDED_SCORE_INCREMENT = 10;
+const ENDED_SCORE_STEP_MS = 280;
+const ENDED_SCORE_SLIDE_MS = 220;
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 
@@ -890,25 +894,89 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       context.lineTo(canvas.width * 0.5, canvas.height - 72);
       context.stroke();
 
-      context.fillStyle = '#f5f8ff';
-      context.strokeStyle = '#dc4a68';
-      context.lineWidth = 6;
-      context.beginPath();
-      context.arc(ballsX, ballsY - 20, 94, 0, Math.PI * 2);
-      context.fill();
-      context.stroke();
+      const resultCenterY = ballsY - 20;
+      const resultRadius = 94;
+      const resultSlideDistance = resultRadius * 2.2;
+      const roundedScore =
+        Math.ceil(Math.max(0, data.score) / ENDED_SCORE_INCREMENT) *
+        ENDED_SCORE_INCREMENT;
+      const totalScoreSteps = Math.floor(roundedScore / ENDED_SCORE_INCREMENT);
+      const scoreRevealStartAtMs =
+        (roundEndedAtMs ?? nowMs) +
+        ENDED_TIMER_HIDE_DELAY_MS +
+        ENDED_SCORE_REVEAL_DELAY_MS;
+      const scoreRevealElapsedMs = nowMs - scoreRevealStartAtMs;
 
-      context.fillStyle = '#173778';
-      context.font = 'bold 68px Arial';
-      context.textAlign = 'center';
-      context.fillText('GREAT', ballsX, ballsY - 34);
-      context.fillStyle = '#e54161';
-      context.font = 'bold 74px Arial';
-      context.fillText('JOB!', ballsX, ballsY + 30);
+      const drawResultCircle = (
+        centerY: number,
+        content: 'great' | number,
+        alpha = 1
+      ): void => {
+        context.save();
+        context.globalAlpha = clamp01(alpha);
 
-      context.fillStyle = '#153572';
-      context.font = 'bold 44px Arial';
-      context.fillText('CALCULATING', ballsX, ballsY + 126);
+        context.fillStyle = '#f5f8ff';
+        context.strokeStyle = '#dc4a68';
+        context.lineWidth = 6;
+        context.beginPath();
+        context.arc(ballsX, centerY, resultRadius, 0, Math.PI * 2);
+        context.fill();
+        context.stroke();
+
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+
+        if (content === 'great') {
+          context.fillStyle = '#173778';
+          context.font = 'bold 68px Arial';
+          context.fillText('GREAT', ballsX, centerY - 14);
+          context.fillStyle = '#e54161';
+          context.font = 'bold 74px Arial';
+          context.fillText('JOB!', ballsX, centerY + 50);
+        } else {
+          context.fillStyle = '#e54161';
+          context.font = 'bold 96px Arial';
+          context.fillText(String(content), ballsX, centerY + 4);
+        }
+
+        context.restore();
+      };
+
+      if (scoreRevealElapsedMs < 0) {
+        drawResultCircle(resultCenterY, 'great');
+
+        context.fillStyle = '#153572';
+        context.font = 'bold 44px Arial';
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        context.fillText('CALCULATING', ballsX, ballsY + 126);
+      } else if (totalScoreSteps <= 0) {
+        drawResultCircle(resultCenterY, 0);
+      } else {
+        const completedSteps = Math.floor(scoreRevealElapsedMs / ENDED_SCORE_STEP_MS);
+
+        if (completedSteps >= totalScoreSteps) {
+          drawResultCircle(resultCenterY, roundedScore);
+        } else {
+          const stepProgressMs =
+            scoreRevealElapsedMs - completedSteps * ENDED_SCORE_STEP_MS;
+          const toValue = (completedSteps + 1) * ENDED_SCORE_INCREMENT;
+
+          if (stepProgressMs < ENDED_SCORE_SLIDE_MS) {
+            const slideProgress = clamp01(stepProgressMs / ENDED_SCORE_SLIDE_MS);
+            const fromValue = completedSteps * ENDED_SCORE_INCREMENT;
+            const fromContent: 'great' | number =
+              completedSteps <= 0 ? 'great' : fromValue;
+            const fromY = resultCenterY + slideProgress * resultSlideDistance;
+            const toY = resultCenterY + (1 - slideProgress) * resultSlideDistance;
+
+            drawResultCircle(fromY, fromContent, 1 - slideProgress * 0.25);
+            drawResultCircle(toY, toValue, 0.8 + slideProgress * 0.2);
+          } else {
+            drawResultCircle(resultCenterY, toValue);
+          }
+        }
+      }
 
       texture.needsUpdate = true;
       return;
