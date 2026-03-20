@@ -53,6 +53,8 @@ const ENDED_TIMER_HIDE_DELAY_MS = 1000;
 const ENDED_COUNT_RELEASE_INTERVAL_MS = 90;
 const ENDED_DROP_GRAVITY = 920;
 const ENDED_BALL_RADIUS_SCALE = 0.9;
+const ENDED_JAR_SLEEP_SPEED = 24;
+const ENDED_JAR_SLEEP_FRAMES = 18;
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 
@@ -103,6 +105,7 @@ interface EndedJarBall {
   y: number;
   vx: number;
   vy: number;
+  sleepFrames: number;
 }
 
 export const createStatusDisplay = (): StatusDisplayVisual => {
@@ -657,7 +660,8 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
             x: ball.x,
             y: Math.max(jarCeiling, ball.y),
             vx: ball.vx,
-            vy: ball.vy
+            vy: ball.vy,
+            sleepFrames: 0
           });
           continue;
         }
@@ -667,36 +671,62 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
         }
       }
 
+      const canSleepInJar = endedFallingBalls.length === 0;
+
       for (const ball of endedJarBalls) {
-        ball.vy += ENDED_DROP_GRAVITY * endedDt;
-        ball.vx *= 0.986;
-        ball.vy *= 0.996;
-        ball.x += ball.vx * endedDt;
-        ball.y += ball.vy * endedDt;
+        const speed = Math.hypot(ball.vx, ball.vy);
+        const isSleeping = canSleepInJar && ball.sleepFrames >= ENDED_JAR_SLEEP_FRAMES;
+
+        if (!isSleeping) {
+          ball.vy += ENDED_DROP_GRAVITY * endedDt;
+          ball.vx *= 0.976;
+          ball.vy *= 0.988;
+          ball.x += ball.vx * endedDt;
+          ball.y += ball.vy * endedDt;
+        }
 
         if (ball.x < jarLeft) {
           ball.x = jarLeft;
           if (ball.vx < 0) {
-            ball.vx *= -0.35;
+            ball.vx *= -0.22;
           }
+          ball.sleepFrames = 0;
         } else if (ball.x > jarRight) {
           ball.x = jarRight;
           if (ball.vx > 0) {
-            ball.vx *= -0.35;
+            ball.vx *= -0.22;
           }
+          ball.sleepFrames = 0;
         }
 
         if (ball.y > jarFloor) {
           ball.y = jarFloor;
           if (ball.vy > 0) {
-            ball.vy *= -0.22;
+            ball.vy *= -0.14;
           }
-          ball.vx *= 0.94;
+          if (Math.abs(ball.vy) < 16) {
+            ball.vy = 0;
+          }
+          ball.vx *= 0.88;
         } else if (ball.y < jarCeiling) {
           ball.y = jarCeiling;
           if (ball.vy < 0) {
-            ball.vy *= -0.12;
+            ball.vy *= -0.1;
           }
+          ball.sleepFrames = 0;
+        }
+
+        const nearFloor = Math.abs(ball.y - jarFloor) < 0.6;
+        if (canSleepInJar && nearFloor && speed < ENDED_JAR_SLEEP_SPEED) {
+          ball.sleepFrames += 1;
+        } else {
+          ball.sleepFrames = 0;
+        }
+
+        if (ball.sleepFrames >= ENDED_JAR_SLEEP_FRAMES) {
+          ball.vx = 0;
+          ball.vy = 0;
+          ball.y = jarFloor;
         }
       }
 
@@ -704,6 +734,13 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
         for (let j = i + 1; j < endedJarBalls.length; j += 1) {
           const left = endedJarBalls[i];
           const right = endedJarBalls[j];
+          if (
+            left.sleepFrames >= ENDED_JAR_SLEEP_FRAMES &&
+            right.sleepFrames >= ENDED_JAR_SLEEP_FRAMES
+          ) {
+            continue;
+          }
+
           const dx = right.x - left.x;
           const dy = right.y - left.y;
           const distance = Math.hypot(dx, dy);
@@ -726,12 +763,19 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
             (right.vx - left.vx) * nx + (right.vy - left.vy) * ny;
 
           if (relativeVelocity < 0) {
-            const impulse = -relativeVelocity * 0.25;
+            const impulse = -relativeVelocity * 0.14;
             left.vx -= nx * impulse;
             left.vy -= ny * impulse;
             right.vx += nx * impulse;
             right.vy += ny * impulse;
           }
+
+          left.vx *= 0.96;
+          left.vy *= 0.96;
+          right.vx *= 0.96;
+          right.vy *= 0.96;
+          left.sleepFrames = 0;
+          right.sleepFrames = 0;
 
           left.x = Math.max(jarLeft, Math.min(jarRight, left.x));
           right.x = Math.max(jarLeft, Math.min(jarRight, right.x));
