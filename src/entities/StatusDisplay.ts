@@ -53,8 +53,8 @@ const ENDED_TIMER_HIDE_DELAY_MS = 1000;
 const ENDED_COUNT_RELEASE_INTERVAL_MS = 90;
 const ENDED_DROP_GRAVITY = 920;
 const ENDED_BALL_RADIUS_SCALE = 0.9;
-const ENDED_JAR_SLEEP_SPEED = 24;
-const ENDED_JAR_SLEEP_FRAMES = 18;
+const ENDED_JAR_SLEEP_SPEED = 28;
+const ENDED_JAR_SLEEP_FRAMES = 14;
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 
@@ -678,8 +678,8 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
 
         if (!isSleeping) {
           ball.vy += ENDED_DROP_GRAVITY * endedDt;
-          ball.vx *= 0.976;
-          ball.vy *= 0.988;
+          ball.vx *= 0.95;
+          ball.vy *= 0.965;
           ball.x += ball.vx * endedDt;
           ball.y += ball.vy * endedDt;
         }
@@ -712,7 +712,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
           if (Math.abs(ball.vy) < 16) {
             ball.vy = 0;
           }
-          ball.vx *= 0.88;
+          ball.vx *= 0.8;
         } else if (ball.y < jarCeiling) {
           ball.y = jarCeiling;
           if (ball.vy < 0) {
@@ -778,20 +778,20 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
           const relativeVelocity =
             (right.vx - left.vx) * nx + (right.vy - left.vy) * ny;
 
-          if (relativeVelocity < -2) {
-            const impulse = -relativeVelocity * 0.1;
+          if (relativeVelocity < -4) {
+            const impulse = -relativeVelocity * 0.06;
             if (!leftSleeping) {
               left.vx -= nx * impulse;
               left.vy -= ny * impulse;
-              left.vx *= 0.97;
-              left.vy *= 0.97;
+              left.vx *= 0.92;
+              left.vy *= 0.92;
               left.sleepFrames = 0;
             }
             if (!rightSleeping) {
               right.vx += nx * impulse;
               right.vy += ny * impulse;
-              right.vx *= 0.97;
-              right.vy *= 0.97;
+              right.vx *= 0.92;
+              right.vy *= 0.92;
               right.sleepFrames = 0;
             }
           }
