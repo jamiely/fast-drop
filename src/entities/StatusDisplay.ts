@@ -897,8 +897,9 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       const resultCenterY = ballsY - 20;
       const resultRadius = 94;
       const resultSlideDistance = resultRadius * 2.2;
+      const scoreDividedByTen = Math.max(0, data.score) / 10;
       const roundedScore =
-        Math.ceil(Math.max(0, data.score) / ENDED_SCORE_INCREMENT) *
+        Math.ceil(scoreDividedByTen / ENDED_SCORE_INCREMENT) *
         ENDED_SCORE_INCREMENT;
       const totalScoreSteps = Math.floor(roundedScore / ENDED_SCORE_INCREMENT);
       const scoreRevealStartAtMs =
