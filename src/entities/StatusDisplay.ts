@@ -895,7 +895,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       context.stroke();
 
       const resultCenterY = ballsY - 20;
-      const resultRadius = 94;
+      const resultRadius = 141;
       const resultSlideDistance = resultRadius * 2.2;
       const resultTopStartY = -resultRadius - 8;
       const enteredCountForScore = Math.max(0, Math.floor(data.ballsEntered));
@@ -938,9 +938,12 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
           context.font = 'bold 96px Arial';
           context.fillText(String(content), ballsX, centerY - 10);
 
-          context.fillStyle = '#173778';
-          context.font = 'bold 34px Arial';
-          context.fillText('POINTS!', ballsX, centerY + 44);
+          context.strokeStyle = '#173778';
+          context.lineWidth = 8;
+          context.fillStyle = '#ffffff';
+          context.font = 'bold 38px Arial';
+          context.strokeText('POINTS!', ballsX, centerY + 52);
+          context.fillText('POINTS!', ballsX, centerY + 52);
         }
 
         context.restore();
