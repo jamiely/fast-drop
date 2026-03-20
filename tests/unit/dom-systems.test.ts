@@ -176,7 +176,7 @@ describe('DOM systems and UI helpers', () => {
     const balls = host.querySelector('[data-role="balls"]');
 
     expect(hud?.hidden).toBe(false);
-    expect(score?.textContent).toBe('000025');
+    expect(score).toBeNull();
     expect(time?.textContent).toBe('09.9');
     expect(balls?.textContent).toBe('03');
 

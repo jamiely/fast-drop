@@ -13,10 +13,6 @@ export class UISystem {
   }
 
   public render(state: GameState): void {
-    this.hud.scoreValue.textContent = String(Math.max(0, state.score)).padStart(
-      6,
-      '0'
-    );
     this.hud.timeValue.textContent = state.timeRemaining
       .toFixed(1)
       .padStart(4, '0');

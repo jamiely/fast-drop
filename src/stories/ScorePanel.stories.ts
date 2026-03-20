@@ -2,7 +2,6 @@ import type { Meta, StoryObj } from '@storybook/html';
 import { createHud } from '../ui/hud';
 
 interface ScoreboardArgs {
-  score: string;
   time: string;
   balls: string;
   ledColor: string;
@@ -23,7 +22,6 @@ const meta: Meta<ScoreboardArgs> = {
     host.style.overflow = 'hidden';
 
     const hud = createHud(host);
-    hud.scoreValue.textContent = args.score;
     hud.timeValue.textContent = args.time;
     hud.ballsValue.textContent = args.balls;
 
@@ -39,14 +37,12 @@ const meta: Meta<ScoreboardArgs> = {
     return host;
   },
   args: {
-    score: '001245',
     time: '26.4',
     balls: '07',
     ledColor: '#ff3f3f',
     panelScale: 1
   },
   argTypes: {
-    score: { control: 'text' },
     time: { control: 'text' },
     balls: { control: 'text' },
     ledColor: { control: 'color' },

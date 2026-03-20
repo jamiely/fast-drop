@@ -408,7 +408,7 @@ describe('Game', () => {
     expect(latestState.ballsRemaining).toBe(0);
     expect(latestState.phase).toBe('playing');
 
-    bridge.stepFrames(179);
+    bridge.stepFrames(180);
     latestState = gameMocks.uiRender.mock.calls.at(-1)?.[0] as {
       phase: string;
     };

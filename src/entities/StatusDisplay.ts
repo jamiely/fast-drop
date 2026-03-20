@@ -49,6 +49,7 @@ const LINEAR_DAMPING = 0.9;
 const RESTITUTION = 0.12;
 const SLEEP_SPEED = 14;
 const SLEEP_FRAMES_REQUIRED = 14;
+const ENDED_TIMER_HIDE_DELAY_MS = 1000;
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 
@@ -235,6 +236,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
   let lastFrameAtMs: number | null = null;
   let ballsSphereScale = 2;
   let lastAppliedSphereScale = ballsSphereScale;
+  let roundEndedAtMs: number | null = null;
 
   const getBallRadius = () => BASE_BALL_RADIUS * ballsSphereScale;
 
@@ -423,6 +425,19 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
     const progress = clamp01(data.timeRemaining / safeTotal);
     const elapsed = 1 - progress;
 
+    if (data.roundEnded) {
+      if (roundEndedAtMs === null) {
+        roundEndedAtMs = nowMs;
+      }
+    } else {
+      roundEndedAtMs = null;
+    }
+
+    const showEndedLayout =
+      data.roundEnded &&
+      roundEndedAtMs !== null &&
+      nowMs - roundEndedAtMs >= ENDED_TIMER_HIDE_DELAY_MS;
+
     context.clearRect(0, 0, canvas.width, canvas.height);
 
     const bg = context.createLinearGradient(0, 0, 0, canvas.height);
@@ -431,77 +446,79 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
     context.fillStyle = bg;
     context.fillRect(0, 0, canvas.width, canvas.height);
 
-    context.fillStyle = '#16326a';
-    context.font = 'bold 58px Arial';
-    context.textAlign = 'center';
-    context.fillText('TIME', canvas.width * 0.31, 104);
-    context.font = 'bold 40px Arial';
-    context.fillText('REMAINING', canvas.width * 0.31, 146);
-
-    context.font = 'bold 58px Arial';
-    context.fillText('BALLS', canvas.width * 0.75, 104);
-    context.font = 'bold 40px Arial';
-    context.fillText('REMAINING', canvas.width * 0.75, 146);
-
     const timerX = canvas.width * 0.29;
     const timerY = canvas.height * 0.3 + 142;
     const timerRadius = 146;
 
-    context.lineWidth = 34;
-    context.lineCap = 'round';
+    if (!showEndedLayout) {
+      context.fillStyle = '#16326a';
+      context.font = 'bold 58px Arial';
+      context.textAlign = 'center';
+      context.fillText('TIME', canvas.width * 0.31, 104);
+      context.font = 'bold 40px Arial';
+      context.fillText('REMAINING', canvas.width * 0.31, 146);
 
-    const startAngle = -Math.PI * 0.5;
-    const elapsedArc = Math.PI * 2 * elapsed;
-    context.strokeStyle = '#2edd76';
-    context.beginPath();
-    context.arc(timerX, timerY, timerRadius, 0, Math.PI * 2);
-    context.stroke();
+      context.font = 'bold 58px Arial';
+      context.fillText('BALLS', canvas.width * 0.75, 104);
+      context.font = 'bold 40px Arial';
+      context.fillText('REMAINING', canvas.width * 0.75, 146);
 
-    if (elapsedArc > 0.001) {
-      context.strokeStyle = '#f0525f';
+      context.lineWidth = 34;
+      context.lineCap = 'round';
+
+      const startAngle = -Math.PI * 0.5;
+      const elapsedArc = Math.PI * 2 * elapsed;
+      context.strokeStyle = '#2edd76';
       context.beginPath();
-      context.arc(
-        timerX,
-        timerY,
-        timerRadius,
-        startAngle,
-        startAngle + elapsedArc
-      );
+      context.arc(timerX, timerY, timerRadius, 0, Math.PI * 2);
+      context.stroke();
+
+      if (elapsedArc > 0.001) {
+        context.strokeStyle = '#f0525f';
+        context.beginPath();
+        context.arc(
+          timerX,
+          timerY,
+          timerRadius,
+          startAngle,
+          startAngle + elapsedArc
+        );
+        context.stroke();
+      }
+
+      context.fillStyle = '#e0fbff';
+      context.beginPath();
+      context.arc(timerX, timerY, timerRadius - 27, 0, Math.PI * 2);
+      context.fill();
+
+      const needleAngle = startAngle + Math.PI * 2 * elapsed;
+      const needleLength = timerRadius - 18;
+
+      const needleTipX = timerX + Math.cos(needleAngle) * needleLength;
+      const needleTipY = timerY + Math.sin(needleAngle) * needleLength;
+
+      context.strokeStyle = '#4a4a4a';
+      context.lineWidth = 16;
+      context.beginPath();
+      context.moveTo(timerX, timerY);
+      context.lineTo(needleTipX, needleTipY);
+      context.stroke();
+
+      context.strokeStyle = '#d3d3d3';
+      context.lineWidth = 10;
+      context.beginPath();
+      context.moveTo(timerX, timerY);
+      context.lineTo(needleTipX, needleTipY);
+      context.stroke();
+
+      context.fillStyle = '#d3d3d3';
+      context.strokeStyle = '#4a4a4a';
+      context.lineWidth = 4;
+      context.beginPath();
+      context.arc(timerX, timerY, 14, 0, Math.PI * 2);
+      context.fill();
       context.stroke();
     }
-
-    context.fillStyle = '#e0fbff';
-    context.beginPath();
-    context.arc(timerX, timerY, timerRadius - 27, 0, Math.PI * 2);
-    context.fill();
-
-    const needleAngle = startAngle + Math.PI * 2 * elapsed;
-    const needleLength = timerRadius - 18;
-
-    const needleTipX = timerX + Math.cos(needleAngle) * needleLength;
-    const needleTipY = timerY + Math.sin(needleAngle) * needleLength;
-
-    context.strokeStyle = '#4a4a4a';
-    context.lineWidth = 16;
-    context.beginPath();
-    context.moveTo(timerX, timerY);
-    context.lineTo(needleTipX, needleTipY);
-    context.stroke();
-
-    context.strokeStyle = '#d3d3d3';
-    context.lineWidth = 10;
-    context.beginPath();
-    context.moveTo(timerX, timerY);
-    context.lineTo(needleTipX, needleTipY);
-    context.stroke();
-
-    context.fillStyle = '#d3d3d3';
-    context.strokeStyle = '#4a4a4a';
-    context.lineWidth = 4;
-    context.beginPath();
-    context.arc(timerX, timerY, 14, 0, Math.PI * 2);
-    context.fill();
-    context.stroke();
 
     const ballsX = canvas.width * 0.75;
     const ballsY = timerY;
@@ -517,7 +534,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
     const showAllDroppedMessage = ballsCount <= 0 && ballsTotal > 0;
     const ballRadius = getBallRadius();
 
-    if (data.roundEnded) {
+    if (showEndedLayout) {
       const enteredCount = Math.max(0, Math.min(ballsTotal, Math.floor(data.ballsEntered)));
       const fillRatio = ballsTotal <= 0 ? 0 : clamp01(enteredCount / ballsTotal);
 

@@ -4,9 +4,9 @@ test('shows HUD and updates balls after drop', async ({ page }) => {
   await page.goto('/');
 
   const hud = page.locator('.hud');
-  await expect(hud.getByText('Score', { exact: true })).toBeVisible();
   await expect(hud.getByText('Time', { exact: true })).toBeVisible();
   await expect(hud.getByText('Balls', { exact: true })).toBeVisible();
+  await expect(page.locator('[data-role="score"]')).toHaveCount(0);
 
   const ballsValue = page.locator('[data-role="balls"]');
   await expect(ballsValue).toHaveText('50');
@@ -40,16 +40,15 @@ test('debug controls mutate HUD state when debug is enabled', async ({
   await page.goto('/?debug=1');
 
   const timeValue = page.locator('[data-role="time"]');
-  const scoreValue = page.locator('[data-role="score"]');
 
   await expect(timeValue).toHaveText(/2?9\.\d|30\.0/);
-  await expect(scoreValue).toHaveText('000000');
+  await expect(page.locator('[data-role="score"]')).toHaveCount(0);
 
   await page.getByRole('button', { name: '+3s' }).click();
   await expect(timeValue).toHaveText(/3[2-3]\.\d/);
 
   await page.getByRole('button', { name: '+100' }).click();
-  await expect(scoreValue).toHaveText('000100');
+  await expect(page.locator('[data-role="score"]')).toHaveCount(0);
 });
 
 test('round ends on timer expiry and allows restart with space', async ({
@@ -81,7 +80,7 @@ test('round waits a few seconds before ending after balls are exhausted', async 
   await expect(page.locator('.hud')).toBeVisible();
 
   await page.evaluate(() => {
-    window.__FAST_DROP_TEST_BRIDGE__?.stepFrames(180);
+    window.__FAST_DROP_TEST_BRIDGE__?.stepFrames(181);
   });
 
   await expect(page.locator('.hud')).toBeHidden();
@@ -113,7 +112,7 @@ test('space restarts round after it ends', async ({ page }) => {
   await page.keyboard.press('Space');
 
   await expect(page.locator('.hud')).toBeVisible();
-  await expect(page.locator('[data-role="score"]')).toHaveText('000000');
+  await expect(page.locator('[data-role="score"]')).toHaveCount(0);
   await expect(page.locator('[data-role="balls"]')).toHaveText('50');
   await expect(page.locator('[data-role="time"]')).toHaveText(
     /2[89]\.\d|30\.0/

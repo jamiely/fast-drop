@@ -1,6 +1,5 @@
 export interface HudView {
   root: HTMLElement;
-  scoreValue: HTMLElement;
   timeValue: HTMLElement;
   ballsValue: HTMLElement;
   summaryOverlay: HTMLElement;
@@ -15,11 +14,6 @@ export const createHud = (host: HTMLElement): HudView => {
   const root = document.createElement('section');
   root.className = 'hud';
   root.innerHTML = `
-    <div class="hud__title">SCORE PANEL</div>
-    <div class="hud__row">
-      <span>Score</span>
-      <strong class="led" data-role="score">000000</strong>
-    </div>
     <div class="hud__row">
       <span>Time</span>
       <strong class="led" data-role="time">00.0</strong>
@@ -42,7 +36,6 @@ export const createHud = (host: HTMLElement): HudView => {
     <button class="summary-overlay__play-again" type="button">Play Again</button>
   `;
 
-  const scoreValue = root.querySelector<HTMLElement>('[data-role="score"]');
   const timeValue = root.querySelector<HTMLElement>('[data-role="time"]');
   const ballsValue = root.querySelector<HTMLElement>('[data-role="balls"]');
   const summaryScore = summaryOverlay.querySelector<HTMLElement>(
@@ -61,7 +54,6 @@ export const createHud = (host: HTMLElement): HudView => {
     summaryOverlay.querySelector<HTMLButtonElement>('button');
 
   if (
-    !scoreValue ||
     !timeValue ||
     !ballsValue ||
     !summaryScore ||
@@ -77,7 +69,6 @@ export const createHud = (host: HTMLElement): HudView => {
 
   return {
     root,
-    scoreValue,
     timeValue,
     ballsValue,
     summaryOverlay,
