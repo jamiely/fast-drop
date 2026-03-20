@@ -80,6 +80,7 @@ const MAX_BALL_AGE_SECONDS = 8;
 const MISSED_BALL_CLEANUP_Y = -3.5;
 const BALL_COLLISION_RESTITUTION = 0.45;
 const OUTER_RING_LED_REVERSE_CHECK_SECONDS = 2.4;
+const BRIDGE_CENTER_DOME_UNDERLAP = 0.35;
 
 export class SceneRoot {
   public readonly renderer: WebGLRenderer | null;
@@ -800,6 +801,11 @@ export class SceneRoot {
     return Math.max(0.03, this.getJarRadius() * 0.08);
   }
 
+  private getBridgeCenterDomeUnderlap(): number {
+    const moundRadius = this.getMoundRadius();
+    return Math.min(BRIDGE_CENTER_DOME_UNDERLAP, moundRadius * 0.28);
+  }
+
   private updateCenterDomeScale(): void {
     const centerClearance = 0.06;
     const maxRadiusBeforeJarContact = Math.max(
@@ -843,15 +849,19 @@ export class SceneRoot {
         0,
         this.getMoundRadius() - this.getBridgeDomeIntersectionDepth()
       );
+      const underlapAnchorRadius = Math.max(
+        0,
+        bridgeAnchorRadius - this.getBridgeCenterDomeUnderlap()
+      );
       const bridgeEndRadius = Math.max(
         jarRadius * 0.9,
         distanceFromCenter - petalRadius * 0.98
       );
       const bridgeLength = Math.max(
         this.getMinimumBridgeLength(),
-        bridgeEndRadius - bridgeAnchorRadius
+        bridgeEndRadius - underlapAnchorRadius
       );
-      const bridgeCenterRadius = bridgeAnchorRadius + bridgeLength * 0.5;
+      const bridgeCenterRadius = underlapAnchorRadius + bridgeLength * 0.5;
 
       bridge.scale.z = bridgeLength / this.playfieldDimensions.bridgeLength;
       bridge.position.x = dirX * bridgeCenterRadius;
