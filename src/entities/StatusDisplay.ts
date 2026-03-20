@@ -50,6 +50,8 @@ const RESTITUTION = 0.12;
 const SLEEP_SPEED = 14;
 const SLEEP_FRAMES_REQUIRED = 14;
 const ENDED_TIMER_HIDE_DELAY_MS = 1000;
+const ENDED_COUNT_RELEASE_INTERVAL_MS = 90;
+const ENDED_DROP_GRAVITY = 920;
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 
@@ -85,6 +87,12 @@ interface FallingBall {
   x: number;
   y: number;
   vx: number;
+  vy: number;
+}
+
+interface EndedDropBall {
+  x: number;
+  y: number;
   vy: number;
 }
 
@@ -237,6 +245,10 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
   let ballsSphereScale = 2;
   let lastAppliedSphereScale = ballsSphereScale;
   let roundEndedAtMs: number | null = null;
+  let endedDisplayedCount = 0;
+  let endedFallingBalls: EndedDropBall[] = [];
+  let endedLastReleaseAtMs = 0;
+  let endedLastFrameAtMs: number | null = null;
 
   const getBallRadius = () => BASE_BALL_RADIUS * ballsSphereScale;
 
@@ -431,6 +443,10 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       }
     } else {
       roundEndedAtMs = null;
+      endedDisplayedCount = 0;
+      endedFallingBalls = [];
+      endedLastReleaseAtMs = 0;
+      endedLastFrameAtMs = null;
     }
 
     const showEndedLayout =
@@ -538,60 +554,133 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       const enteredCount = Math.max(0, Math.min(ballsTotal, Math.floor(data.ballsEntered)));
       const fillRatio = ballsTotal <= 0 ? 0 : clamp01(enteredCount / ballsTotal);
 
-      const leftPanelX = canvas.width * 0.18;
-      const panelTopY = 140;
+      const platformY = canvas.height - 64;
+      const platformLeft = 44;
+      const platformRight = canvas.width * 0.47;
+      const platformWidth = platformRight - platformLeft;
+      const platformCenterX = platformLeft + platformWidth * 0.5;
 
-      context.fillStyle = '#d6435d';
-      context.font = 'bold 28px Arial';
-      context.textAlign = 'left';
-      context.fillText('SWIPE CARD', leftPanelX, panelTopY - 16);
+      context.fillStyle = '#304e97';
+      context.beginPath();
+      context.roundRect(platformLeft, platformY - 10, platformWidth, 20, 10);
+      context.fill();
+      context.fillStyle = '#223d7c';
+      context.beginPath();
+      context.ellipse(platformCenterX, platformY + 14, platformWidth * 0.54, 19, 0, 0, Math.PI * 2);
+      context.fill();
 
       const jarX = timerX;
-      const jarY = timerY - 4;
-      const jarWidth = 170;
-      const jarHeight = 206;
-      const jarTop = jarY - jarHeight * 0.5;
-      const jarBottom = jarY + jarHeight * 0.5;
+      const jarWidth = 196;
+      const jarHeight = 254;
+      const jarBottom = platformY - 2;
+      const jarTop = jarBottom - jarHeight;
+      const jarMouthY = jarTop + 16;
       const jarFillTop = jarBottom - jarHeight * fillRatio;
+      const jarInnerInset = 12;
+      const jarInnerWidth = jarWidth - jarInnerInset * 2;
 
-      context.fillStyle = '#3c2ce4';
+      if (endedLastFrameAtMs === null) {
+        endedLastFrameAtMs = nowMs;
+      }
+      const endedDt = Math.min(
+        0.05,
+        Math.max(0.001, (nowMs - endedLastFrameAtMs) / 1000)
+      );
+      endedLastFrameAtMs = nowMs;
+
+      while (
+        endedDisplayedCount + endedFallingBalls.length < enteredCount &&
+        nowMs - endedLastReleaseAtMs >= ENDED_COUNT_RELEASE_INTERVAL_MS
+      ) {
+        endedFallingBalls.push({
+          x: jarX + (Math.random() - 0.5) * (jarInnerWidth * 0.42),
+          y: 18,
+          vy: 18
+        });
+        endedLastReleaseAtMs = nowMs;
+      }
+
+      for (let index = endedFallingBalls.length - 1; index >= 0; index -= 1) {
+        const ball = endedFallingBalls[index];
+        ball.vy += ENDED_DROP_GRAVITY * endedDt;
+        ball.y += ball.vy * endedDt;
+
+        if (ball.y >= jarBottom - 20) {
+          endedFallingBalls.splice(index, 1);
+          endedDisplayedCount = Math.min(endedDisplayedCount + 1, enteredCount);
+        }
+      }
+
+      context.fillStyle = '#e8f7ff';
       context.beginPath();
-      context.ellipse(jarX, jarBottom + 34, 92, 26, 0, 0, Math.PI * 2);
+      context.ellipse(jarX, jarBottom, jarWidth * 0.5, 22, 0, 0, Math.PI * 2);
       context.fill();
-      context.fillRect(jarX - 22, jarBottom + 34, 44, 88);
 
-      context.fillStyle = 'rgba(183, 240, 255, 0.18)';
-      context.fillRect(jarX - jarWidth * 0.5, jarTop, jarWidth, jarHeight);
+      context.fillStyle = '#d6f0ff';
+      context.fillRect(jarX - jarWidth * 0.5, jarTop + 18, jarWidth, jarHeight - 18);
 
-      context.strokeStyle = '#1e2f72';
+      context.fillStyle = '#8cc2ff';
+      context.fillRect(
+        jarX - jarWidth * 0.5 + jarInnerInset,
+        jarFillTop,
+        jarInnerWidth,
+        jarBottom - jarFillTop
+      );
+
+      context.strokeStyle = '#274f92';
       context.lineWidth = 10;
-      context.strokeRect(jarX - jarWidth * 0.5, jarTop, jarWidth, jarHeight);
-
-      context.fillStyle = 'rgba(76, 116, 255, 0.45)';
-      context.fillRect(jarX - jarWidth * 0.5 + 4, jarFillTop, jarWidth - 8, jarBottom - jarFillTop);
-
-      context.strokeStyle = '#122457';
-      context.lineWidth = 8;
       context.beginPath();
-      context.ellipse(jarX, jarTop, jarWidth * 0.52, 16, 0, 0, Math.PI * 2);
+      context.moveTo(jarX - jarWidth * 0.5, jarTop + 18);
+      context.lineTo(jarX - jarWidth * 0.5, jarBottom);
+      context.moveTo(jarX + jarWidth * 0.5, jarTop + 18);
+      context.lineTo(jarX + jarWidth * 0.5, jarBottom);
       context.stroke();
+
+      context.fillStyle = '#f2fbff';
+      context.strokeStyle = '#274f92';
+      context.lineWidth = 10;
+      context.beginPath();
+      context.ellipse(jarX, jarTop + 18, jarWidth * 0.52, 22, 0, 0, Math.PI * 2);
+      context.fill();
+      context.stroke();
+
+      context.fillStyle = '#f2fbff';
+      context.strokeStyle = '#274f92';
+      context.lineWidth = 10;
+      context.beginPath();
+      context.ellipse(jarX, jarBottom, jarWidth * 0.5, 22, 0, 0, Math.PI * 2);
+      context.fill();
+      context.stroke();
+
+      for (const ball of endedFallingBalls) {
+        if (ball.y > jarMouthY - 12 && Math.abs(ball.x - jarX) < jarInnerWidth * 0.5) {
+          context.save();
+          context.beginPath();
+          context.rect(jarX - jarInnerWidth * 0.5, jarMouthY - 4, jarInnerWidth, jarBottom - jarMouthY + 8);
+          context.clip();
+          drawBall(ball.x, ball.y, 0.45, 1, 0);
+          context.restore();
+        } else {
+          drawBall(ball.x, ball.y, 0.45, 1, 0);
+        }
+      }
 
       context.fillStyle = '#eff7ff';
       context.strokeStyle = '#27488f';
       context.lineWidth = 6;
       context.beginPath();
-      context.arc(jarX, jarY, 34, 0, Math.PI * 2);
+      context.arc(jarX, jarTop + jarHeight * 0.52, 46, 0, Math.PI * 2);
       context.fill();
       context.stroke();
 
       context.fillStyle = '#e54161';
-      context.font = 'bold 56px Arial';
+      context.font = 'bold 72px Arial';
       context.textAlign = 'center';
       context.textBaseline = 'middle';
-      context.fillText(String(enteredCount), jarX, jarY - 2);
+      context.fillText(String(endedDisplayedCount), jarX, jarTop + jarHeight * 0.52 - 3);
       context.fillStyle = '#2a4a90';
-      context.font = 'bold 18px Arial';
-      context.fillText('BALLS', jarX, jarY + 28);
+      context.font = 'bold 30px Arial';
+      context.fillText('BALLS', jarX, jarTop + jarHeight * 0.52 + 38);
 
       context.strokeStyle = '#31559b';
       context.lineWidth = 3;
