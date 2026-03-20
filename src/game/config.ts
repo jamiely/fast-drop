@@ -65,7 +65,7 @@ export const gameConfig: RuntimeConfig = {
     dropPointX: 0,
     dropPointZ: 2.2 + DEFAULT_JAR_DIAMETER,
     dropHeight: 3.25,
-    dropButtonZ: 3.5,
+    dropButtonZ: 3.75,
     statusDisplayX: 0,
     statusDisplayY: 2.25,
     statusDisplayZ: 1.9,
@@ -89,7 +89,7 @@ export const gameConfig: RuntimeConfig = {
     outerRingLedReverseChance: 0.2
   },
   camera: {
-    distance: 6,
+    distance: 6.7,
     pitch: 2.1,
     yaw: 0,
     panX: 0,

@@ -292,7 +292,7 @@ export const createDebugMenu = (
       <label>Ring diameter <span class="debug-menu__value" data-value-for="gameplay:outerRingDiameter">6.20</span><input type="range" min="2" max="16" step="0.1" value="6.2" data-gameplay="outerRingDiameter" /></label>
       <label>Drop distance <span class="debug-menu__value" data-value-for="gameplay:dropPointZ">2.86</span><input type="range" min="-6" max="6" step="0.05" value="2.86" data-gameplay="dropPointZ" /></label>
       <label>Drop height <span class="debug-menu__value" data-value-for="gameplay:dropHeight">3.25</span><input type="range" min="0.4" max="8" step="0.05" value="3.25" data-gameplay="dropHeight" /></label>
-      <label>Button Z <span class="debug-menu__value" data-value-for="gameplay:dropButtonZ">3.50</span><input type="range" min="-6" max="6" step="0.01" value="3.5" data-gameplay="dropButtonZ" /></label>
+      <label>Button Z <span class="debug-menu__value" data-value-for="gameplay:dropButtonZ">3.75</span><input type="range" min="-6" max="6" step="0.01" value="3.75" data-gameplay="dropButtonZ" /></label>
       <label>Display X <span class="debug-menu__value" data-value-for="gameplay:statusDisplayX">0.00</span><input type="range" min="-4" max="4" step="0.01" value="0" data-gameplay="statusDisplayX" /></label>
       <label>Display Y <span class="debug-menu__value" data-value-for="gameplay:statusDisplayY">2.25</span><input type="range" min="0.2" max="4" step="0.01" value="2.25" data-gameplay="statusDisplayY" /></label>
       <label>Display Z <span class="debug-menu__value" data-value-for="gameplay:statusDisplayZ">1.90</span><input type="range" min="-4" max="4" step="0.01" value="1.9" data-gameplay="statusDisplayZ" /></label>
@@ -307,7 +307,7 @@ export const createDebugMenu = (
     </div>
     <div class="debug-menu__group">
       <h4>Camera tuning</h4>
-      <label>Distance <span class="debug-menu__value" data-value-for="camera:distance">6.00</span><input type="range" min="2" max="30" step="0.1" value="6" data-camera="distance" /></label>
+      <label>Distance <span class="debug-menu__value" data-value-for="camera:distance">6.70</span><input type="range" min="2" max="30" step="0.1" value="6.7" data-camera="distance" /></label>
       <label>Pitch <span class="debug-menu__value" data-value-for="camera:pitch">2.10</span><input type="range" min="-1" max="10" step="0.1" value="2.1" data-camera="pitch" /></label>
       <label>Yaw <span class="debug-menu__value" data-value-for="camera:yaw">0.00</span><input type="range" min="-4" max="4" step="0.1" value="0" data-camera="yaw" /></label>
       <label>Pan X <span class="debug-menu__value" data-value-for="camera:panX">0.00</span><input type="range" min="-14" max="14" step="0.1" value="0" data-camera="panX" /></label>
