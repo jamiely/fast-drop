@@ -936,7 +936,11 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
         } else {
           context.fillStyle = '#e54161';
           context.font = 'bold 96px Arial';
-          context.fillText(String(content), ballsX, centerY + 4);
+          context.fillText(String(content), ballsX, centerY - 10);
+
+          context.fillStyle = '#173778';
+          context.font = 'bold 34px Arial';
+          context.fillText('POINTS!', ballsX, centerY + 44);
         }
 
         context.restore();
