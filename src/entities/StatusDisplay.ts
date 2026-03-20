@@ -602,7 +602,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
 
       const jarWidth = 196;
       const jarHeight = 254;
-      const jarBottom = pedestalTopY - 22;
+      const jarBottom = pedestalTopY - 4;
       const jarTop = jarBottom - jarHeight;
       const jarMouthY = jarTop + 16;
       const jarFillTop = jarBottom - jarHeight * fillRatio;
