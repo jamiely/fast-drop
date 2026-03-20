@@ -195,6 +195,14 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
   screen.position.z = housingFrontZ + 0.001;
   bezel.position.z = housingFrontZ + 0.004;
 
+  const displayMeshes = [housing, screen, bezel];
+  for (const mesh of displayMeshes) {
+    mesh.renderOrder = 1000;
+    const material = mesh.material;
+    material.depthTest = false;
+    material.depthWrite = false;
+  }
+
   group.add(housing, screen, bezel);
 
   const getNowMs = () =>
