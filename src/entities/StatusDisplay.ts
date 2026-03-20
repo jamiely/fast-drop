@@ -958,8 +958,14 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
           totalScoreSteps * ENDED_SCORE_STEP_MS
         );
         const linearProgress = clamp01(scoreRevealElapsedMs / totalAnimationMs);
-        const easedProgress = 1 - (1 - linearProgress) ** 3;
-        const stepFloat = easedProgress * totalScoreSteps;
+        const fastStartProgress = 1 - (1 - linearProgress) ** 2.2;
+        const endBlendStart = 0.65;
+        const endBlend = clamp01(
+          (linearProgress - endBlendStart) / (1 - endBlendStart)
+        );
+        const blendedProgress =
+          fastStartProgress * (1 - endBlend) + linearProgress * endBlend;
+        const stepFloat = blendedProgress * totalScoreSteps;
         const completedSteps = Math.floor(stepFloat);
 
         if (linearProgress >= 1 || completedSteps >= totalScoreSteps) {
