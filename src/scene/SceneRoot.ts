@@ -692,7 +692,7 @@ export class SceneRoot {
   private syncDropButtonPlacement(): void {
     const ringRadius = this.outerRingMesh.geometry.parameters.radius ?? 3.75;
     this.dropButton.group.position.set(0, 0.07, ringRadius - 0.2);
-    this.dropButton.group.rotation.y = Math.PI;
+    this.dropButton.group.rotation.y = Math.PI * 0.5;
   }
 
   private syncBallScale(): void {
