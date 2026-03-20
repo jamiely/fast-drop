@@ -38,10 +38,12 @@ body {
   height: 100dvh;
   min-height: 100svh;
   overflow: hidden;
+  touch-action: manipulation;
 }
 
 canvas {
   display: block;
+  touch-action: manipulation;
 }
 
 [hidden] {
