@@ -54,7 +54,10 @@ const meta: Meta<StatusDisplayStoryArgs> = {
       timeRemaining: args.timeRemaining,
       timeTotal: args.timeTotal,
       ballsRemaining: args.ballsRemaining,
-      ballsTotal: 50
+      ballsTotal: 50,
+      roundEnded: false,
+      score: 0,
+      ballsEntered: 0
     });
     group.add(statusDisplay.group);
 

@@ -57,6 +57,9 @@ export interface StatusDisplayData {
   timeTotal: number;
   ballsRemaining: number;
   ballsTotal: number;
+  roundEnded: boolean;
+  score: number;
+  ballsEntered: number;
 }
 
 export interface StatusDisplayVisual {
@@ -232,6 +235,11 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
   let lastFrameAtMs: number | null = null;
   let ballsSphereScale = 2;
   let lastAppliedSphereScale = ballsSphereScale;
+  let scoreDisplayValue = 0;
+  let scoreAnimationStartMs = 0;
+  let scoreAnimationFrom = 0;
+  let scoreAnimationTo = 0;
+  let scoreAnimationActive = false;
 
   const getBallRadius = () => BASE_BALL_RADIUS * ballsSphereScale;
 
@@ -411,6 +419,40 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
     }
   };
 
+  const getAnimatedScoreValue = (targetScore: number, nowMs: number): number => {
+    if (!Number.isFinite(targetScore)) {
+      return 0;
+    }
+
+    const safeTarget = Math.max(0, Math.floor(targetScore));
+
+    if (safeTarget !== scoreAnimationTo) {
+      scoreAnimationFrom = scoreDisplayValue;
+      scoreAnimationTo = safeTarget;
+      scoreAnimationStartMs = nowMs;
+      scoreAnimationActive = true;
+    }
+
+    if (!scoreAnimationActive) {
+      return scoreDisplayValue;
+    }
+
+    const distance = Math.abs(scoreAnimationTo - scoreAnimationFrom);
+    const durationMs = Math.max(650, Math.min(3200, 520 + distance * 16));
+    const progress = clamp01((nowMs - scoreAnimationStartMs) / durationMs);
+    const eased = 1 - (1 - progress) * (1 - progress);
+    scoreDisplayValue = Math.round(
+      scoreAnimationFrom + (scoreAnimationTo - scoreAnimationFrom) * eased
+    );
+
+    if (progress >= 1) {
+      scoreDisplayValue = scoreAnimationTo;
+      scoreAnimationActive = false;
+    }
+
+    return scoreDisplayValue;
+  };
+
   const draw = (data: StatusDisplayData, nowMs = getNowMs()) => {
     if (!context || !texture) {
       return;
@@ -513,6 +555,100 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
     const ballsTotal = Math.max(0, Math.floor(data.ballsTotal));
     const showAllDroppedMessage = ballsCount <= 0 && ballsTotal > 0;
     const ballRadius = getBallRadius();
+
+    if (data.roundEnded) {
+      const enteredCount = Math.max(0, Math.min(ballsTotal, Math.floor(data.ballsEntered)));
+      const fillRatio = ballsTotal <= 0 ? 0 : clamp01(enteredCount / ballsTotal);
+
+      const leftPanelX = canvas.width * 0.18;
+      const panelTopY = 140;
+
+      context.fillStyle = '#d6435d';
+      context.font = 'bold 28px Arial';
+      context.textAlign = 'left';
+      context.fillText('SWIPE CARD', leftPanelX, panelTopY - 16);
+
+      const jarX = timerX;
+      const jarY = timerY - 4;
+      const jarWidth = 170;
+      const jarHeight = 206;
+      const jarTop = jarY - jarHeight * 0.5;
+      const jarBottom = jarY + jarHeight * 0.5;
+      const jarFillTop = jarBottom - jarHeight * fillRatio;
+
+      context.fillStyle = '#3c2ce4';
+      context.beginPath();
+      context.ellipse(jarX, jarBottom + 34, 92, 26, 0, 0, Math.PI * 2);
+      context.fill();
+      context.fillRect(jarX - 22, jarBottom + 34, 44, 88);
+
+      context.fillStyle = 'rgba(183, 240, 255, 0.18)';
+      context.fillRect(jarX - jarWidth * 0.5, jarTop, jarWidth, jarHeight);
+
+      context.strokeStyle = '#1e2f72';
+      context.lineWidth = 10;
+      context.strokeRect(jarX - jarWidth * 0.5, jarTop, jarWidth, jarHeight);
+
+      context.fillStyle = 'rgba(76, 116, 255, 0.45)';
+      context.fillRect(jarX - jarWidth * 0.5 + 4, jarFillTop, jarWidth - 8, jarBottom - jarFillTop);
+
+      context.strokeStyle = '#122457';
+      context.lineWidth = 8;
+      context.beginPath();
+      context.ellipse(jarX, jarTop, jarWidth * 0.52, 16, 0, 0, Math.PI * 2);
+      context.stroke();
+
+      context.fillStyle = '#eff7ff';
+      context.strokeStyle = '#27488f';
+      context.lineWidth = 6;
+      context.beginPath();
+      context.arc(jarX, jarY, 34, 0, Math.PI * 2);
+      context.fill();
+      context.stroke();
+
+      context.fillStyle = '#e54161';
+      context.font = 'bold 56px Arial';
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      context.fillText(String(enteredCount), jarX, jarY - 2);
+      context.fillStyle = '#2a4a90';
+      context.font = 'bold 18px Arial';
+      context.fillText('BALLS', jarX, jarY + 28);
+
+      context.strokeStyle = '#31559b';
+      context.lineWidth = 3;
+      context.beginPath();
+      context.moveTo(canvas.width * 0.5, 116);
+      context.lineTo(canvas.width * 0.5, canvas.height - 72);
+      context.stroke();
+
+      context.fillStyle = '#f5f8ff';
+      context.strokeStyle = '#dc4a68';
+      context.lineWidth = 6;
+      context.beginPath();
+      context.arc(ballsX, ballsY - 20, 94, 0, Math.PI * 2);
+      context.fill();
+      context.stroke();
+
+      context.fillStyle = '#173778';
+      context.font = 'bold 68px Arial';
+      context.textAlign = 'center';
+      context.fillText('GREAT', ballsX, ballsY - 34);
+      context.fillStyle = '#e54161';
+      context.font = 'bold 74px Arial';
+      context.fillText('JOB!', ballsX, ballsY + 30);
+
+      const animatedScore = getAnimatedScoreValue(data.score, nowMs);
+      context.fillStyle = '#153572';
+      context.font = 'bold 44px Arial';
+      context.fillText('CALCULATING', ballsX, ballsY + 126);
+      context.fillStyle = '#e54161';
+      context.font = 'bold 62px Arial';
+      context.fillText(String(animatedScore), ballsX, ballsY + 184);
+
+      texture.needsUpdate = true;
+      return;
+    }
 
     if (lastFrameAtMs === null) {
       lastFrameAtMs = nowMs;
@@ -673,7 +809,10 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       timeRemaining: 30,
       timeTotal: 30,
       ballsRemaining: 50,
-      ballsTotal: 50
+      ballsTotal: 50,
+      roundEnded: false,
+      score: 0,
+      ballsEntered: 0
     },
     getNowMs()
   );

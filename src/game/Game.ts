@@ -219,7 +219,10 @@ export class Game {
         timeRemaining: number,
         timeTotal: number,
         ballsRemaining: number,
-        ballsTotal: number
+        ballsTotal: number,
+        roundEnded: boolean,
+        score: number,
+        ballsEntered: number
       ) => void;
     };
 
@@ -227,7 +230,10 @@ export class Game {
       this.state.timeRemaining,
       this.runtimeConfig.timeStartSeconds,
       this.state.ballsRemaining,
-      this.runtimeConfig.ballsTotal
+      this.runtimeConfig.ballsTotal,
+      this.state.phase === 'ended',
+      this.state.score,
+      this.state.hits
     );
   }
 

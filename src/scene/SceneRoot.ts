@@ -463,13 +463,19 @@ export class SceneRoot {
     timeRemaining: number,
     timeTotal: number,
     ballsRemaining: number,
-    ballsTotal: number
+    ballsTotal: number,
+    roundEnded: boolean,
+    score: number,
+    ballsEntered: number
   ): void {
     this.statusDisplay.updateData({
       timeRemaining,
       timeTotal,
       ballsRemaining,
-      ballsTotal
+      ballsTotal,
+      roundEnded,
+      score,
+      ballsEntered
     });
   }
 
