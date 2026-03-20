@@ -115,7 +115,7 @@ export class SceneRoot {
   private dropButtonPress = 0;
 
   private dropPoint = { x: 0, z: 2.2, y: 2.5 };
-  private dropButtonZ = 2.9;
+  private dropButtonZ = 3.5;
   private orbitRadius = 2.2;
   private jarDiameterScale = 1;
   private jarHeightScale = 1;

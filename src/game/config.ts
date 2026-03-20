@@ -65,7 +65,7 @@ export const gameConfig: RuntimeConfig = {
     dropPointX: 0,
     dropPointZ: 2.2 + DEFAULT_JAR_DIAMETER,
     dropHeight: 3.25,
-    dropButtonZ: 2.9,
+    dropButtonZ: 3.5,
     statusDisplayX: 0,
     statusDisplayY: 2.25,
     statusDisplayZ: 1.9,
