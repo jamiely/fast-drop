@@ -16,3 +16,4 @@
 - Store feature screenshots (and related historical artifacts like old research/prompt files) in `docs/history/timestamp-x/`, where `x` describes the feature that was added.
 - After adding features, deploy updates to GitHub (when remote access is available).
 - For each major feature completed, add at least one focused end-to-end regression test to prevent regressions.
+- Drop button orientation baseline: `DROP` text should face the player/camera by default (current fix uses a 90° Y rotation in `SceneRoot.syncDropButtonPlacement()`).
