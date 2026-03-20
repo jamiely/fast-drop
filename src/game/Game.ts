@@ -31,7 +31,7 @@ import {
 import { createDebugMenu } from '../ui/debugMenu';
 
 const DEV_PRESET_STORAGE_KEY = 'fast-drop-debug-preset';
-const BALLS_EXHAUSTED_END_DELAY_SECONDS = 10;
+const BALLS_EXHAUSTED_END_DELAY_SECONDS = 3;
 
 export class Game {
   private readonly sceneRoot: SceneRoot;

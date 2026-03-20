@@ -387,7 +387,7 @@ describe('Game', () => {
     expect(gameMocks.audioPlay).toHaveBeenCalledWith('game-over');
   });
 
-  it('waits 10 seconds before ending after balls are exhausted', async () => {
+  it('waits a few seconds before ending after balls are exhausted', async () => {
     const { Game } = await import('../../src/game/Game');
     const game = new Game(document.createElement('div'));
 
@@ -408,7 +408,7 @@ describe('Game', () => {
     expect(latestState.ballsRemaining).toBe(0);
     expect(latestState.phase).toBe('playing');
 
-    bridge.stepFrames(599);
+    bridge.stepFrames(179);
     latestState = gameMocks.uiRender.mock.calls.at(-1)?.[0] as {
       phase: string;
     };

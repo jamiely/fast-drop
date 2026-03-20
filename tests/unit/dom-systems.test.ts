@@ -156,12 +156,9 @@ describe('DOM systems and UI helpers', () => {
     expect(drops).toBe(0);
   });
 
-  it('renders state and handles play again events in UISystem', () => {
+  it('renders state and hides HUD when round is ended', () => {
     const host = document.createElement('div');
     const ui = new UISystem(host);
-
-    const onPlayAgain = vi.fn();
-    ui.onPlayAgain(onPlayAgain);
 
     ui.render({
       phase: 'playing',
@@ -173,13 +170,12 @@ describe('DOM systems and UI helpers', () => {
       misses: 1
     });
 
+    const hud = host.querySelector<HTMLElement>('.hud');
     const score = host.querySelector('[data-role="score"]');
     const time = host.querySelector('[data-role="time"]');
     const balls = host.querySelector('[data-role="balls"]');
-    const playAgainButton = host.querySelector<HTMLButtonElement>(
-      '.summary-overlay__play-again'
-    );
 
+    expect(hud?.hidden).toBe(false);
     expect(score?.textContent).toBe('000025');
     expect(time?.textContent).toBe('09.9');
     expect(balls?.textContent).toBe('03');
@@ -194,14 +190,7 @@ describe('DOM systems and UI helpers', () => {
       misses: 1
     });
 
-    expect(host.querySelector('.summary-overlay')?.hasAttribute('hidden')).toBe(
-      false
-    );
-    expect(
-      host.querySelector('[data-role="summary-accuracy"]')?.textContent
-    ).toBe('50%');
-
-    playAgainButton?.click();
-    expect(onPlayAgain).toHaveBeenCalledTimes(1);
+    expect(hud?.hidden).toBe(true);
+    expect(host.querySelector('.summary-overlay')?.hasAttribute('hidden')).toBe(true);
   });
 });

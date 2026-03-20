@@ -1,4 +1,3 @@
-import { selectAccuracy } from '../game/state';
 import type { GameState } from '../game/types';
 import { createHud, type HudView } from '../ui/hud';
 
@@ -27,12 +26,7 @@ export class UISystem {
 
     const isEnded = state.phase === 'ended';
 
-    this.hud.summaryOverlay.hidden = !isEnded;
-    this.hud.summaryScore.textContent = String(Math.max(0, state.score));
-    this.hud.summaryHits.textContent = String(Math.max(0, state.hits));
-    this.hud.summaryMisses.textContent = String(Math.max(0, state.misses));
-    this.hud.summaryAccuracy.textContent = `${Math.round(
-      selectAccuracy(state) * 100
-    )}%`;
+    this.hud.root.hidden = isEnded;
+    this.hud.summaryOverlay.hidden = true;
   }
 }

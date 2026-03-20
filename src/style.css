@@ -44,6 +44,10 @@ canvas {
   display: block;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 .hud {
   position: absolute;
   top: max(14px, env(safe-area-inset-top));

@@ -235,11 +235,6 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
   let lastFrameAtMs: number | null = null;
   let ballsSphereScale = 2;
   let lastAppliedSphereScale = ballsSphereScale;
-  let scoreDisplayValue = 0;
-  let scoreAnimationStartMs = 0;
-  let scoreAnimationFrom = 0;
-  let scoreAnimationTo = 0;
-  let scoreAnimationActive = false;
 
   const getBallRadius = () => BASE_BALL_RADIUS * ballsSphereScale;
 
@@ -417,40 +412,6 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
         fallingBalls.splice(index, 1);
       }
     }
-  };
-
-  const getAnimatedScoreValue = (targetScore: number, nowMs: number): number => {
-    if (!Number.isFinite(targetScore)) {
-      return 0;
-    }
-
-    const safeTarget = Math.max(0, Math.floor(targetScore));
-
-    if (safeTarget !== scoreAnimationTo) {
-      scoreAnimationFrom = scoreDisplayValue;
-      scoreAnimationTo = safeTarget;
-      scoreAnimationStartMs = nowMs;
-      scoreAnimationActive = true;
-    }
-
-    if (!scoreAnimationActive) {
-      return scoreDisplayValue;
-    }
-
-    const distance = Math.abs(scoreAnimationTo - scoreAnimationFrom);
-    const durationMs = Math.max(650, Math.min(3200, 520 + distance * 16));
-    const progress = clamp01((nowMs - scoreAnimationStartMs) / durationMs);
-    const eased = 1 - (1 - progress) * (1 - progress);
-    scoreDisplayValue = Math.round(
-      scoreAnimationFrom + (scoreAnimationTo - scoreAnimationFrom) * eased
-    );
-
-    if (progress >= 1) {
-      scoreDisplayValue = scoreAnimationTo;
-      scoreAnimationActive = false;
-    }
-
-    return scoreDisplayValue;
   };
 
   const draw = (data: StatusDisplayData, nowMs = getNowMs()) => {
@@ -638,13 +599,9 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       context.font = 'bold 74px Arial';
       context.fillText('JOB!', ballsX, ballsY + 30);
 
-      const animatedScore = getAnimatedScoreValue(data.score, nowMs);
       context.fillStyle = '#153572';
       context.font = 'bold 44px Arial';
       context.fillText('CALCULATING', ballsX, ballsY + 126);
-      context.fillStyle = '#e54161';
-      context.font = 'bold 62px Arial';
-      context.fillText(String(animatedScore), ballsX, ballsY + 184);
 
       texture.needsUpdate = true;
       return;
