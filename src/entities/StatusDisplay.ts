@@ -57,8 +57,8 @@ const ENDED_JAR_SLEEP_SPEED = 28;
 const ENDED_JAR_SLEEP_FRAMES = 14;
 const ENDED_SCORE_REVEAL_DELAY_MS = 2000;
 const ENDED_SCORE_INCREMENT = 10;
-const ENDED_SCORE_STEP_MS = 280;
-const ENDED_SCORE_SLIDE_MS = 220;
+const ENDED_SCORE_STEP_MS = 380;
+const ENDED_SCORE_SLIDE_MS = 320;
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 
@@ -897,6 +897,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       const resultCenterY = ballsY - 20;
       const resultRadius = 94;
       const resultSlideDistance = resultRadius * 2.2;
+      const resultTopStartY = -resultRadius - 8;
       const scoreDividedByTen = Math.max(0, data.score) / 10;
       const roundedScore =
         Math.ceil(scoreDividedByTen / ENDED_SCORE_INCREMENT) *
@@ -969,7 +970,8 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
             const fromContent: 'great' | number =
               completedSteps <= 0 ? 'great' : fromValue;
             const fromY = resultCenterY + slideProgress * resultSlideDistance;
-            const toY = resultCenterY + (1 - slideProgress) * resultSlideDistance;
+            const toY =
+              resultTopStartY + (resultCenterY - resultTopStartY) * slideProgress;
 
             drawResultCircle(fromY, fromContent, 1 - slideProgress * 0.25);
             drawResultCircle(toY, toValue, 0.8 + slideProgress * 0.2);
