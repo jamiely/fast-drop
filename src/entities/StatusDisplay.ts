@@ -674,7 +674,6 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       const canSleepInJar = endedFallingBalls.length === 0;
 
       for (const ball of endedJarBalls) {
-        const speed = Math.hypot(ball.vx, ball.vy);
         const isSleeping = canSleepInJar && ball.sleepFrames >= ENDED_JAR_SLEEP_FRAMES;
 
         if (!isSleeping) {
@@ -688,15 +687,21 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
         if (ball.x < jarLeft) {
           ball.x = jarLeft;
           if (ball.vx < 0) {
+            const priorVx = ball.vx;
             ball.vx *= -0.22;
+            if (Math.abs(priorVx) > 20) {
+              ball.sleepFrames = 0;
+            }
           }
-          ball.sleepFrames = 0;
         } else if (ball.x > jarRight) {
           ball.x = jarRight;
           if (ball.vx > 0) {
+            const priorVx = ball.vx;
             ball.vx *= -0.22;
+            if (Math.abs(priorVx) > 20) {
+              ball.sleepFrames = 0;
+            }
           }
-          ball.sleepFrames = 0;
         }
 
         if (ball.y > jarFloor) {
@@ -717,7 +722,8 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
         }
 
         const nearFloor = Math.abs(ball.y - jarFloor) < 0.6;
-        if (canSleepInJar && nearFloor && speed < ENDED_JAR_SLEEP_SPEED) {
+        const speedNow = Math.hypot(ball.vx, ball.vy);
+        if (canSleepInJar && nearFloor && speedNow < ENDED_JAR_SLEEP_SPEED) {
           ball.sleepFrames += 1;
         } else {
           ball.sleepFrames = 0;
@@ -753,29 +759,42 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
           const nx = dx / distance;
           const ny = dy / distance;
           const overlap = minimumDistance - distance;
+          const leftSleeping = left.sleepFrames >= ENDED_JAR_SLEEP_FRAMES;
+          const rightSleeping = right.sleepFrames >= ENDED_JAR_SLEEP_FRAMES;
 
-          left.x -= nx * overlap * 0.5;
-          left.y -= ny * overlap * 0.5;
-          right.x += nx * overlap * 0.5;
-          right.y += ny * overlap * 0.5;
+          if (leftSleeping && !rightSleeping) {
+            right.x += nx * overlap;
+            right.y += ny * overlap;
+          } else if (!leftSleeping && rightSleeping) {
+            left.x -= nx * overlap;
+            left.y -= ny * overlap;
+          } else {
+            left.x -= nx * overlap * 0.5;
+            left.y -= ny * overlap * 0.5;
+            right.x += nx * overlap * 0.5;
+            right.y += ny * overlap * 0.5;
+          }
 
           const relativeVelocity =
             (right.vx - left.vx) * nx + (right.vy - left.vy) * ny;
 
-          if (relativeVelocity < 0) {
-            const impulse = -relativeVelocity * 0.14;
-            left.vx -= nx * impulse;
-            left.vy -= ny * impulse;
-            right.vx += nx * impulse;
-            right.vy += ny * impulse;
+          if (relativeVelocity < -2) {
+            const impulse = -relativeVelocity * 0.1;
+            if (!leftSleeping) {
+              left.vx -= nx * impulse;
+              left.vy -= ny * impulse;
+              left.vx *= 0.97;
+              left.vy *= 0.97;
+              left.sleepFrames = 0;
+            }
+            if (!rightSleeping) {
+              right.vx += nx * impulse;
+              right.vy += ny * impulse;
+              right.vx *= 0.97;
+              right.vy *= 0.97;
+              right.sleepFrames = 0;
+            }
           }
-
-          left.vx *= 0.96;
-          left.vy *= 0.96;
-          right.vx *= 0.96;
-          right.vy *= 0.96;
-          left.sleepFrames = 0;
-          right.sleepFrames = 0;
 
           left.x = Math.max(jarLeft, Math.min(jarRight, left.x));
           right.x = Math.max(jarLeft, Math.min(jarRight, right.x));
