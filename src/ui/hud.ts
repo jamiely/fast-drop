@@ -13,16 +13,10 @@ export interface HudView {
 export const createHud = (host: HTMLElement): HudView => {
   const root = document.createElement('section');
   root.className = 'hud';
-  root.innerHTML = `
-    <div class="hud__row">
-      <span>Time</span>
-      <strong class="led" data-role="time">00.0</strong>
-    </div>
-    <div class="hud__row">
-      <span>Balls</span>
-      <strong class="led" data-role="balls">00</strong>
-    </div>
-  `;
+  root.hidden = true;
+
+  const timeValue = document.createElement('strong');
+  const ballsValue = document.createElement('strong');
 
   const summaryOverlay = document.createElement('aside');
   summaryOverlay.className = 'summary-overlay';
@@ -36,8 +30,6 @@ export const createHud = (host: HTMLElement): HudView => {
     <button class="summary-overlay__play-again" type="button">Play Again</button>
   `;
 
-  const timeValue = root.querySelector<HTMLElement>('[data-role="time"]');
-  const ballsValue = root.querySelector<HTMLElement>('[data-role="balls"]');
   const summaryScore = summaryOverlay.querySelector<HTMLElement>(
     '[data-role="summary-score"]'
   );
@@ -54,8 +46,6 @@ export const createHud = (host: HTMLElement): HudView => {
     summaryOverlay.querySelector<HTMLButtonElement>('button');
 
   if (
-    !timeValue ||
-    !ballsValue ||
     !summaryScore ||
     !summaryHits ||
     !summaryMisses ||
@@ -65,7 +55,7 @@ export const createHud = (host: HTMLElement): HudView => {
     throw new Error('Failed to initialize HUD elements');
   }
 
-  host.append(root, summaryOverlay);
+  host.append(summaryOverlay);
 
   return {
     root,

@@ -1,18 +1,19 @@
 import { expect, test } from '@playwright/test';
 
-test('shows HUD and updates balls after drop', async ({ page }) => {
+test('does not render top-left HUD component', async ({ page }) => {
   await page.goto('/');
 
-  const hud = page.locator('.hud');
-  await expect(hud.getByText('Time', { exact: true })).toBeVisible();
-  await expect(hud.getByText('Balls', { exact: true })).toBeVisible();
+  await expect(page.locator('.hud')).toHaveCount(0);
+  await expect(page.locator('[data-role="time"]')).toHaveCount(0);
+  await expect(page.locator('[data-role="balls"]')).toHaveCount(0);
   await expect(page.locator('[data-role="score"]')).toHaveCount(0);
+});
 
-  const ballsValue = page.locator('[data-role="balls"]');
-  await expect(ballsValue).toHaveText('50');
+test('space drop works without HUD', async ({ page }) => {
+  await page.goto('/');
 
   await page.keyboard.press('Space');
-  await expect(ballsValue).toHaveText('49');
+  await expect(page.locator('.hud')).toHaveCount(0);
 });
 
 test('shows debug menu when debug flag is enabled', async ({ page }) => {
@@ -34,21 +35,13 @@ test('uses 1.3 as default status display scale', async ({ page }) => {
   );
 });
 
-test('debug controls mutate HUD state when debug is enabled', async ({
-  page
-}) => {
+test('debug controls still work with no HUD', async ({ page }) => {
   await page.goto('/?debug=1');
 
-  const timeValue = page.locator('[data-role="time"]');
-
-  await expect(timeValue).toHaveText(/2?9\.\d|30\.0/);
-  await expect(page.locator('[data-role="score"]')).toHaveCount(0);
-
   await page.getByRole('button', { name: '+3s' }).click();
-  await expect(timeValue).toHaveText(/3[2-3]\.\d/);
-
   await page.getByRole('button', { name: '+100' }).click();
-  await expect(page.locator('[data-role="score"]')).toHaveCount(0);
+
+  await expect(page.locator('.hud')).toHaveCount(0);
 });
 
 test('round ends on timer expiry and allows restart with space', async ({
@@ -61,10 +54,9 @@ test('round ends on timer expiry and allows restart with space', async ({
     window.__FAST_DROP_TEST_BRIDGE__?.stepFrames(12);
   });
 
-  await expect(page.locator('.hud')).toBeHidden();
+  await expect(page.locator('.hud')).toHaveCount(0);
   await page.keyboard.press('Space');
-  await expect(page.locator('.hud')).toBeVisible();
-  await expect(page.locator('[data-role="balls"]')).toHaveText('50');
+  await expect(page.locator('.hud')).toHaveCount(0);
 });
 
 test('round waits a few seconds before ending after balls are exhausted', async ({ page }) => {
@@ -76,14 +68,11 @@ test('round waits a few seconds before ending after balls are exhausted', async 
 
   await page.keyboard.press('Space');
 
-  await expect(page.locator('[data-role="balls"]')).toHaveText('00');
-  await expect(page.locator('.hud')).toBeVisible();
-
   await page.evaluate(() => {
     window.__FAST_DROP_TEST_BRIDGE__?.stepFrames(181);
   });
 
-  await expect(page.locator('.hud')).toBeHidden();
+  await expect(page.locator('.hud')).toHaveCount(0);
 });
 
 test('does not show summary overlay at end of round', async ({ page }) => {
@@ -107,14 +96,8 @@ test('space restarts round after it ends', async ({ page }) => {
     window.__FAST_DROP_TEST_BRIDGE__?.stepFrames(12);
   });
 
-  await expect(page.locator('.hud')).toBeHidden();
-
   await page.keyboard.press('Space');
 
-  await expect(page.locator('.hud')).toBeVisible();
+  await expect(page.locator('.hud')).toHaveCount(0);
   await expect(page.locator('[data-role="score"]')).toHaveCount(0);
-  await expect(page.locator('[data-role="balls"]')).toHaveText('50');
-  await expect(page.locator('[data-role="time"]')).toHaveText(
-    /2[89]\.\d|30\.0/
-  );
 });

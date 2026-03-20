@@ -20,9 +20,7 @@ export class UISystem {
       Math.max(0, state.ballsRemaining)
     ).padStart(2, '0');
 
-    const isEnded = state.phase === 'ended';
-
-    this.hud.root.hidden = isEnded;
+    this.hud.root.hidden = true;
     this.hud.summaryOverlay.hidden = true;
   }
 }
