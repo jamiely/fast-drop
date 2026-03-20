@@ -92,12 +92,10 @@ export const createDropTubeVisual = (
   const tubeMaterial = new MeshPhysicalMaterial({
     color: '#dff8ff',
     transparent: true,
-    opacity: 0.25,
-    transmission: 0.94,
-    thickness: 0.24,
-    ior: 1.45,
+    opacity: 0.2,
+    transmission: 0,
     metalness: 0,
-    roughness: 0.08,
+    roughness: 0.12,
     clearcoat: 1,
     clearcoatRoughness: 0.05
   });
@@ -164,14 +162,12 @@ export const createOuterEnclosure = (radius: number): Group => {
     new MeshPhysicalMaterial({
       color: '#d7e6ff',
       transparent: true,
-      opacity: 0.16,
-      transmission: 0.92,
-      thickness: 0.42,
-      ior: 1.47,
+      opacity: 0.12,
+      transmission: 0,
       metalness: 0,
-      roughness: 0.1,
+      roughness: 0.16,
       clearcoat: 1,
-      clearcoatRoughness: 0.04,
+      clearcoatRoughness: 0.05,
       depthWrite: false
     })
   );
