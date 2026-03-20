@@ -68,7 +68,7 @@ export const gameConfig: RuntimeConfig = {
     dropButtonZ: 3.75,
     statusDisplayX: 0,
     statusDisplayY: 2.25,
-    statusDisplayZ: 1.9,
+    statusDisplayZ: 0.85,
     statusDisplayScale: 1.3,
     statusDisplayBallScale: 2,
     dropCooldownMs: 80,
