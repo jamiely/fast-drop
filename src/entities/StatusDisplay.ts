@@ -52,6 +52,7 @@ const SLEEP_FRAMES_REQUIRED = 14;
 const ENDED_TIMER_HIDE_DELAY_MS = 1000;
 const ENDED_COUNT_RELEASE_INTERVAL_MS = 90;
 const ENDED_DROP_GRAVITY = 920;
+const ENDED_BALL_RADIUS_SCALE = 0.9;
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 
@@ -94,6 +95,11 @@ interface EndedDropBall {
   x: number;
   y: number;
   vy: number;
+}
+
+interface EndedSettledBall {
+  x: number;
+  y: number;
 }
 
 export const createStatusDisplay = (): StatusDisplayVisual => {
@@ -247,6 +253,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
   let roundEndedAtMs: number | null = null;
   let endedDisplayedCount = 0;
   let endedFallingBalls: EndedDropBall[] = [];
+  let endedSettledBalls: EndedSettledBall[] = [];
   let endedLastReleaseAtMs = 0;
   let endedLastFrameAtMs: number | null = null;
 
@@ -445,6 +452,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       roundEndedAtMs = null;
       endedDisplayedCount = 0;
       endedFallingBalls = [];
+      endedSettledBalls = [];
       endedLastReleaseAtMs = 0;
       endedLastFrameAtMs = null;
     }
@@ -622,13 +630,26 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
         endedLastReleaseAtMs = nowMs;
       }
 
+      const settledBallRadius = getBallRadius() * ENDED_BALL_RADIUS_SCALE;
+
       for (let index = endedFallingBalls.length - 1; index >= 0; index -= 1) {
         const ball = endedFallingBalls[index];
         ball.vy += ENDED_DROP_GRAVITY * endedDt;
         ball.y += ball.vy * endedDt;
 
-        if (ball.y >= jarBottom - 20) {
+        if (ball.y >= jarBottom - settledBallRadius - 4) {
           endedFallingBalls.splice(index, 1);
+          const settledIndex = endedSettledBalls.length;
+          const normalized = (settledIndex + 0.5) / Math.max(1, enteredCount);
+          const targetY =
+            jarBottom -
+            settledBallRadius -
+            normalized * (jarHeight - 42 - settledBallRadius * 2);
+          const xLimit = jarInnerWidth * 0.5 - settledBallRadius - 4;
+          endedSettledBalls.push({
+            x: jarX + Math.max(-xLimit, Math.min(xLimit, ball.x - jarX)),
+            y: Math.max(jarMouthY + settledBallRadius, targetY)
+          });
           endedDisplayedCount = Math.min(endedDisplayedCount + 1, enteredCount);
         }
       }
@@ -674,18 +695,25 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       context.fill();
       context.stroke();
 
-      for (const ball of endedFallingBalls) {
-        if (ball.y > jarMouthY - 12 && Math.abs(ball.x - jarX) < jarInnerWidth * 0.5) {
-          context.save();
-          context.beginPath();
-          context.rect(jarX - jarInnerWidth * 0.5, jarMouthY - 4, jarInnerWidth, jarBottom - jarMouthY + 8);
-          context.clip();
-          drawBall(ball.x, ball.y, 0.45, 1, 0);
-          context.restore();
-        } else {
-          drawBall(ball.x, ball.y, 0.45, 1, 0);
-        }
+      context.save();
+      context.beginPath();
+      context.rect(
+        jarX - jarInnerWidth * 0.5,
+        jarMouthY - 4,
+        jarInnerWidth,
+        jarBottom - jarMouthY + 8
+      );
+      context.clip();
+
+      for (const ball of endedSettledBalls) {
+        drawBall(ball.x, ball.y, ENDED_BALL_RADIUS_SCALE, 1, 0);
       }
+
+      for (const ball of endedFallingBalls) {
+        drawBall(ball.x, ball.y, ENDED_BALL_RADIUS_SCALE, 1, 0);
+      }
+
+      context.restore();
 
       context.fillStyle = '#eff7ff';
       context.strokeStyle = '#27488f';
