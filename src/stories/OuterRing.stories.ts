@@ -1,11 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/html';
 import { useArgs } from '@storybook/preview-api';
-import {
-  Color,
-  Mesh,
-  MeshPhysicalMaterial,
-  TorusGeometry
-} from 'three';
+import { Color, Mesh, MeshPhysicalMaterial, TorusGeometry } from 'three';
 import {
   createPlayfieldBase,
   createPlayfieldDimensions
@@ -45,7 +40,10 @@ const meta: Meta<OuterRingStoryArgs> = {
   render: (args) => {
     const [, updateArgs] = useArgs<OuterRingStoryArgs>();
 
-    const dimensions = createPlayfieldDimensions(args.jarOrbitRadius, args.jarRadius);
+    const dimensions = createPlayfieldDimensions(
+      args.jarOrbitRadius,
+      args.jarRadius
+    );
     const platform = createPlayfieldBase(dimensions);
 
     const outerRing = platform.children[1] as Mesh | undefined;
@@ -194,7 +192,9 @@ const meta: Meta<OuterRingStoryArgs> = {
     ledSpeed: { control: { type: 'range', min: 0.05, max: 2.5, step: 0.01 } },
     ledHeadCount: { control: { type: 'range', min: 1, max: 12, step: 1 } },
     ledTrail: { control: { type: 'range', min: 0.05, max: 1, step: 0.01 } },
-    ledReverseChance: { control: { type: 'range', min: 0, max: 1, step: 0.01 } },
+    ledReverseChance: {
+      control: { type: 'range', min: 0, max: 1, step: 0.01 }
+    },
     cameraX: { control: { type: 'range', min: -5, max: 5, step: 0.01 } },
     cameraY: { control: { type: 'range', min: -1, max: 5, step: 0.01 } },
     cameraZ: { control: { type: 'range', min: 0.5, max: 8, step: 0.01 } },

@@ -25,7 +25,9 @@ describe('entity factories', () => {
     const normalRim = normal.children[0] as Mesh;
     const normalRimMaterial = normalRim.material as MeshPhysicalMaterial;
 
-    expect(bonusBodyMaterial.color.getHex()).toBe(normalBodyMaterial.color.getHex());
+    expect(bonusBodyMaterial.color.getHex()).toBe(
+      normalBodyMaterial.color.getHex()
+    );
     expect(normalRimMaterial.color.getHexString()).toBe('111111');
   });
 

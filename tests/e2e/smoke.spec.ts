@@ -59,7 +59,9 @@ test('round ends on timer expiry and allows restart with space', async ({
   await expect(page.locator('.hud')).toHaveCount(0);
 });
 
-test('round waits a few seconds before ending after balls are exhausted', async ({ page }) => {
+test('round waits a few seconds before ending after balls are exhausted', async ({
+  page
+}) => {
   await page.goto('/?debug=1');
 
   await page.evaluate(() => {

@@ -33,6 +33,7 @@ npm run prepare
 ```
 
 - Installs Husky hooks at `.husky/`.
+- Pre-commit now auto-runs `npm run format` (Prettier `--write`) before quality gates.
 - Pre-commit enforces lint, tests, coverage (>=90%), and e2e before allowing commit.
 
 ## E2E + coverage notes

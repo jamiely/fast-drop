@@ -69,7 +69,8 @@ export const createDropButtonVisual = (): DropButtonVisual => {
   return {
     group,
     setLitIntensity: (value: number) => {
-      capMaterial.emissiveIntensity = 0.35 + Math.max(0, Math.min(1, value)) * 1.8;
+      capMaterial.emissiveIntensity =
+        0.35 + Math.max(0, Math.min(1, value)) * 1.8;
     },
     setPressAmount: (value: number) => {
       const amount = Math.max(0, Math.min(1, value));
@@ -116,7 +117,10 @@ export const createDropTubeVisual = (
     tubeMaterial
   );
 
-  const topLip = new Mesh(new TorusGeometry(tubeRadius, 0.03, 18, 54), lipMaterial);
+  const topLip = new Mesh(
+    new TorusGeometry(tubeRadius, 0.03, 18, 54),
+    lipMaterial
+  );
   topLip.rotation.x = Math.PI * 0.5;
   topLip.position.y = tubeHeight * 0.5;
 
@@ -140,7 +144,14 @@ export const createDropTubeVisual = (
     syncToBallRadius: (ballRadius: number) => {
       tubeRadius = Math.max(0.12, ballRadius * 1.32);
       tube.geometry.dispose();
-      tube.geometry = new CylinderGeometry(tubeRadius, tubeRadius, tubeHeight, 36, 1, true);
+      tube.geometry = new CylinderGeometry(
+        tubeRadius,
+        tubeRadius,
+        tubeHeight,
+        36,
+        1,
+        true
+      );
       topLip.geometry.dispose();
       topLip.geometry = new TorusGeometry(tubeRadius, 0.03, 18, 54);
       bottomLip.geometry.dispose();

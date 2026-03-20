@@ -55,23 +55,27 @@ const readCurrentSettings = (
 ): Record<string, unknown> => {
   const snapshot: Record<string, unknown> = {};
 
-  menu.querySelectorAll<HTMLInputElement>('input[data-gameplay]').forEach((input) => {
-    const key = input.dataset.gameplay;
-    if (!key) {
-      return;
-    }
+  menu
+    .querySelectorAll<HTMLInputElement>('input[data-gameplay]')
+    .forEach((input) => {
+      const key = input.dataset.gameplay;
+      if (!key) {
+        return;
+      }
 
-    snapshot[key] = parseNumber(input.value);
-  });
+      snapshot[key] = parseNumber(input.value);
+    });
 
-  menu.querySelectorAll<HTMLInputElement>('input[data-camera]').forEach((input) => {
-    const key = input.dataset.camera;
-    if (!key) {
-      return;
-    }
+  menu
+    .querySelectorAll<HTMLInputElement>('input[data-camera]')
+    .forEach((input) => {
+      const key = input.dataset.camera;
+      if (!key) {
+        return;
+      }
 
-    snapshot[`camera.${key}`] = parseNumber(input.value);
-  });
+      snapshot[`camera.${key}`] = parseNumber(input.value);
+    });
 
   if (Number.isFinite(snapshot.outerRingDiameter as number)) {
     snapshot.outerRingRadius = Number(snapshot.outerRingDiameter) * 0.5;
@@ -85,38 +89,44 @@ const readCurrentSettings = (
 };
 
 const updateControlBadges = (menu: HTMLElement): void => {
-  menu.querySelectorAll<HTMLInputElement>('input[type="range"]').forEach((input) => {
-    const gameplayKey = input.dataset.gameplay;
-    const cameraKey = input.dataset.camera;
-    const lightKey = input.dataset.lightInput;
+  menu
+    .querySelectorAll<HTMLInputElement>('input[type="range"]')
+    .forEach((input) => {
+      const gameplayKey = input.dataset.gameplay;
+      const cameraKey = input.dataset.camera;
+      const lightKey = input.dataset.lightInput;
 
-    let key = '';
-    if (gameplayKey) {
-      key = `gameplay:${gameplayKey}`;
-    } else if (cameraKey) {
-      key = `camera:${cameraKey}`;
-    } else if (lightKey) {
-      key = `light:${lightKey}`;
-    }
+      let key = '';
+      if (gameplayKey) {
+        key = `gameplay:${gameplayKey}`;
+      } else if (cameraKey) {
+        key = `camera:${cameraKey}`;
+      } else if (lightKey) {
+        key = `light:${lightKey}`;
+      }
 
-    if (!key) {
-      return;
-    }
+      if (!key) {
+        return;
+      }
 
-    const output = menu.querySelector<HTMLElement>(`[data-value-for="${key}"]`);
-    if (!output) {
-      return;
-    }
+      const output = menu.querySelector<HTMLElement>(
+        `[data-value-for="${key}"]`
+      );
+      if (!output) {
+        return;
+      }
 
-    output.textContent = formatControlValue(input.value);
-  });
+      output.textContent = formatControlValue(input.value);
+    });
 };
 
 const updateSnapshotField = (
   menu: HTMLElement,
   controls?: DebugMenuControls
 ): void => {
-  const output = menu.querySelector<HTMLTextAreaElement>('[data-role="snapshot"]');
+  const output = menu.querySelector<HTMLTextAreaElement>(
+    '[data-role="snapshot"]'
+  );
   if (!output) {
     return;
   }
@@ -210,9 +220,9 @@ const renderLightEditor = (
     colorOutput.textContent = selected?.color ?? 'n/a';
   }
 
-  const fields = menu.querySelectorAll<
-    HTMLInputElement | HTMLSelectElement
-  >('[data-light-input]');
+  const fields = menu.querySelectorAll<HTMLInputElement | HTMLSelectElement>(
+    '[data-light-input]'
+  );
 
   for (const field of fields) {
     if (!selected) {
@@ -405,7 +415,10 @@ export const createDebugMenu = (
           }
 
           void navigator.clipboard.writeText(snapshot.value).catch((error) => {
-            console.warn('[DebugMenu] Unable to copy values to clipboard', error);
+            console.warn(
+              '[DebugMenu] Unable to copy values to clipboard',
+              error
+            );
           });
           break;
         }
@@ -451,7 +464,9 @@ export const createDebugMenu = (
       });
     });
 
-  const lightSelect = menu.querySelector<HTMLSelectElement>('[data-light-selector]');
+  const lightSelect = menu.querySelector<HTMLSelectElement>(
+    '[data-light-selector]'
+  );
   lightSelect?.addEventListener('change', () => {
     lightState.selectedLightId = lightSelect.value || null;
     controls?.setSelectedLight(lightState.selectedLightId);
@@ -459,7 +474,9 @@ export const createDebugMenu = (
   });
 
   menu
-    .querySelectorAll<HTMLInputElement | HTMLSelectElement>('[data-light-input]')
+    .querySelectorAll<
+      HTMLInputElement | HTMLSelectElement
+    >('[data-light-input]')
     .forEach((input) => {
       const trigger = input instanceof HTMLSelectElement ? 'change' : 'input';
       input.addEventListener(trigger, () => {

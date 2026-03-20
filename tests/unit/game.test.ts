@@ -254,9 +254,7 @@ describe('Game', () => {
     gameMocks.sceneApplyGameplayTuning.mockClear();
     gameMocks.orbitSetRadius.mockClear();
 
-    gameMocks
-      .getDebugControls()
-      .applyGameplayTuning('dropPointX', 1.43);
+    gameMocks.getDebugControls().applyGameplayTuning('dropPointX', 1.43);
 
     const linkedDropXCall = gameMocks.sceneApplyGameplayTuning.mock.calls
       .slice()
@@ -267,12 +265,10 @@ describe('Game', () => {
       .reverse()
       .find(([key]) => key === 'dropPointZ');
 
-    expect(linkedDropXCall?.[1]).toBeCloseTo(1.2790, 4);
+    expect(linkedDropXCall?.[1]).toBeCloseTo(1.279, 4);
     expect(linkedDropZCall?.[1]).toBeCloseTo(2.5581, 4);
 
-    gameMocks
-      .getDebugControls()
-      .applyGameplayTuning('ringRadius', 4);
+    gameMocks.getDebugControls().applyGameplayTuning('ringRadius', 4);
 
     const relinkedDropXCall = gameMocks.sceneApplyGameplayTuning.mock.calls
       .slice()

@@ -53,13 +53,17 @@ const PREVIEW_WIDTH = 520;
 const PREVIEW_HEIGHT = 320;
 const CAMERA_SYNC_EPSILON = 0.002;
 
-const nearlyEqual = (a: number, b: number) => Math.abs(a - b) <= CAMERA_SYNC_EPSILON;
+const nearlyEqual = (a: number, b: number) =>
+  Math.abs(a - b) <= CAMERA_SYNC_EPSILON;
 
 const applyCameraSettings = (
   instance: PreviewInstance,
   cameraSettings: NonNullable<ThreePreviewOptions['camera']>
 ) => {
-  if (typeof cameraSettings.fov === 'number' && !nearlyEqual(instance.camera.fov, cameraSettings.fov)) {
+  if (
+    typeof cameraSettings.fov === 'number' &&
+    !nearlyEqual(instance.camera.fov, cameraSettings.fov)
+  ) {
     instance.camera.fov = cameraSettings.fov;
     instance.camera.updateProjectionMatrix();
   }
@@ -285,7 +289,8 @@ export const renderThreePreview = (
   object: Object3D,
   options: ThreePreviewOptions = {}
 ): HTMLElement => {
-  const instanceId = options.previewId ?? `preview-${Math.random().toString(36).slice(2)}`;
+  const instanceId =
+    options.previewId ?? `preview-${Math.random().toString(36).slice(2)}`;
   const existing = previewInstances.get(instanceId);
 
   if (existing) {

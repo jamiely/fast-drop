@@ -281,7 +281,10 @@ export class Game {
     }
   }
 
-  private projectDropPointToRing(x: number, z: number): { x: number; z: number } {
+  private projectDropPointToRing(
+    x: number,
+    z: number
+  ): { x: number; z: number } {
     const radius = Math.max(0.5, this.runtimeConfig.tuning.ringRadius);
     const length = Math.hypot(x, z);
 
@@ -533,7 +536,6 @@ export class Game {
           scoringResult.scoreDelta,
           scoringResult.bonusTimeDelta
         );
-
       }
 
       const bounceCount = this.sceneRoot.consumeBounceCount();
@@ -551,7 +553,10 @@ export class Game {
         this.hasPlayedWarning = true;
       }
 
-      if (this.state.ballsRemaining <= 0 && this.ballsExhaustedAtSeconds === null) {
+      if (
+        this.state.ballsRemaining <= 0 &&
+        this.ballsExhaustedAtSeconds === null
+      ) {
         this.ballsExhaustedAtSeconds = this.simulationTimeSeconds;
       }
 

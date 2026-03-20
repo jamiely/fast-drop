@@ -10,6 +10,7 @@
 - Use `PLAN.md` for implementation planning and execution order.
 - Update `README.md` when applicable.
 - When adding or changing tooling/workflow gates (e.g., Husky hooks, CI checks, coverage thresholds), document them in `README.md` and/or `docs/dev-setup.md` in the same change.
+- Current Husky pre-commit gate runs `npm run format` (Prettier `--write`) before lint/test/coverage/e2e.
 - Add a `docs/` folder with human/developer documentation (features, dev setup, etc.) when applicable.
 - After adding each feature, take a couple of representative screenshots that show what was implemented.
 - `README.md` should always include a few representative screenshots of menu and gameplay.

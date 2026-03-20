@@ -551,7 +551,8 @@ export const addLighting = (
       return { ...snapshot };
     },
     setSelectedLight: (id) => {
-      const normalized = id && entries.some((entry) => entry.snapshot.id === id) ? id : null;
+      const normalized =
+        id && entries.some((entry) => entry.snapshot.id === id) ? id : null;
       if (selectedLightId === normalized) {
         return;
       }

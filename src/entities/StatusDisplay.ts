@@ -30,13 +30,33 @@ const createRoundedRectShape = (
 
   shape.moveTo(-halfWidth + safeRadius, -halfHeight);
   shape.lineTo(halfWidth - safeRadius, -halfHeight);
-  shape.quadraticCurveTo(halfWidth, -halfHeight, halfWidth, -halfHeight + safeRadius);
+  shape.quadraticCurveTo(
+    halfWidth,
+    -halfHeight,
+    halfWidth,
+    -halfHeight + safeRadius
+  );
   shape.lineTo(halfWidth, halfHeight - safeRadius);
-  shape.quadraticCurveTo(halfWidth, halfHeight, halfWidth - safeRadius, halfHeight);
+  shape.quadraticCurveTo(
+    halfWidth,
+    halfHeight,
+    halfWidth - safeRadius,
+    halfHeight
+  );
   shape.lineTo(-halfWidth + safeRadius, halfHeight);
-  shape.quadraticCurveTo(-halfWidth, halfHeight, -halfWidth, halfHeight - safeRadius);
+  shape.quadraticCurveTo(
+    -halfWidth,
+    halfHeight,
+    -halfWidth,
+    halfHeight - safeRadius
+  );
   shape.lineTo(-halfWidth, -halfHeight + safeRadius);
-  shape.quadraticCurveTo(-halfWidth, -halfHeight, -halfWidth + safeRadius, -halfHeight);
+  shape.quadraticCurveTo(
+    -halfWidth,
+    -halfHeight,
+    -halfWidth + safeRadius,
+    -halfHeight
+  );
 
   return shape;
 };
@@ -336,7 +356,11 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
     pendingReleaseCount -= 1;
   };
 
-  const simulateSphere = (dt: number, innerRadius: number, ballRadius: number) => {
+  const simulateSphere = (
+    dt: number,
+    innerRadius: number,
+    ballRadius: number
+  ) => {
     const maxDistance = innerRadius - ballRadius;
 
     for (const ball of sphereBalls) {
@@ -569,8 +593,12 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
     const ballRadius = getBallRadius();
 
     if (showEndedLayout) {
-      const enteredCount = Math.max(0, Math.min(ballsTotal, Math.floor(data.ballsEntered)));
-      const fillRatio = ballsTotal <= 0 ? 0 : clamp01(enteredCount / ballsTotal);
+      const enteredCount = Math.max(
+        0,
+        Math.min(ballsTotal, Math.floor(data.ballsEntered))
+      );
+      const fillRatio =
+        ballsTotal <= 0 ? 0 : clamp01(enteredCount / ballsTotal);
 
       const jarX = canvas.width * 0.24;
 
@@ -581,7 +609,15 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
 
       context.fillStyle = '#5f82cd';
       context.beginPath();
-      context.ellipse(jarX, pedestalTopY, pedestalWidth * 0.5, 16, 0, 0, Math.PI * 2);
+      context.ellipse(
+        jarX,
+        pedestalTopY,
+        pedestalWidth * 0.5,
+        16,
+        0,
+        0,
+        Math.PI * 2
+      );
       context.fill();
 
       context.fillStyle = '#4367b8';
@@ -598,16 +634,37 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       const supportBottomY = supportTopY + supportHeight;
 
       context.fillStyle = '#35579f';
-      context.fillRect(jarX - supportWidth * 0.5, supportTopY, supportWidth, supportHeight);
+      context.fillRect(
+        jarX - supportWidth * 0.5,
+        supportTopY,
+        supportWidth,
+        supportHeight
+      );
 
       context.fillStyle = '#27417d';
       context.beginPath();
-      context.ellipse(jarX, supportBottomY, supportWidth * 0.5, 12, 0, 0, Math.PI * 2);
+      context.ellipse(
+        jarX,
+        supportBottomY,
+        supportWidth * 0.5,
+        12,
+        0,
+        0,
+        Math.PI * 2
+      );
       context.fill();
 
       context.fillStyle = '#2c4d92';
       context.beginPath();
-      context.ellipse(jarX, pedestalBottomY, pedestalWidth * 0.5, 18, 0, 0, Math.PI * 2);
+      context.ellipse(
+        jarX,
+        pedestalBottomY,
+        pedestalWidth * 0.5,
+        18,
+        0,
+        0,
+        Math.PI * 2
+      );
       context.fill();
 
       const jarWidth = 196;
@@ -678,7 +735,8 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       const canSleepInJar = endedFallingBalls.length === 0;
 
       for (const ball of endedJarBalls) {
-        const isSleeping = canSleepInJar && ball.sleepFrames >= ENDED_JAR_SLEEP_FRAMES;
+        const isSleeping =
+          canSleepInJar && ball.sleepFrames >= ENDED_JAR_SLEEP_FRAMES;
 
         if (!isSleeping) {
           ball.vy += ENDED_DROP_GRAVITY * endedDt;
@@ -815,7 +873,12 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       context.fill();
 
       context.fillStyle = '#d6f0ff';
-      context.fillRect(jarX - jarWidth * 0.5, jarTop + 18, jarWidth, jarHeight - 18);
+      context.fillRect(
+        jarX - jarWidth * 0.5,
+        jarTop + 18,
+        jarWidth,
+        jarHeight - 18
+      );
 
       context.fillStyle = '#8cc2ff';
       context.fillRect(
@@ -838,7 +901,15 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       context.strokeStyle = '#274f92';
       context.lineWidth = 10;
       context.beginPath();
-      context.ellipse(jarX, jarTop + 18, jarWidth * 0.52, 22, 0, 0, Math.PI * 2);
+      context.ellipse(
+        jarX,
+        jarTop + 18,
+        jarWidth * 0.52,
+        22,
+        0,
+        0,
+        Math.PI * 2
+      );
       context.fill();
       context.stroke();
 
@@ -882,7 +953,11 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       context.font = 'bold 72px Arial';
       context.textAlign = 'center';
       context.textBaseline = 'middle';
-      context.fillText(String(endedDisplayedCount), jarX, jarTop + jarHeight * 0.52 - 3);
+      context.fillText(
+        String(endedDisplayedCount),
+        jarX,
+        jarTop + jarHeight * 0.52 - 3
+      );
       context.fillStyle = '#2a4a90';
       context.font = 'bold 30px Arial';
       context.fillText('BALLS', jarX, jarTop + jarHeight * 0.52 + 38);
@@ -1038,7 +1113,10 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
     const dt = Math.min(0.05, Math.max(0.001, (nowMs - lastFrameAtMs) / 1000));
     lastFrameAtMs = nowMs;
 
-    if (pendingReleaseCount > 0 && nowMs - lastReleaseAtMs >= RELEASE_INTERVAL_MS) {
+    if (
+      pendingReleaseCount > 0 &&
+      nowMs - lastReleaseAtMs >= RELEASE_INTERVAL_MS
+    ) {
       releaseOneBall(sphereInnerRadius, ballRadius);
       lastReleaseAtMs = nowMs;
     }
@@ -1103,7 +1181,9 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
         (left, right) => left.z - right.z || left.y - right.y
       );
       for (const ball of sortedSphereBalls) {
-        const depth = clamp01((ball.z + sphereInnerRadius) / (sphereInnerRadius * 2));
+        const depth = clamp01(
+          (ball.z + sphereInnerRadius) / (sphereInnerRadius * 2)
+        );
         const perspective = 0.84 + depth * 0.32;
         const drawX = ballsX + ball.x * perspective;
         const drawY = ballsY + ball.y * perspective;
@@ -1150,7 +1230,13 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       context.strokeStyle = '#7fd2f6';
       context.lineWidth = 3;
       context.beginPath();
-      context.arc(ballsX, ballsY, sphereInnerRadius, Math.PI * 0.08, Math.PI * 0.92);
+      context.arc(
+        ballsX,
+        ballsY,
+        sphereInnerRadius,
+        Math.PI * 0.08,
+        Math.PI * 0.92
+      );
       context.stroke();
 
       context.fillStyle = '#e54161';

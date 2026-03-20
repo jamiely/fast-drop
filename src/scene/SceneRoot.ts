@@ -100,7 +100,10 @@ export class SceneRoot {
   private readonly centerDomeReflectionMesh: Object3D | null;
   private readonly centerDomeReflectionMaterial: ShaderMaterial | null;
   private readonly outerRingMesh: Mesh<TorusGeometry, MeshPhysicalMaterial>;
-  private readonly outerRingLedOverlayMesh: Mesh<TorusGeometry, ShaderMaterial> | null;
+  private readonly outerRingLedOverlayMesh: Mesh<
+    TorusGeometry,
+    ShaderMaterial
+  > | null;
   private readonly bonusJarIndices: Set<number>;
   private readonly statusDisplay: StatusDisplayVisual;
   private readonly dropTube: DropTubeVisual;
@@ -212,10 +215,15 @@ export class SceneRoot {
     this.outerRingMesh.renderOrder = 1;
     this.scene.add(this.playfieldMesh);
 
-    this.enclosure = createOuterEnclosure(this.playfieldDimensions.outerRingRadius + 0.34);
+    this.enclosure = createOuterEnclosure(
+      this.playfieldDimensions.outerRingRadius + 0.34
+    );
     this.scene.add(this.enclosure);
 
-    this.dropTube = createDropTubeVisual(this.getBallRadius(), this.dropPoint.y);
+    this.dropTube = createDropTubeVisual(
+      this.getBallRadius(),
+      this.dropPoint.y
+    );
     this.dropTube.group.position.x = this.dropPoint.x;
     this.dropTube.group.position.z = this.dropPoint.z;
     this.scene.add(this.dropTube.group);
@@ -372,7 +380,9 @@ export class SceneRoot {
     }
 
     if (key === 'statusDisplayBallScale') {
-      this.statusDisplay.setBallsSphereScale(Math.max(0.5, Math.min(3.5, value)));
+      this.statusDisplay.setBallsSphereScale(
+        Math.max(0.5, Math.min(3.5, value))
+      );
       return;
     }
 
@@ -519,7 +529,10 @@ export class SceneRoot {
     this.syncPlayfieldVisuals();
     this.updateOuterRingLeds(dt);
 
-    this.dropButtonLightPulse = Math.max(0, this.dropButtonLightPulse - dt * 3.4);
+    this.dropButtonLightPulse = Math.max(
+      0,
+      this.dropButtonLightPulse - dt * 3.4
+    );
     this.dropButtonPress = Math.max(0, this.dropButtonPress - dt * 8.5);
     this.dropButton.setLitIntensity(this.dropButtonLightPulse);
     this.dropButton.setPressAmount(this.dropButtonPress);
@@ -634,7 +647,8 @@ export class SceneRoot {
       0,
       moundRadius - this.getBridgeDomeIntersectionDepth()
     );
-    const petalRadius = this.playfieldDimensions.petalRadius * this.jarDiameterScale;
+    const petalRadius =
+      this.playfieldDimensions.petalRadius * this.jarDiameterScale;
     const baseArmLength = Math.max(
       this.getMinimumBridgeLength(),
       this.playfieldDimensions.bridgeLength
@@ -788,7 +802,9 @@ export class SceneRoot {
   }
 
   private getMoundRadius(): number {
-    return this.playfieldDimensions.moundRadius * this.centerDomeAppliedDiameterScale;
+    return (
+      this.playfieldDimensions.moundRadius * this.centerDomeAppliedDiameterScale
+    );
   }
 
   private getMoundHeight(): number {
@@ -822,7 +838,8 @@ export class SceneRoot {
     );
     const maxScaleFromJarClearance = Math.max(
       0.2,
-      maxRadiusBeforeJarContact / Math.max(0.001, this.playfieldDimensions.moundRadius)
+      maxRadiusBeforeJarContact /
+        Math.max(0.001, this.playfieldDimensions.moundRadius)
     );
     this.centerDomeAppliedDiameterScale = Math.min(
       this.centerDomeDiameterScale,
@@ -834,12 +851,14 @@ export class SceneRoot {
       this.centerDomeSteepnessScale,
       this.centerDomeAppliedDiameterScale
     );
-    this.moundMesh.position.y = this.getMoundHeight() * 0.5 + this.getMoundYOffset();
+    this.moundMesh.position.y =
+      this.getMoundHeight() * 0.5 + this.getMoundYOffset();
   }
 
   private syncPlayfieldVisuals(): void {
     const jarRadius = this.getJarRadius();
-    const petalRadius = this.playfieldDimensions.petalRadius * this.jarDiameterScale;
+    const petalRadius =
+      this.playfieldDimensions.petalRadius * this.jarDiameterScale;
 
     for (const [index, jar] of this.jars.entries()) {
       jar.lookAt(0, jar.position.y, 0);
@@ -965,8 +984,8 @@ export class SceneRoot {
     let bridgeHeightAtPoint = Number.NEGATIVE_INFINITY;
 
     for (const bridge of this.bridges) {
-      const halfBridgeWidth = (bridgeWidth * bridge.scale.x) * 0.5;
-      const halfBridgeLength = (bridgeLength * bridge.scale.z) * 0.5;
+      const halfBridgeWidth = bridgeWidth * bridge.scale.x * 0.5;
+      const halfBridgeLength = bridgeLength * bridge.scale.z * 0.5;
       const cosY = Math.cos(bridge.rotation.y);
       const sinY = Math.sin(bridge.rotation.y);
       const localX =
@@ -982,7 +1001,11 @@ export class SceneRoot {
       }
     }
 
-    return Math.max(moundHeightAtPoint, petalHeightAtPoint, bridgeHeightAtPoint);
+    return Math.max(
+      moundHeightAtPoint,
+      petalHeightAtPoint,
+      bridgeHeightAtPoint
+    );
   }
 
   private resolveOuterJarWallCollision(activeBall: ActiveBallVisual): void {
@@ -1008,7 +1031,9 @@ export class SceneRoot {
 
       const safeDistance = Math.max(0.0001, distanceXZ);
       const fallbackDirectionX =
-        Math.abs(activeBall.velocityX) >= Math.abs(activeBall.velocityZ) ? 1 : 0;
+        Math.abs(activeBall.velocityX) >= Math.abs(activeBall.velocityZ)
+          ? 1
+          : 0;
       const fallbackDirectionZ = fallbackDirectionX === 1 ? 0 : 1;
       const nx = distanceXZ > 0.0001 ? dx / safeDistance : fallbackDirectionX;
       const nz = distanceXZ > 0.0001 ? dz / safeDistance : fallbackDirectionZ;

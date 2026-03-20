@@ -46,7 +46,9 @@ describe('DOM systems and UI helpers', () => {
       ?.querySelector<HTMLButtonElement>('button[data-action="pause"]')
       ?.click();
     menu
-      ?.querySelector<HTMLButtonElement>('button[data-action="force-game-over"]')
+      ?.querySelector<HTMLButtonElement>(
+        'button[data-action="force-game-over"]'
+      )
       ?.click();
 
     expect(controls.togglePause).toHaveBeenCalled();
@@ -190,6 +192,8 @@ describe('DOM systems and UI helpers', () => {
       misses: 1
     });
 
-    expect(host.querySelector('.summary-overlay')?.hasAttribute('hidden')).toBe(true);
+    expect(host.querySelector('.summary-overlay')?.hasAttribute('hidden')).toBe(
+      true
+    );
   });
 });

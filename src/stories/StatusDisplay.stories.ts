@@ -2,7 +2,10 @@ import type { Meta, StoryObj } from '@storybook/html';
 import { useArgs } from '@storybook/preview-api';
 import { Group } from 'three';
 import { createJarMesh } from '../entities/Jar';
-import { createPlayfieldBase, createPlayfieldDimensions } from '../entities/Playfield';
+import {
+  createPlayfieldBase,
+  createPlayfieldDimensions
+} from '../entities/Playfield';
 import { createStatusDisplay } from '../entities/StatusDisplay';
 import { renderThreePreview } from './threePreview';
 
@@ -33,7 +36,10 @@ const meta: Meta<StatusDisplayStoryArgs> = {
     const group = new Group();
 
     const jarRadius = 0.33;
-    const dimensions = createPlayfieldDimensions(args.jarOrbitRadius, jarRadius);
+    const dimensions = createPlayfieldDimensions(
+      args.jarOrbitRadius,
+      jarRadius
+    );
     const playfield = createPlayfieldBase(dimensions);
     group.add(playfield);
 

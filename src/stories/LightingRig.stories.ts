@@ -206,7 +206,9 @@ const meta: Meta<LightingRigStoryArgs> = {
     ringAngularSpeed: {
       control: { type: 'range', min: 0, max: 2.2, step: 0.01 }
     },
-    cameraDistance: { control: { type: 'range', min: 3.6, max: 11, step: 0.1 } },
+    cameraDistance: {
+      control: { type: 'range', min: 3.6, max: 11, step: 0.1 }
+    },
     cameraPitch: { control: { type: 'range', min: 2, max: 6, step: 0.1 } },
     cameraYaw: { control: { type: 'range', min: -2, max: 2, step: 0.1 } },
     cameraTargetY: { control: { type: 'range', min: 0, max: 2, step: 0.05 } }

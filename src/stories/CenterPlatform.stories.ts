@@ -31,7 +31,10 @@ const meta: Meta<PlatformStoryArgs> = {
   title: 'Components/Center Platform',
   render: (args) => {
     const [, updateArgs] = useArgs<PlatformStoryArgs>();
-    const dimensions = createPlayfieldDimensions(args.jarOrbitRadius, args.jarRadius);
+    const dimensions = createPlayfieldDimensions(
+      args.jarOrbitRadius,
+      args.jarRadius
+    );
 
     const group = new Group();
     const center = createPlayfieldBase(dimensions);
@@ -119,7 +122,9 @@ const meta: Meta<PlatformStoryArgs> = {
     moundColor: { control: 'color' },
     bridgeColor: { control: 'color' },
     padColor: { control: 'color' },
-    bridgeScale: { control: { type: 'range', min: 0.75, max: 1.6, step: 0.01 } },
+    bridgeScale: {
+      control: { type: 'range', min: 0.75, max: 1.6, step: 0.01 }
+    },
     cameraX: { control: { type: 'range', min: -5, max: 5, step: 0.01 } },
     cameraY: { control: { type: 'range', min: -1, max: 5, step: 0.01 } },
     cameraZ: { control: { type: 'range', min: 0.5, max: 8, step: 0.01 } },
