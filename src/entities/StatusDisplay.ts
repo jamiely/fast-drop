@@ -958,7 +958,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
           totalScoreSteps * ENDED_SCORE_STEP_MS
         );
         const linearProgress = clamp01(scoreRevealElapsedMs / totalAnimationMs);
-        const fastStartProgress = 1 - (1 - linearProgress) ** 2.2;
+        const fastStartProgress = 1 - (1 - linearProgress) ** 3.4;
         const endBlendStart = 0.65;
         const endBlend = clamp01(
           (linearProgress - endBlendStart) / (1 - endBlendStart)
@@ -974,6 +974,12 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
           const toStep = Math.min(totalScoreSteps, completedSteps + 1);
           const toValue = toStep * ENDED_SCORE_INCREMENT;
           const slideProgress = clamp01(stepFloat - completedSteps);
+
+          if (toStep === totalScoreSteps && linearProgress >= 0.94) {
+            drawResultCircle(resultCenterY, roundedScore);
+            texture.needsUpdate = true;
+            return;
+          }
           const fromValue = completedSteps * ENDED_SCORE_INCREMENT;
           const fromContent: 'great' | number =
             completedSteps <= 0 ? 'great' : fromValue;
