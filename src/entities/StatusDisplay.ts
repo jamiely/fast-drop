@@ -56,6 +56,7 @@ export interface StatusDisplayData {
   timeRemaining: number;
   timeTotal: number;
   ballsRemaining: number;
+  ballsTotal: number;
 }
 
 export interface StatusDisplayVisual {
@@ -509,6 +510,8 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       0,
       Math.min(MAX_BALL_ICONS, Math.floor(data.ballsRemaining))
     );
+    const ballsTotal = Math.max(0, Math.floor(data.ballsTotal));
+    const showAllDroppedMessage = ballsCount <= 0 && ballsTotal > 0;
     const ballRadius = getBallRadius();
 
     if (lastFrameAtMs === null) {
@@ -566,75 +569,101 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
     context.arc(ballsX, ballsY, ballsRadius - 10, 0, Math.PI * 2);
     context.fill();
 
-    context.save();
-    context.beginPath();
-    context.arc(ballsX, ballsY, sphereInnerRadius, 0, Math.PI * 2);
-    context.clip();
+    if (showAllDroppedMessage) {
+      context.fillStyle = 'rgba(240, 251, 255, 0.92)';
+      context.beginPath();
+      context.arc(ballsX, ballsY, sphereInnerRadius, 0, Math.PI * 2);
+      context.fill();
 
-    const sortedSphereBalls = [...sphereBalls].sort(
-      (left, right) => left.z - right.z || left.y - right.y
-    );
-    for (const ball of sortedSphereBalls) {
-      const depth = clamp01((ball.z + sphereInnerRadius) / (sphereInnerRadius * 2));
-      const perspective = 0.84 + depth * 0.32;
-      const drawX = ballsX + ball.x * perspective;
-      const drawY = ballsY + ball.y * perspective;
-      const radiusScale = 0.76 + depth * 0.38;
-      const depthTint = 1 - depth;
-      drawBall(drawX, drawY, radiusScale, 1, depthTint);
+      context.fillStyle = '#16326a';
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      context.font = 'bold 38px Arial';
+      context.fillText('YOU', ballsX, ballsY - 70);
+      context.font = 'bold 36px Arial';
+      context.fillText('DROPPED ALL', ballsX, ballsY - 26);
+
+      context.fillStyle = '#e54161';
+      context.strokeStyle = '#ffffff';
+      context.lineWidth = 5;
+      context.font = 'bold 92px Arial';
+      context.strokeText(String(ballsTotal), ballsX, ballsY + 42);
+      context.fillText(String(ballsTotal), ballsX, ballsY + 42);
+
+      context.fillStyle = '#16326a';
+      context.font = 'bold 50px Arial';
+      context.fillText('BALLS!', ballsX, ballsY + 102);
+    } else {
+      context.save();
+      context.beginPath();
+      context.arc(ballsX, ballsY, sphereInnerRadius, 0, Math.PI * 2);
+      context.clip();
+
+      const sortedSphereBalls = [...sphereBalls].sort(
+        (left, right) => left.z - right.z || left.y - right.y
+      );
+      for (const ball of sortedSphereBalls) {
+        const depth = clamp01((ball.z + sphereInnerRadius) / (sphereInnerRadius * 2));
+        const perspective = 0.84 + depth * 0.32;
+        const drawX = ballsX + ball.x * perspective;
+        const drawY = ballsY + ball.y * perspective;
+        const radiusScale = 0.76 + depth * 0.38;
+        const depthTint = 1 - depth;
+        drawBall(drawX, drawY, radiusScale, 1, depthTint);
+      }
+
+      const sphereShade = context.createRadialGradient(
+        ballsX + 16,
+        ballsY + 14,
+        20,
+        ballsX,
+        ballsY,
+        sphereInnerRadius
+      );
+      sphereShade.addColorStop(0, 'rgba(255,255,255,0)');
+      sphereShade.addColorStop(1, 'rgba(18,53,104,0.2)');
+      context.fillStyle = sphereShade;
+      context.beginPath();
+      context.arc(ballsX, ballsY, sphereInnerRadius, 0, Math.PI * 2);
+      context.fill();
+
+      context.restore();
+
+      context.fillStyle = '#0f2650';
+      context.beginPath();
+      context.ellipse(
+        ballsX,
+        ballsY + sphereInnerRadius - 1,
+        holeHalfWidth,
+        11,
+        0,
+        0,
+        Math.PI * 2
+      );
+      context.fill();
+
+      for (const ball of fallingBalls) {
+        const alpha = clamp01(1 - (ball.y - sphereInnerRadius) / 240);
+        drawBall(ballsX + ball.x, ballsY + ball.y, 0.95, alpha);
+      }
+
+      context.strokeStyle = '#7fd2f6';
+      context.lineWidth = 3;
+      context.beginPath();
+      context.arc(ballsX, ballsY, sphereInnerRadius, Math.PI * 0.08, Math.PI * 0.92);
+      context.stroke();
+
+      context.fillStyle = '#e54161';
+      context.strokeStyle = '#ffffff';
+      context.lineWidth = 5;
+      context.font = 'bold 80px Arial';
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      const ballsLabel = String(ballsCount).padStart(2, '0');
+      const ballsLabelY = ballsY - ballsRadius + 52;
+      context.strokeText(ballsLabel, ballsX, ballsLabelY);
+      context.fillText(ballsLabel, ballsX, ballsLabelY);
     }
-
-    const sphereShade = context.createRadialGradient(
-      ballsX + 16,
-      ballsY + 14,
-      20,
-      ballsX,
-      ballsY,
-      sphereInnerRadius
-    );
-    sphereShade.addColorStop(0, 'rgba(255,255,255,0)');
-    sphereShade.addColorStop(1, 'rgba(18,53,104,0.2)');
-    context.fillStyle = sphereShade;
-    context.beginPath();
-    context.arc(ballsX, ballsY, sphereInnerRadius, 0, Math.PI * 2);
-    context.fill();
-
-    context.restore();
-
-    context.fillStyle = '#0f2650';
-    context.beginPath();
-    context.ellipse(
-      ballsX,
-      ballsY + sphereInnerRadius - 1,
-      holeHalfWidth,
-      11,
-      0,
-      0,
-      Math.PI * 2
-    );
-    context.fill();
-
-    for (const ball of fallingBalls) {
-      const alpha = clamp01(1 - (ball.y - sphereInnerRadius) / 240);
-      drawBall(ballsX + ball.x, ballsY + ball.y, 0.95, alpha);
-    }
-
-    context.strokeStyle = '#7fd2f6';
-    context.lineWidth = 3;
-    context.beginPath();
-    context.arc(ballsX, ballsY, sphereInnerRadius, Math.PI * 0.08, Math.PI * 0.92);
-    context.stroke();
-
-    context.fillStyle = '#e54161';
-    context.strokeStyle = '#ffffff';
-    context.lineWidth = 5;
-    context.font = 'bold 80px Arial';
-    context.textAlign = 'center';
-    context.textBaseline = 'middle';
-    const ballsLabel = String(ballsCount).padStart(2, '0');
-    const ballsLabelY = ballsY - ballsRadius + 52;
-    context.strokeText(ballsLabel, ballsX, ballsLabelY);
-    context.fillText(ballsLabel, ballsX, ballsLabelY);
 
     texture.needsUpdate = true;
   };
@@ -643,7 +672,8 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
     {
       timeRemaining: 30,
       timeTotal: 30,
-      ballsRemaining: 50
+      ballsRemaining: 50,
+      ballsTotal: 50
     },
     getNowMs()
   );

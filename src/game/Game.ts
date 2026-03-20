@@ -31,6 +31,7 @@ import {
 import { createDebugMenu } from '../ui/debugMenu';
 
 const DEV_PRESET_STORAGE_KEY = 'fast-drop-debug-preset';
+const BALLS_EXHAUSTED_END_DELAY_SECONDS = 10;
 
 export class Game {
   private readonly sceneRoot: SceneRoot;
@@ -52,6 +53,7 @@ export class Game {
   private hasPlayedWarning = false;
   private simulationTimeSeconds = 0;
   private lastDropAtSeconds: number | null = null;
+  private ballsExhaustedAtSeconds: number | null = null;
   private readonly runtimeConfig = createRuntimeConfig();
 
   public constructor(host: HTMLElement) {
@@ -216,14 +218,16 @@ export class Game {
       setStatusDisplayState?: (
         timeRemaining: number,
         timeTotal: number,
-        ballsRemaining: number
+        ballsRemaining: number,
+        ballsTotal: number
       ) => void;
     };
 
     sceneRoot.setStatusDisplayState?.(
       this.state.timeRemaining,
       this.runtimeConfig.timeStartSeconds,
-      this.state.ballsRemaining
+      this.state.ballsRemaining,
+      this.runtimeConfig.ballsTotal
     );
   }
 
@@ -378,6 +382,7 @@ export class Game {
     this.nextBallId = 1;
     this.simulationTimeSeconds = 0;
     this.lastDropAtSeconds = null;
+    this.ballsExhaustedAtSeconds = null;
     this.hasPlayedWarning = false;
     this.paused = false;
     this.orbitSystem.setPaused(false);
@@ -418,8 +423,11 @@ export class Game {
     this.audioSystem.play('drop');
     this.spawnBall();
 
-    if (this.state.ballsRemaining <= 0) {
-      this.endRound();
+    if (
+      this.state.ballsRemaining <= 0 &&
+      this.ballsExhaustedAtSeconds === null
+    ) {
+      this.ballsExhaustedAtSeconds = this.simulationTimeSeconds;
     }
 
     this.uiSystem.render(this.state);
@@ -452,10 +460,18 @@ export class Game {
   }
 
   private setBallsRemaining(remaining: number): void {
+    const nextRemaining = Math.max(0, Math.floor(remaining));
     this.state = {
       ...this.state,
-      ballsRemaining: Math.max(0, Math.floor(remaining))
+      ballsRemaining: nextRemaining
     };
+
+    if (nextRemaining <= 0) {
+      this.ballsExhaustedAtSeconds ??= this.simulationTimeSeconds;
+    } else {
+      this.ballsExhaustedAtSeconds = null;
+    }
+
     this.syncStatusDisplayFromState();
     this.uiSystem.render(this.state);
   }
@@ -521,7 +537,22 @@ export class Game {
         this.hasPlayedWarning = true;
       }
 
-      if (this.state.timeRemaining <= 0 || this.state.ballsRemaining <= 0) {
+      if (this.state.ballsRemaining <= 0 && this.ballsExhaustedAtSeconds === null) {
+        this.ballsExhaustedAtSeconds = this.simulationTimeSeconds;
+      }
+
+      if (this.state.ballsRemaining > 0) {
+        this.ballsExhaustedAtSeconds = null;
+      }
+
+      if (this.state.timeRemaining <= 0) {
+        this.endRound();
+      } else if (
+        this.state.ballsRemaining <= 0 &&
+        this.ballsExhaustedAtSeconds !== null &&
+        this.simulationTimeSeconds - this.ballsExhaustedAtSeconds >=
+          BALLS_EXHAUSTED_END_DELAY_SECONDS
+      ) {
         this.endRound();
       }
     }

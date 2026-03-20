@@ -462,12 +462,14 @@ export class SceneRoot {
   public setStatusDisplayState(
     timeRemaining: number,
     timeTotal: number,
-    ballsRemaining: number
+    ballsRemaining: number,
+    ballsTotal: number
   ): void {
     this.statusDisplay.updateData({
       timeRemaining,
       timeTotal,
-      ballsRemaining
+      ballsRemaining,
+      ballsTotal
     });
   }
 

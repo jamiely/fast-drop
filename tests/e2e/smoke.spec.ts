@@ -67,7 +67,7 @@ test('round ends on timer expiry and shows summary overlay', async ({
   await expect(page.getByRole('button', { name: 'Play Again' })).toBeVisible();
 });
 
-test('round ends immediately after balls are exhausted', async ({ page }) => {
+test('round waits 10 seconds before ending after balls are exhausted', async ({ page }) => {
   await page.goto('/?debug=1');
 
   await page.evaluate(() => {
@@ -77,6 +77,12 @@ test('round ends immediately after balls are exhausted', async ({ page }) => {
   await page.keyboard.press('Space');
 
   await expect(page.locator('[data-role="balls"]')).toHaveText('00');
+  await expect(page.locator('.summary-overlay')).toBeHidden();
+
+  await page.evaluate(() => {
+    window.__FAST_DROP_TEST_BRIDGE__?.stepFrames(600);
+  });
+
   await expect(page.locator('.summary-overlay')).toBeVisible();
 });
 

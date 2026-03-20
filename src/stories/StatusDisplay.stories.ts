@@ -53,7 +53,8 @@ const meta: Meta<StatusDisplayStoryArgs> = {
     statusDisplay.updateData({
       timeRemaining: args.timeRemaining,
       timeTotal: args.timeTotal,
-      ballsRemaining: args.ballsRemaining
+      ballsRemaining: args.ballsRemaining,
+      ballsTotal: 50
     });
     group.add(statusDisplay.group);
 
