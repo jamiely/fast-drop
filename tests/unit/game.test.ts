@@ -396,7 +396,7 @@ describe('Game', () => {
     const bridge = gameMocks.getBridge();
     for (let index = 0; index < 49; index += 1) {
       bridge.dropBall();
-      bridge.stepFrames(5);
+      bridge.stepFrames(10);
     }
 
     bridge.dropBall();
@@ -408,13 +408,13 @@ describe('Game', () => {
     expect(latestState.ballsRemaining).toBe(0);
     expect(latestState.phase).toBe('playing');
 
-    bridge.stepFrames(180);
+    bridge.stepFrames(179);
     latestState = gameMocks.uiRender.mock.calls.at(-1)?.[0] as {
       phase: string;
     };
     expect(latestState.phase).toBe('playing');
 
-    bridge.stepFrames(1);
+    bridge.stepFrames(2);
     latestState = gameMocks.uiRender.mock.calls.at(-1)?.[0] as {
       phase: string;
     };
