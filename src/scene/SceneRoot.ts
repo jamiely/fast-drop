@@ -115,6 +115,7 @@ export class SceneRoot {
   private dropButtonPress = 0;
 
   private dropPoint = { x: 0, z: 2.2, y: 2.5 };
+  private dropButtonZ = 2.9;
   private orbitRadius = 2.2;
   private jarDiameterScale = 1;
   private jarHeightScale = 1;
@@ -219,7 +220,7 @@ export class SceneRoot {
     this.scene.add(this.dropTube.group);
 
     this.dropButton = createDropButtonVisual();
-    this.dropButton.group.position.set(0, 0.07, this.playfieldDimensions.outerRingRadius - 0.2);
+    this.dropButton.group.position.set(0, 0.07, this.dropButtonZ);
     this.scene.add(this.dropButton.group);
     this.syncDropButtonPlacement();
 
@@ -336,6 +337,12 @@ export class SceneRoot {
     if (key === 'dropHeight') {
       this.dropPoint.y = value;
       this.dropTube.setDropHeight(this.dropPoint.y);
+      return;
+    }
+
+    if (key === 'dropButtonZ') {
+      this.dropButtonZ = value;
+      this.syncDropButtonPlacement();
       return;
     }
 
@@ -690,8 +697,7 @@ export class SceneRoot {
   }
 
   private syncDropButtonPlacement(): void {
-    const ringRadius = this.outerRingMesh.geometry.parameters.radius ?? 3.75;
-    this.dropButton.group.position.set(0, 0.07, ringRadius - 0.2);
+    this.dropButton.group.position.set(0, 0.07, this.dropButtonZ);
     this.dropButton.group.rotation.y = Math.PI * 0.5;
   }
 

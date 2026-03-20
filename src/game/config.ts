@@ -5,6 +5,7 @@ export interface GameplayTuning {
   dropPointX: number;
   dropPointZ: number;
   dropHeight: number;
+  dropButtonZ: number;
   statusDisplayX: number;
   statusDisplayY: number;
   statusDisplayZ: number;
@@ -60,10 +61,11 @@ export const gameConfig: RuntimeConfig = {
   tuning: {
     ringAngularSpeed: 0.7,
     ringRadius: 2.2 + DEFAULT_JAR_DIAMETER,
-    outerRingDiameter: 7.5,
+    outerRingDiameter: 6.2,
     dropPointX: 0,
     dropPointZ: 2.2 + DEFAULT_JAR_DIAMETER,
     dropHeight: 3.25,
+    dropButtonZ: 2.9,
     statusDisplayX: 0,
     statusDisplayY: 2.25,
     statusDisplayZ: 1.9,
