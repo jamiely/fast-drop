@@ -26,6 +26,7 @@ describe('DOM systems and UI helpers', () => {
       addTime: vi.fn(),
       addScore: vi.fn(),
       spawnBall: vi.fn(),
+      forceGameOver: vi.fn(),
       setSpeedMultiplier: vi.fn(),
       applyGameplayTuning: vi.fn(),
       applyCameraTuning: vi.fn(),
@@ -44,8 +45,12 @@ describe('DOM systems and UI helpers', () => {
     menu
       ?.querySelector<HTMLButtonElement>('button[data-action="pause"]')
       ?.click();
+    menu
+      ?.querySelector<HTMLButtonElement>('button[data-action="force-game-over"]')
+      ?.click();
 
     expect(controls.togglePause).toHaveBeenCalled();
+    expect(controls.forceGameOver).toHaveBeenCalled();
   });
 
   it('updates light enabled toggle from debug menu', () => {
@@ -56,6 +61,7 @@ describe('DOM systems and UI helpers', () => {
       addTime: vi.fn(),
       addScore: vi.fn(),
       spawnBall: vi.fn(),
+      forceGameOver: vi.fn(),
       setSpeedMultiplier: vi.fn(),
       applyGameplayTuning: vi.fn(),
       applyCameraTuning: vi.fn(),

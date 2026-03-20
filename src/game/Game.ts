@@ -89,6 +89,7 @@ export class Game {
       addTime: () => this.setTimeRemaining(this.state.timeRemaining + 3),
       addScore: () => this.setScore(this.state.score + 100),
       spawnBall: () => this.spawnBall(),
+      forceGameOver: () => this.forceGameOver(),
       setSpeedMultiplier: (multiplier) => this.setSpeedMultiplier(multiplier),
       applyGameplayTuning: (key, value) => this.applyGameplayTuning(key, value),
       applyCameraTuning: (key, value) => {
@@ -405,6 +406,13 @@ export class Game {
 
     this.state = next;
     this.audioSystem.play('game-over');
+  }
+
+  private forceGameOver(): void {
+    this.endRound();
+    this.ballsExhaustedAtSeconds = null;
+    this.syncStatusDisplayFromState();
+    this.uiSystem.render(this.state);
   }
 
   private dropBall(): void {
