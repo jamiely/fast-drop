@@ -94,12 +94,15 @@ interface FallingBall {
 interface EndedDropBall {
   x: number;
   y: number;
+  vx: number;
   vy: number;
 }
 
-interface EndedSettledBall {
+interface EndedJarBall {
   x: number;
   y: number;
+  vx: number;
+  vy: number;
 }
 
 export const createStatusDisplay = (): StatusDisplayVisual => {
@@ -253,7 +256,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
   let roundEndedAtMs: number | null = null;
   let endedDisplayedCount = 0;
   let endedFallingBalls: EndedDropBall[] = [];
-  let endedSettledBalls: EndedSettledBall[] = [];
+  let endedJarBalls: EndedJarBall[] = [];
   let endedLastReleaseAtMs = 0;
   let endedLastFrameAtMs: number | null = null;
 
@@ -452,7 +455,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       roundEndedAtMs = null;
       endedDisplayedCount = 0;
       endedFallingBalls = [];
-      endedSettledBalls = [];
+      endedJarBalls = [];
       endedLastReleaseAtMs = 0;
       endedLastFrameAtMs = null;
     }
@@ -619,40 +622,125 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       endedLastFrameAtMs = nowMs;
 
       while (
-        endedDisplayedCount + endedFallingBalls.length < enteredCount &&
+        endedJarBalls.length + endedFallingBalls.length < enteredCount &&
         nowMs - endedLastReleaseAtMs >= ENDED_COUNT_RELEASE_INTERVAL_MS
       ) {
         endedFallingBalls.push({
           x: jarX + (Math.random() - 0.5) * (jarInnerWidth * 0.42),
           y: 18,
+          vx: (Math.random() - 0.5) * 26,
           vy: 18
         });
         endedLastReleaseAtMs = nowMs;
       }
 
-      const settledBallRadius = getBallRadius() * ENDED_BALL_RADIUS_SCALE;
+      const jarBallRadius = getBallRadius() * ENDED_BALL_RADIUS_SCALE;
+      const jarLeft = jarX - jarInnerWidth * 0.5 + jarBallRadius + 2;
+      const jarRight = jarX + jarInnerWidth * 0.5 - jarBallRadius - 2;
+      const jarFloor = jarBottom - jarBallRadius - 2;
+      const jarCeiling = jarMouthY + jarBallRadius + 2;
 
       for (let index = endedFallingBalls.length - 1; index >= 0; index -= 1) {
         const ball = endedFallingBalls[index];
         ball.vy += ENDED_DROP_GRAVITY * endedDt;
+        ball.vx *= 0.995;
+        ball.x += ball.vx * endedDt;
         ball.y += ball.vy * endedDt;
 
-        if (ball.y >= jarBottom - settledBallRadius - 4) {
+        if (
+          ball.y >= jarMouthY - jarBallRadius &&
+          ball.x >= jarLeft &&
+          ball.x <= jarRight
+        ) {
           endedFallingBalls.splice(index, 1);
-          const settledIndex = endedSettledBalls.length;
-          const normalized = (settledIndex + 0.5) / Math.max(1, enteredCount);
-          const targetY =
-            jarBottom -
-            settledBallRadius -
-            normalized * (jarHeight - 42 - settledBallRadius * 2);
-          const xLimit = jarInnerWidth * 0.5 - settledBallRadius - 4;
-          endedSettledBalls.push({
-            x: jarX + Math.max(-xLimit, Math.min(xLimit, ball.x - jarX)),
-            y: Math.max(jarMouthY + settledBallRadius, targetY)
+          endedJarBalls.push({
+            x: ball.x,
+            y: Math.max(jarCeiling, ball.y),
+            vx: ball.vx,
+            vy: ball.vy
           });
-          endedDisplayedCount = Math.min(endedDisplayedCount + 1, enteredCount);
+          continue;
+        }
+
+        if (ball.y > canvas.height + 40) {
+          endedFallingBalls.splice(index, 1);
         }
       }
+
+      for (const ball of endedJarBalls) {
+        ball.vy += ENDED_DROP_GRAVITY * endedDt;
+        ball.vx *= 0.986;
+        ball.vy *= 0.996;
+        ball.x += ball.vx * endedDt;
+        ball.y += ball.vy * endedDt;
+
+        if (ball.x < jarLeft) {
+          ball.x = jarLeft;
+          if (ball.vx < 0) {
+            ball.vx *= -0.35;
+          }
+        } else if (ball.x > jarRight) {
+          ball.x = jarRight;
+          if (ball.vx > 0) {
+            ball.vx *= -0.35;
+          }
+        }
+
+        if (ball.y > jarFloor) {
+          ball.y = jarFloor;
+          if (ball.vy > 0) {
+            ball.vy *= -0.22;
+          }
+          ball.vx *= 0.94;
+        } else if (ball.y < jarCeiling) {
+          ball.y = jarCeiling;
+          if (ball.vy < 0) {
+            ball.vy *= -0.12;
+          }
+        }
+      }
+
+      for (let i = 0; i < endedJarBalls.length; i += 1) {
+        for (let j = i + 1; j < endedJarBalls.length; j += 1) {
+          const left = endedJarBalls[i];
+          const right = endedJarBalls[j];
+          const dx = right.x - left.x;
+          const dy = right.y - left.y;
+          const distance = Math.hypot(dx, dy);
+          const minimumDistance = jarBallRadius * 2;
+
+          if (distance >= minimumDistance || distance <= 0.0001) {
+            continue;
+          }
+
+          const nx = dx / distance;
+          const ny = dy / distance;
+          const overlap = minimumDistance - distance;
+
+          left.x -= nx * overlap * 0.5;
+          left.y -= ny * overlap * 0.5;
+          right.x += nx * overlap * 0.5;
+          right.y += ny * overlap * 0.5;
+
+          const relativeVelocity =
+            (right.vx - left.vx) * nx + (right.vy - left.vy) * ny;
+
+          if (relativeVelocity < 0) {
+            const impulse = -relativeVelocity * 0.25;
+            left.vx -= nx * impulse;
+            left.vy -= ny * impulse;
+            right.vx += nx * impulse;
+            right.vy += ny * impulse;
+          }
+
+          left.x = Math.max(jarLeft, Math.min(jarRight, left.x));
+          right.x = Math.max(jarLeft, Math.min(jarRight, right.x));
+          left.y = Math.max(jarCeiling, Math.min(jarFloor, left.y));
+          right.y = Math.max(jarCeiling, Math.min(jarFloor, right.y));
+        }
+      }
+
+      endedDisplayedCount = Math.min(endedJarBalls.length, enteredCount);
 
       context.fillStyle = '#e8f7ff';
       context.beginPath();
@@ -705,7 +793,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       );
       context.clip();
 
-      for (const ball of endedSettledBalls) {
+      for (const ball of endedJarBalls) {
         drawBall(ball.x, ball.y, ENDED_BALL_RADIUS_SCALE, 1, 0);
       }
 
