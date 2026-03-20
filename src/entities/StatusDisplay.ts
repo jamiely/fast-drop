@@ -597,9 +597,6 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
         0,
         Math.min(ballsTotal, Math.floor(data.ballsEntered))
       );
-      const fillRatio =
-        ballsTotal <= 0 ? 0 : clamp01(enteredCount / ballsTotal);
-
       const jarX = canvas.width * 0.24;
 
       const pedestalTopY = canvas.height - 106;
@@ -672,7 +669,6 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       const jarBottom = pedestalTopY - 4;
       const jarTop = jarBottom - jarHeight;
       const jarMouthY = jarTop + 16;
-      const jarFillTop = jarBottom - jarHeight * fillRatio;
       const jarInnerInset = 12;
       const jarInnerWidth = jarWidth - jarInnerInset * 2;
 
@@ -867,12 +863,12 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
 
       endedDisplayedCount = Math.min(endedJarBalls.length, enteredCount);
 
-      context.fillStyle = '#e8f7ff';
+      context.fillStyle = 'rgba(216, 242, 255, 0.24)';
       context.beginPath();
       context.ellipse(jarX, jarBottom, jarWidth * 0.5, 22, 0, 0, Math.PI * 2);
       context.fill();
 
-      context.fillStyle = '#d6f0ff';
+      context.fillStyle = 'rgba(180, 225, 255, 0.2)';
       context.fillRect(
         jarX - jarWidth * 0.5,
         jarTop + 18,
@@ -880,16 +876,8 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
         jarHeight - 18
       );
 
-      context.fillStyle = '#8cc2ff';
-      context.fillRect(
-        jarX - jarWidth * 0.5 + jarInnerInset,
-        jarFillTop,
-        jarInnerWidth,
-        jarBottom - jarFillTop
-      );
-
-      context.strokeStyle = '#274f92';
-      context.lineWidth = 10;
+      context.strokeStyle = '#111111';
+      context.lineWidth = 8;
       context.beginPath();
       context.moveTo(jarX - jarWidth * 0.5, jarTop + 18);
       context.lineTo(jarX - jarWidth * 0.5, jarBottom);
@@ -897,8 +885,8 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       context.lineTo(jarX + jarWidth * 0.5, jarBottom);
       context.stroke();
 
-      context.fillStyle = '#f2fbff';
-      context.strokeStyle = '#274f92';
+      context.fillStyle = 'rgba(230, 247, 255, 0.42)';
+      context.strokeStyle = '#111111';
       context.lineWidth = 10;
       context.beginPath();
       context.ellipse(
@@ -913,9 +901,9 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       context.fill();
       context.stroke();
 
-      context.fillStyle = '#f2fbff';
-      context.strokeStyle = '#274f92';
-      context.lineWidth = 10;
+      context.fillStyle = 'rgba(230, 247, 255, 0.24)';
+      context.strokeStyle = 'rgba(17, 17, 17, 0.55)';
+      context.lineWidth = 7;
       context.beginPath();
       context.ellipse(jarX, jarBottom, jarWidth * 0.5, 22, 0, 0, Math.PI * 2);
       context.fill();
