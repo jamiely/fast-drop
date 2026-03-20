@@ -569,12 +569,12 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       const pedestalHeight = 34;
       const pedestalBottomY = pedestalTopY + pedestalHeight;
 
-      context.fillStyle = '#3a5ca8';
+      context.fillStyle = '#233d78';
       context.beginPath();
       context.ellipse(jarX, pedestalTopY, pedestalWidth * 0.5, 16, 0, 0, Math.PI * 2);
       context.fill();
 
-      context.fillStyle = '#304e97';
+      context.fillStyle = '#2f4f99';
       context.fillRect(
         jarX - pedestalWidth * 0.5,
         pedestalTopY,
@@ -595,7 +595,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       context.ellipse(jarX, supportBottomY, supportWidth * 0.5, 12, 0, 0, Math.PI * 2);
       context.fill();
 
-      context.fillStyle = '#223d7c';
+      context.fillStyle = '#3f63b5';
       context.beginPath();
       context.ellipse(jarX, pedestalBottomY, pedestalWidth * 0.5, 18, 0, 0, Math.PI * 2);
       context.fill();
