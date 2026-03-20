@@ -554,11 +554,11 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       const enteredCount = Math.max(0, Math.min(ballsTotal, Math.floor(data.ballsEntered)));
       const fillRatio = ballsTotal <= 0 ? 0 : clamp01(enteredCount / ballsTotal);
 
-      const jarX = timerX;
+      const jarX = canvas.width * 0.24;
 
-      const pedestalTopY = canvas.height - 100;
+      const pedestalTopY = canvas.height - 106;
       const pedestalWidth = 256;
-      const pedestalHeight = 58;
+      const pedestalHeight = 34;
       const pedestalBottomY = pedestalTopY + pedestalHeight;
 
       context.fillStyle = '#3a5ca8';
@@ -574,14 +574,27 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
         pedestalHeight
       );
 
+      const supportWidth = 82;
+      const supportTopY = pedestalBottomY - 3;
+      const supportHeight = 82;
+      const supportBottomY = supportTopY + supportHeight;
+
+      context.fillStyle = '#2b4688';
+      context.fillRect(jarX - supportWidth * 0.5, supportTopY, supportWidth, supportHeight);
+
+      context.fillStyle = '#203972';
+      context.beginPath();
+      context.ellipse(jarX, supportBottomY, supportWidth * 0.5, 12, 0, 0, Math.PI * 2);
+      context.fill();
+
       context.fillStyle = '#223d7c';
       context.beginPath();
-      context.ellipse(jarX, pedestalBottomY, pedestalWidth * 0.5, 20, 0, 0, Math.PI * 2);
+      context.ellipse(jarX, pedestalBottomY, pedestalWidth * 0.5, 18, 0, 0, Math.PI * 2);
       context.fill();
 
       const jarWidth = 196;
       const jarHeight = 254;
-      const jarBottom = pedestalTopY - 6;
+      const jarBottom = pedestalTopY - 22;
       const jarTop = jarBottom - jarHeight;
       const jarMouthY = jarTop + 16;
       const jarFillTop = jarBottom - jarHeight * fillRatio;
