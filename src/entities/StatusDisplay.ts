@@ -598,7 +598,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
     const timerRadius = 146;
 
     if (!showEndedLayout) {
-      const timerLabelX = canvas.width * 0.31;
+      const timerLabelX = timerX;
       const ballsLabelX = canvas.width * 0.75;
       const labelTopY = 84;
       const labelBottomY = 126;
