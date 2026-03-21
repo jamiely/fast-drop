@@ -620,6 +620,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
 
       const startAngle = -Math.PI * 0.5;
       const elapsedArc = Math.PI * 2 * elapsed;
+      const isTimesUp = data.timeRemaining <= 0.001;
       context.strokeStyle = '#2edd76';
       context.beginPath();
       context.arc(timerX, timerY, timerRadius, 0, Math.PI * 2);
@@ -659,37 +660,56 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
         context.fill();
       }
 
-      const needleAngle = startAngle + Math.PI * 2 * elapsed;
-      const needleLength = timerRadius - 18;
+      if (isTimesUp) {
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        context.lineJoin = 'round';
 
-      const needleTipX = timerX + Math.cos(needleAngle) * needleLength;
-      const needleTipY = timerY + Math.sin(needleAngle) * needleLength;
-      const needlePerpX = -Math.sin(needleAngle);
-      const needlePerpY = Math.cos(needleAngle);
-      const needleBaseHalfWidth = 7;
-      const needleLeftX = timerX + needlePerpX * needleBaseHalfWidth;
-      const needleLeftY = timerY + needlePerpY * needleBaseHalfWidth;
-      const needleRightX = timerX - needlePerpX * needleBaseHalfWidth;
-      const needleRightY = timerY - needlePerpY * needleBaseHalfWidth;
+        context.strokeStyle = '#111111';
+        context.fillStyle = '#e43d53';
 
-      context.fillStyle = '#9be9ff';
-      context.strokeStyle = '#1e5fb8';
-      context.lineWidth = 4;
-      context.beginPath();
-      context.moveTo(needleLeftX, needleLeftY);
-      context.lineTo(needleTipX, needleTipY);
-      context.lineTo(needleRightX, needleRightY);
-      context.arc(
-        timerX,
-        timerY,
-        needleBaseHalfWidth,
-        needleAngle - Math.PI * 0.5,
-        needleAngle + Math.PI * 0.5,
-        true
-      );
-      context.closePath();
-      context.fill();
-      context.stroke();
+        context.lineWidth = 10;
+        context.font = 'bold 58px Arial';
+        context.strokeText("TIME'S", timerX, timerY - 34);
+        context.fillText("TIME'S", timerX, timerY - 34);
+
+        context.lineWidth = 12;
+        context.font = 'bold 96px Arial';
+        context.strokeText('UP', timerX, timerY + 48);
+        context.fillText('UP', timerX, timerY + 48);
+      } else {
+        const needleAngle = startAngle + Math.PI * 2 * elapsed;
+        const needleLength = timerRadius - 18;
+
+        const needleTipX = timerX + Math.cos(needleAngle) * needleLength;
+        const needleTipY = timerY + Math.sin(needleAngle) * needleLength;
+        const needlePerpX = -Math.sin(needleAngle);
+        const needlePerpY = Math.cos(needleAngle);
+        const needleBaseHalfWidth = 7;
+        const needleLeftX = timerX + needlePerpX * needleBaseHalfWidth;
+        const needleLeftY = timerY + needlePerpY * needleBaseHalfWidth;
+        const needleRightX = timerX - needlePerpX * needleBaseHalfWidth;
+        const needleRightY = timerY - needlePerpY * needleBaseHalfWidth;
+
+        context.fillStyle = '#9be9ff';
+        context.strokeStyle = '#1e5fb8';
+        context.lineWidth = 4;
+        context.beginPath();
+        context.moveTo(needleLeftX, needleLeftY);
+        context.lineTo(needleTipX, needleTipY);
+        context.lineTo(needleRightX, needleRightY);
+        context.arc(
+          timerX,
+          timerY,
+          needleBaseHalfWidth,
+          needleAngle - Math.PI * 0.5,
+          needleAngle + Math.PI * 0.5,
+          true
+        );
+        context.closePath();
+        context.fill();
+        context.stroke();
+      }
     }
 
     const ballsX = canvas.width * 0.75;
