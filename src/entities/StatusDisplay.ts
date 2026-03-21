@@ -75,6 +75,10 @@ const ENDED_DROP_GRAVITY = 920;
 const ENDED_BALL_RADIUS_SCALE = 0.9;
 const ENDED_JAR_SLEEP_SPEED = 28;
 const ENDED_JAR_SLEEP_FRAMES = 14;
+const ENDED_JAR_SETTLE_DAMPING_X = 0.88;
+const ENDED_JAR_SETTLE_DAMPING_Y = 0.9;
+const ENDED_JAR_SETTLE_DAMPING_Z = 0.985;
+const ENDED_JAR_SETTLE_MAX_OVERLAP = 0.9;
 const ENDED_SCORE_REVEAL_DELAY_MS = 2000;
 const ENDED_SCORE_INCREMENT = 10;
 const ENDED_SCORE_FAST_INCREMENT = 100;
@@ -126,15 +130,19 @@ interface FallingBall {
 interface EndedDropBall {
   x: number;
   y: number;
+  z: number;
   vx: number;
   vy: number;
+  vz: number;
 }
 
 interface EndedJarBall {
   x: number;
   y: number;
+  z: number;
   vx: number;
   vy: number;
+  vz: number;
   sleepFrames: number;
 }
 
@@ -882,8 +890,10 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
         endedFallingBalls.push({
           x: jarX + (Math.random() - 0.5) * (jarInnerWidth * 0.42),
           y: 18,
+          z: (Math.random() - 0.5) * jarInnerWidth * 0.36,
           vx: (Math.random() - 0.5) * 26,
-          vy: 18
+          vy: 18,
+          vz: (Math.random() - 0.5) * 10
         });
         endedLastReleaseAtMs = nowMs;
       }
@@ -893,13 +903,18 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       const jarRight = jarX + jarInnerWidth * 0.5 - jarBallRadius - 2;
       const jarFloor = jarBottom - jarBallRadius - 2;
       const jarCeiling = jarMouthY + jarBallRadius + 2;
+      const jarDepth = jarInnerWidth * 0.56;
+      const jarBack = -jarDepth * 0.5 + jarBallRadius;
+      const jarFront = jarDepth * 0.5 - jarBallRadius;
 
       for (let index = endedFallingBalls.length - 1; index >= 0; index -= 1) {
         const ball = endedFallingBalls[index];
         ball.vy += ENDED_DROP_GRAVITY * endedDt;
         ball.vx *= 0.995;
+        ball.vz *= 0.995;
         ball.x += ball.vx * endedDt;
         ball.y += ball.vy * endedDt;
+        ball.z += ball.vz * endedDt;
 
         if (
           ball.y >= jarMouthY - jarBallRadius &&
@@ -910,8 +925,10 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
           endedJarBalls.push({
             x: ball.x,
             y: Math.max(jarCeiling, ball.y),
+            z: Math.max(jarBack, Math.min(jarFront, ball.z)),
             vx: ball.vx,
             vy: ball.vy,
+            vz: ball.vz,
             sleepFrames: 0
           });
           continue;
@@ -930,10 +947,12 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
 
         if (!isSleeping) {
           ball.vy += ENDED_DROP_GRAVITY * endedDt;
-          ball.vx *= 0.95;
-          ball.vy *= 0.965;
+          ball.vx *= canSleepInJar ? ENDED_JAR_SETTLE_DAMPING_X : 0.95;
+          ball.vy *= canSleepInJar ? ENDED_JAR_SETTLE_DAMPING_Y : 0.965;
+          ball.vz *= canSleepInJar ? ENDED_JAR_SETTLE_DAMPING_Z : 0.985;
           ball.x += ball.vx * endedDt;
           ball.y += ball.vy * endedDt;
+          ball.z += ball.vz * endedDt;
         }
 
         if (ball.x < jarLeft) {
@@ -965,6 +984,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
             ball.vy = 0;
           }
           ball.vx *= 0.8;
+          ball.vz *= 0.98;
         } else if (ball.y < jarCeiling) {
           ball.y = jarCeiling;
           if (ball.vy < 0) {
@@ -973,9 +993,20 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
           ball.sleepFrames = 0;
         }
 
-        const nearFloor = Math.abs(ball.y - jarFloor) < 0.6;
-        const speedNow = Math.hypot(ball.vx, ball.vy);
-        if (canSleepInJar && nearFloor && speedNow < ENDED_JAR_SLEEP_SPEED) {
+        if (ball.z < jarBack) {
+          ball.z = jarBack;
+          if (ball.vz < 0) {
+            ball.vz *= -0.16;
+          }
+        } else if (ball.z > jarFront) {
+          ball.z = jarFront;
+          if (ball.vz > 0) {
+            ball.vz *= -0.16;
+          }
+        }
+
+        const speedNow = Math.hypot(ball.vx, ball.vy, ball.vz);
+        if (canSleepInJar && speedNow < ENDED_JAR_SLEEP_SPEED) {
           ball.sleepFrames += 1;
         } else {
           ball.sleepFrames = 0;
@@ -984,7 +1015,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
         if (ball.sleepFrames >= ENDED_JAR_SLEEP_FRAMES) {
           ball.vx = 0;
           ball.vy = 0;
-          ball.y = jarFloor;
+          ball.vz = 0;
         }
       }
 
@@ -1001,7 +1032,8 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
 
           const dx = right.x - left.x;
           const dy = right.y - left.y;
-          const distance = Math.hypot(dx, dy);
+          const dz = right.z - left.z;
+          const distance = Math.hypot(dx, dy, dz);
           const minimumDistance = jarBallRadius * 2;
 
           if (distance >= minimumDistance || distance <= 0.0001) {
@@ -1010,41 +1042,56 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
 
           const nx = dx / distance;
           const ny = dy / distance;
-          const overlap = minimumDistance - distance;
+          const nz = dz / distance;
+          const overlap = canSleepInJar
+            ? Math.min(minimumDistance - distance, ENDED_JAR_SETTLE_MAX_OVERLAP)
+            : minimumDistance - distance;
           const leftSleeping = left.sleepFrames >= ENDED_JAR_SLEEP_FRAMES;
           const rightSleeping = right.sleepFrames >= ENDED_JAR_SLEEP_FRAMES;
 
           if (leftSleeping && !rightSleeping) {
             right.x += nx * overlap;
             right.y += ny * overlap;
+            right.z += nz * overlap;
           } else if (!leftSleeping && rightSleeping) {
             left.x -= nx * overlap;
             left.y -= ny * overlap;
+            left.z -= nz * overlap;
           } else {
             left.x -= nx * overlap * 0.5;
             left.y -= ny * overlap * 0.5;
+            left.z -= nz * overlap * 0.5;
             right.x += nx * overlap * 0.5;
             right.y += ny * overlap * 0.5;
+            right.z += nz * overlap * 0.5;
           }
 
-          const relativeVelocity =
-            (right.vx - left.vx) * nx + (right.vy - left.vy) * ny;
+          if (!canSleepInJar) {
+            const relativeVelocity =
+              (right.vx - left.vx) * nx +
+              (right.vy - left.vy) * ny +
+              (right.vz - left.vz) * nz;
 
-          if (relativeVelocity < -4) {
-            const impulse = -relativeVelocity * 0.06;
-            if (!leftSleeping) {
-              left.vx -= nx * impulse;
-              left.vy -= ny * impulse;
-              left.vx *= 0.92;
-              left.vy *= 0.92;
-              left.sleepFrames = 0;
-            }
-            if (!rightSleeping) {
-              right.vx += nx * impulse;
-              right.vy += ny * impulse;
-              right.vx *= 0.92;
-              right.vy *= 0.92;
-              right.sleepFrames = 0;
+            if (relativeVelocity < -4) {
+              const impulse = -relativeVelocity * 0.06;
+              if (!leftSleeping) {
+                left.vx -= nx * impulse;
+                left.vy -= ny * impulse;
+                left.vz -= nz * impulse;
+                left.vx *= 0.92;
+                left.vy *= 0.92;
+                left.vz *= 0.92;
+                left.sleepFrames = 0;
+              }
+              if (!rightSleeping) {
+                right.vx += nx * impulse;
+                right.vy += ny * impulse;
+                right.vz += nz * impulse;
+                right.vx *= 0.92;
+                right.vy *= 0.92;
+                right.vz *= 0.92;
+                right.sleepFrames = 0;
+              }
             }
           }
 
@@ -1052,6 +1099,8 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
           right.x = Math.max(jarLeft, Math.min(jarRight, right.x));
           left.y = Math.max(jarCeiling, Math.min(jarFloor, left.y));
           right.y = Math.max(jarCeiling, Math.min(jarFloor, right.y));
+          left.z = Math.max(jarBack, Math.min(jarFront, left.z));
+          right.z = Math.max(jarBack, Math.min(jarFront, right.z));
         }
       }
 
@@ -1182,12 +1231,38 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       );
       context.clip();
 
-      for (const ball of endedJarBalls) {
-        drawBall(ball.x, ball.y, ENDED_BALL_RADIUS_SCALE, 1, 0);
+      const sortedEndedJarBalls = [...endedJarBalls].sort(
+        (left, right) => left.z - right.z
+      );
+      for (const ball of sortedEndedJarBalls) {
+        const depth = clamp01((ball.z - jarBack) / Math.max(0.0001, jarFront - jarBack));
+        const perspective = 0.84 + depth * 0.3;
+        const drawX = ball.x + ball.z * 0.16;
+        const drawY = ball.y - ball.z * 0.04;
+        drawBall(
+          drawX,
+          drawY,
+          ENDED_BALL_RADIUS_SCALE * perspective,
+          1,
+          1 - depth
+        );
       }
 
-      for (const ball of endedFallingBalls) {
-        drawBall(ball.x, ball.y, ENDED_BALL_RADIUS_SCALE, 1, 0);
+      const sortedEndedFallingBalls = [...endedFallingBalls].sort(
+        (left, right) => left.z - right.z
+      );
+      for (const ball of sortedEndedFallingBalls) {
+        const depth = clamp01((ball.z - jarBack) / Math.max(0.0001, jarFront - jarBack));
+        const perspective = 0.84 + depth * 0.3;
+        const drawX = ball.x + ball.z * 0.16;
+        const drawY = ball.y - ball.z * 0.04;
+        drawBall(
+          drawX,
+          drawY,
+          ENDED_BALL_RADIUS_SCALE * perspective,
+          1,
+          1 - depth
+        );
       }
 
       context.restore();
