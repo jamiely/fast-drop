@@ -1209,8 +1209,11 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
         jarX,
         jarBadgeCenterY - 6 * jarScale
       );
-      context.fillStyle = '#2a4a90';
+      context.strokeStyle = '#2a4a90';
+      context.fillStyle = '#ffffff';
+      context.lineWidth = 4 * jarScale;
       context.font = `bold ${Math.round(16 * jarScale)}px Arial`;
+      context.strokeText('BALLS', jarX, jarBadgeCenterY + 36 * jarScale);
       context.fillText('BALLS', jarX, jarBadgeCenterY + 36 * jarScale);
 
       const dividerX = canvas.width * 0.5;
