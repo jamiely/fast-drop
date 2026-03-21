@@ -594,7 +594,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
     }
 
     const timerX = canvas.width * 0.29;
-    const timerY = canvas.height * 0.3 + 142;
+    const timerY = canvas.height * 0.3 + 170;
     const timerRadius = 146;
 
     if (!showEndedLayout) {
