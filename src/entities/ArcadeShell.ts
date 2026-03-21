@@ -11,29 +11,49 @@ import {
   TorusGeometry
 } from 'three';
 
-const createDropLabelTexture = (): CanvasTexture => {
+interface DropLabelTexture {
+  texture: CanvasTexture;
+  setPressAmount: (amount: number) => void;
+}
+
+const createDropLabelTexture = (): DropLabelTexture => {
   const canvas = document.createElement('canvas');
   canvas.width = 256;
   canvas.height = 256;
   const context = canvas.getContext('2d');
 
-  if (context) {
+  const texture = new CanvasTexture(canvas);
+  texture.colorSpace = SRGBColorSpace;
+
+  const draw = (amount: number): void => {
+    if (!context) {
+      return;
+    }
+
+    const clamped = Math.max(0, Math.min(1, amount));
+    const alpha = 0.45 + clamped * 0.45;
+    const tint = Math.round(255 * clamped);
+
     context.clearRect(0, 0, canvas.width, canvas.height);
     context.textAlign = 'center';
     context.textBaseline = 'middle';
-    context.fillStyle = 'rgba(0, 0, 0, 0.45)';
+    context.fillStyle = `rgba(${tint}, ${tint}, ${tint}, ${alpha})`;
 
     context.font = 'bold 78px Arial';
     context.fillText('drop', canvas.width * 0.5, canvas.height * 0.48);
 
     context.font = 'bold 168px Arial';
     context.fillText('⇓', canvas.width * 0.5, canvas.height * 0.76);
-  }
 
-  const texture = new CanvasTexture(canvas);
-  texture.colorSpace = SRGBColorSpace;
-  texture.needsUpdate = true;
-  return texture;
+    texture.needsUpdate = true;
+  };
+
+  draw(0);
+
+  return {
+    texture,
+    setPressAmount: (amount: number) => draw(amount)
+  };
 };
 
 export interface DropButtonVisual {
@@ -74,10 +94,12 @@ export const createDropButtonVisual = (): DropButtonVisual => {
   const capPressTravel = 0.04;
   cap.position.y = capRestY;
 
+  const dropLabelTexture = createDropLabelTexture();
+
   const label = new Mesh(
     new CircleGeometry(0.24, 64),
     new MeshBasicMaterial({
-      map: createDropLabelTexture(),
+      map: dropLabelTexture.texture,
       transparent: true
     })
   );
@@ -99,6 +121,7 @@ export const createDropButtonVisual = (): DropButtonVisual => {
       const amount = Math.max(0, Math.min(1, value));
       cap.position.y = capRestY - capPressTravel * amount;
       label.position.y = cap.position.y + labelOffsetY;
+      dropLabelTexture.setPressAmount(amount);
     }
   };
 };
