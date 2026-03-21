@@ -85,6 +85,9 @@ const STATUS_DISPLAY_END_Z = 2.6;
 const STATUS_DISPLAY_END_ANIMATION_SECONDS = 2;
 const DROP_TUBE_END_HEIGHT = 5;
 const DROP_TUBE_END_ANIMATION_SECONDS = 1;
+const CAMERA_FILL_BASE_ZOOM = 1.15;
+const CAMERA_FILL_REFERENCE_ASPECT = 16 / 9;
+const CAMERA_FILL_MAX_ZOOM = 1.7;
 
 export class SceneRoot {
   public readonly renderer: WebGLRenderer | null;
@@ -168,6 +171,7 @@ export class SceneRoot {
 
     const aspect = host.clientWidth / host.clientHeight;
     this.camera = createCamera(aspect);
+    this.applyViewportCameraFill();
 
     try {
       this.renderer = new WebGLRenderer({ antialias: true });
@@ -664,9 +668,10 @@ export class SceneRoot {
   }
 
   public resize(): void {
-    const width = this.host.clientWidth;
-    const height = this.host.clientHeight;
+    const width = Math.max(1, this.host.clientWidth);
+    const height = Math.max(1, this.host.clientHeight);
     this.camera.aspect = width / height;
+    this.applyViewportCameraFill();
     this.camera.updateProjectionMatrix();
     this.renderer?.setSize(width, height);
   }
@@ -692,6 +697,18 @@ export class SceneRoot {
     return Math.max(
       0.5,
       bridgeAnchorRadius + targetArmLength + petalRadius * 0.98
+    );
+  }
+
+  private applyViewportCameraFill(): void {
+    const width = Math.max(1, this.host.clientWidth);
+    const height = Math.max(1, this.host.clientHeight);
+    const aspect = width / height;
+    const aspectZoom = aspect / CAMERA_FILL_REFERENCE_ASPECT;
+
+    this.camera.zoom = Math.min(
+      CAMERA_FILL_MAX_ZOOM,
+      Math.max(CAMERA_FILL_BASE_ZOOM, aspectZoom)
     );
   }
 
