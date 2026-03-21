@@ -77,6 +77,7 @@ const ENDED_JAR_SLEEP_SPEED = 28;
 const ENDED_JAR_SLEEP_FRAMES = 14;
 const ENDED_SCORE_REVEAL_DELAY_MS = 2000;
 const ENDED_SCORE_INCREMENT = 10;
+const ENDED_SCORE_FAST_INCREMENT = 100;
 const ENDED_SCORE_STEP_MS = 380;
 const ENDED_SCORE_SLIDE_MS = 320;
 const ENDED_SCORE_ANIMATION_SPEED = 4;
@@ -1247,7 +1248,23 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       const resultTopStartY = -resultRadius - 8;
       const enteredCountForScore = Math.max(0, Math.floor(data.ballsEntered));
       const roundedScore = enteredCountForScore * ENDED_SCORE_INCREMENT;
-      const totalScoreSteps = enteredCountForScore;
+      const fastScoreSteps = Math.floor(
+        roundedScore / ENDED_SCORE_FAST_INCREMENT
+      );
+      const fastScoreTotal = fastScoreSteps * ENDED_SCORE_FAST_INCREMENT;
+      const remainderScore = roundedScore - fastScoreTotal;
+      const finalScoreSteps = Math.floor(remainderScore / ENDED_SCORE_INCREMENT);
+      const totalScoreSteps = fastScoreSteps + finalScoreSteps;
+      const scoreAtStep = (step: number): number => {
+        if (step <= 0) {
+          return 0;
+        }
+        if (step <= fastScoreSteps) {
+          return step * ENDED_SCORE_FAST_INCREMENT;
+        }
+        const extraSteps = step - fastScoreSteps;
+        return fastScoreTotal + extraSteps * ENDED_SCORE_INCREMENT;
+      };
       const scoreRevealStartAtMs =
         (roundEndedAtMs ?? nowMs) +
         ENDED_TIMER_HIDE_DELAY_MS +
@@ -1357,10 +1374,10 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
           drawResultCircle(resultCenterY, roundedScore);
         } else {
           const toStep = Math.min(totalScoreSteps, completedSteps + 1);
-          const toValue = toStep * ENDED_SCORE_INCREMENT;
+          const toValue = scoreAtStep(toStep);
           const slideProgress = stepFloat - completedSteps;
           const easedSlideProgress = easeOutCubic(slideProgress);
-          const fromValue = completedSteps * ENDED_SCORE_INCREMENT;
+          const fromValue = scoreAtStep(completedSteps);
           const fromContent: 'great' | number =
             completedSteps <= 0 ? 'great' : fromValue;
           const fromY =
