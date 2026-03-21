@@ -667,24 +667,26 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       const needlePerpX = -Math.sin(needleAngle);
       const needlePerpY = Math.cos(needleAngle);
       const needleBaseHalfWidth = 7;
-      const needleTailLength = 10;
-      const needleTailX = timerX - Math.cos(needleAngle) * needleTailLength;
-      const needleTailY = timerY - Math.sin(needleAngle) * needleTailLength;
+      const needleLeftX = timerX + needlePerpX * needleBaseHalfWidth;
+      const needleLeftY = timerY + needlePerpY * needleBaseHalfWidth;
+      const needleRightX = timerX - needlePerpX * needleBaseHalfWidth;
+      const needleRightY = timerY - needlePerpY * needleBaseHalfWidth;
 
       context.fillStyle = '#9be9ff';
       context.strokeStyle = '#1e5fb8';
       context.lineWidth = 4;
       context.beginPath();
-      context.moveTo(
-        timerX + needlePerpX * needleBaseHalfWidth,
-        timerY + needlePerpY * needleBaseHalfWidth
-      );
+      context.moveTo(needleLeftX, needleLeftY);
       context.lineTo(needleTipX, needleTipY);
-      context.lineTo(
-        timerX - needlePerpX * needleBaseHalfWidth,
-        timerY - needlePerpY * needleBaseHalfWidth
+      context.lineTo(needleRightX, needleRightY);
+      context.arc(
+        timerX,
+        timerY,
+        needleBaseHalfWidth,
+        needleAngle - Math.PI * 0.5,
+        needleAngle + Math.PI * 0.5,
+        true
       );
-      context.lineTo(needleTailX, needleTailY);
       context.closePath();
       context.fill();
       context.stroke();
