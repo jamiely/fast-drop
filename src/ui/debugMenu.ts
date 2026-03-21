@@ -10,6 +10,7 @@ export interface DebugMenuControls {
   stepFrame: () => void;
   addTime: () => void;
   addScore: () => void;
+  forceTimerZero: () => void;
   spawnBall: () => void;
   forceGameOver: () => void;
   forcePerfectGameOver: () => void;
@@ -281,6 +282,7 @@ export const createDebugMenu = (
       <button type="button" data-action="step">Step Frame</button>
       <button type="button" data-action="add-time">+3s</button>
       <button type="button" data-action="add-score">+100</button>
+      <button type="button" data-action="force-timer-zero">Timer 0</button>
       <button type="button" data-action="spawn-ball">Spawn Ball</button>
       <button type="button" data-action="force-game-over">Force Game Over</button>
       <button type="button" data-action="force-perfect-game-over">Force Perfect Game Over</button>
@@ -380,6 +382,9 @@ export const createDebugMenu = (
           break;
         case 'add-score':
           controls?.addScore();
+          break;
+        case 'force-timer-zero':
+          controls?.forceTimerZero();
           break;
         case 'spawn-ball':
           controls?.spawnBall();

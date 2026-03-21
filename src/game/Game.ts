@@ -88,6 +88,7 @@ export class Game {
       stepFrame: () => this.step(1 / 60),
       addTime: () => this.setTimeRemaining(this.state.timeRemaining + 3),
       addScore: () => this.setScore(this.state.score + 100),
+      forceTimerZero: () => this.setTimeRemaining(0),
       spawnBall: () => this.spawnBall(),
       forceGameOver: () => this.forceGameOver(),
       forcePerfectGameOver: () => this.forcePerfectGameOver(),
