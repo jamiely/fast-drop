@@ -940,20 +940,31 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       }
 
       const canSleepInJar = endedFallingBalls.length === 0;
+      const allEndedBallsReleased =
+        endedJarBalls.length + endedFallingBalls.length >= enteredCount;
+      const shouldFreezeJarBalls = canSleepInJar && allEndedBallsReleased;
 
-      for (const ball of endedJarBalls) {
-        const isSleeping =
-          canSleepInJar && ball.sleepFrames >= ENDED_JAR_SLEEP_FRAMES;
-
-        if (!isSleeping) {
-          ball.vy += ENDED_DROP_GRAVITY * endedDt;
-          ball.vx *= canSleepInJar ? ENDED_JAR_SETTLE_DAMPING_X : 0.95;
-          ball.vy *= canSleepInJar ? ENDED_JAR_SETTLE_DAMPING_Y : 0.965;
-          ball.vz *= canSleepInJar ? ENDED_JAR_SETTLE_DAMPING_Z : 0.985;
-          ball.x += ball.vx * endedDt;
-          ball.y += ball.vy * endedDt;
-          ball.z += ball.vz * endedDt;
+      if (shouldFreezeJarBalls) {
+        for (const ball of endedJarBalls) {
+          ball.vx = 0;
+          ball.vy = 0;
+          ball.vz = 0;
+          ball.sleepFrames = ENDED_JAR_SLEEP_FRAMES;
         }
+      } else {
+        for (const ball of endedJarBalls) {
+          const isSleeping =
+            canSleepInJar && ball.sleepFrames >= ENDED_JAR_SLEEP_FRAMES;
+
+          if (!isSleeping) {
+            ball.vy += ENDED_DROP_GRAVITY * endedDt;
+            ball.vx *= canSleepInJar ? ENDED_JAR_SETTLE_DAMPING_X : 0.95;
+            ball.vy *= canSleepInJar ? ENDED_JAR_SETTLE_DAMPING_Y : 0.965;
+            ball.vz *= canSleepInJar ? ENDED_JAR_SETTLE_DAMPING_Z : 0.985;
+            ball.x += ball.vx * endedDt;
+            ball.y += ball.vy * endedDt;
+            ball.z += ball.vz * endedDt;
+          }
 
         if (ball.x < jarLeft) {
           ball.x = jarLeft;
@@ -1017,9 +1028,11 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
           ball.vy = 0;
           ball.vz = 0;
         }
+        }
       }
 
-      for (let i = 0; i < endedJarBalls.length; i += 1) {
+      if (!shouldFreezeJarBalls) {
+        for (let i = 0; i < endedJarBalls.length; i += 1) {
         for (let j = i + 1; j < endedJarBalls.length; j += 1) {
           const left = endedJarBalls[i];
           const right = endedJarBalls[j];
@@ -1102,6 +1115,8 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
           left.z = Math.max(jarBack, Math.min(jarFront, left.z));
           right.z = Math.max(jarBack, Math.min(jarFront, right.z));
         }
+      }
+
       }
 
       endedDisplayedCount = Math.min(endedJarBalls.length, enteredCount);
@@ -1235,7 +1250,9 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
         (left, right) => left.z - right.z
       );
       for (const ball of sortedEndedJarBalls) {
-        const depth = clamp01((ball.z - jarBack) / Math.max(0.0001, jarFront - jarBack));
+        const depth = clamp01(
+          (ball.z - jarBack) / Math.max(0.0001, jarFront - jarBack)
+        );
         const perspective = 0.84 + depth * 0.3;
         const drawX = ball.x + ball.z * 0.16;
         const drawY = ball.y - ball.z * 0.04;
@@ -1252,7 +1269,9 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
         (left, right) => left.z - right.z
       );
       for (const ball of sortedEndedFallingBalls) {
-        const depth = clamp01((ball.z - jarBack) / Math.max(0.0001, jarFront - jarBack));
+        const depth = clamp01(
+          (ball.z - jarBack) / Math.max(0.0001, jarFront - jarBack)
+        );
         const perspective = 0.84 + depth * 0.3;
         const drawX = ball.x + ball.z * 0.16;
         const drawY = ball.y - ball.z * 0.04;
