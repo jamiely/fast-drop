@@ -17,10 +17,14 @@ const createDropLabelTexture = (): CanvasTexture => {
 
   if (context) {
     context.clearRect(0, 0, canvas.width, canvas.height);
-    context.fillStyle = '#111111';
     context.font = 'bold 82px Arial';
     context.textAlign = 'center';
     context.textBaseline = 'middle';
+    context.lineJoin = 'round';
+    context.lineWidth = 8;
+    context.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+    context.strokeText('DROP', canvas.width * 0.5, canvas.height * 0.54);
+    context.fillStyle = '#000000';
     context.fillText('DROP', canvas.width * 0.5, canvas.height * 0.54);
   }
 
