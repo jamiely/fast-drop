@@ -598,20 +598,22 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
     const timerRadius = 146;
 
     if (!showEndedLayout) {
-      const timerLabelX = canvas.width * 0.24;
-      const ballsLabelX = canvas.width * 0.81;
+      const timerLabelX = canvas.width * 0.31;
+      const ballsLabelX = canvas.width * 0.75;
+      const labelTopY = 84;
+      const labelBottomY = 126;
 
       context.fillStyle = '#16326a';
       context.font = 'bold 58px Arial';
       context.textAlign = 'center';
-      context.fillText('TIME', timerLabelX, 104);
+      context.fillText('TIME', timerLabelX, labelTopY);
       context.font = 'bold 40px Arial';
-      context.fillText('REMAINING', timerLabelX, 146);
+      context.fillText('REMAINING', timerLabelX, labelBottomY);
 
       context.font = 'bold 58px Arial';
-      context.fillText('BALLS', ballsLabelX, 104);
+      context.fillText('BALLS', ballsLabelX, labelTopY);
       context.font = 'bold 40px Arial';
-      context.fillText('REMAINING', ballsLabelX, 146);
+      context.fillText('REMAINING', ballsLabelX, labelBottomY);
 
       context.lineWidth = 34;
       context.lineCap = 'round';
