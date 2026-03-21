@@ -159,7 +159,7 @@ describe('DOM systems and UI helpers', () => {
       value: 'touch'
     });
     Object.defineProperty(touchPointerEvent, 'button', {
-      value: 0
+      value: -1
     });
     window.dispatchEvent(touchPointerEvent);
 
@@ -192,6 +192,41 @@ describe('DOM systems and UI helpers', () => {
     window.dispatchEvent(new KeyboardEvent('keyup', { code: 'Space' }));
 
     expect(drops).toBe(0);
+  });
+
+  it('supports touchstart primary action without double-triggering on touchend', () => {
+    let drops = 0;
+
+    new InputSystem({
+      onDrop: () => {
+        drops += 1;
+      }
+    });
+
+    const touchStartEvent = new Event('touchstart') as TouchEvent;
+    Object.defineProperty(touchStartEvent, 'touches', {
+      value: [{ identifier: 1 }]
+    });
+    window.dispatchEvent(touchStartEvent);
+
+    const touchEndEvent = new Event('touchend');
+    window.dispatchEvent(touchEndEvent);
+
+    expect(drops).toBe(1);
+  });
+
+  it('supports touchend fallback when no touchstart was captured', () => {
+    let drops = 0;
+
+    new InputSystem({
+      onDrop: () => {
+        drops += 1;
+      }
+    });
+
+    window.dispatchEvent(new Event('touchend'));
+
+    expect(drops).toBe(1);
   });
 
   it('renders state without mounting top-left HUD', () => {

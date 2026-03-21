@@ -19,6 +19,7 @@ const isInteractiveTarget = (target: EventTarget | null): boolean => {
 export class InputSystem {
   public constructor(options: InputSystemOptions) {
     let lastPointerPrimaryAt = Number.NEGATIVE_INFINITY;
+    let touchActionInProgress = false;
 
     const triggerPrimaryAction = (target: EventTarget | null): void => {
       if (isInteractiveTarget(target)) {
@@ -52,17 +53,50 @@ export class InputSystem {
       options.onDrop();
     });
 
+    window.addEventListener('touchstart', (event) => {
+      if (event.touches.length > 1) {
+        return;
+      }
+
+      touchActionInProgress = true;
+      lastPointerPrimaryAt = performance.now();
+      triggerPrimaryAction(event.target);
+    });
+
     window.addEventListener('pointerup', (event) => {
       const pointerType = event.pointerType;
-      if (
-        (pointerType && pointerType !== 'mouse' && pointerType !== 'touch') ||
-        event.button !== 0
-      ) {
+      if (pointerType && !['mouse', 'touch', 'pen'].includes(pointerType)) {
+        return;
+      }
+
+      if (pointerType === 'touch' && touchActionInProgress) {
+        return;
+      }
+
+      if ((pointerType === 'mouse' || !pointerType) && event.button !== 0) {
         return;
       }
 
       lastPointerPrimaryAt = performance.now();
       triggerPrimaryAction(event.target);
+    });
+
+    window.addEventListener('touchend', (event) => {
+      if (touchActionInProgress) {
+        touchActionInProgress = false;
+        return;
+      }
+
+      if (performance.now() - lastPointerPrimaryAt < 250) {
+        return;
+      }
+
+      lastPointerPrimaryAt = performance.now();
+      triggerPrimaryAction(event.target);
+    });
+
+    window.addEventListener('touchcancel', () => {
+      touchActionInProgress = false;
     });
 
     window.addEventListener('click', (event) => {
