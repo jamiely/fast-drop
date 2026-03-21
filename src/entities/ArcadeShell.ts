@@ -21,7 +21,7 @@ const createDropLabelTexture = (): CanvasTexture => {
     context.clearRect(0, 0, canvas.width, canvas.height);
     context.textAlign = 'center';
     context.textBaseline = 'middle';
-    context.fillStyle = '#000000';
+    context.fillStyle = 'rgba(0, 0, 0, 0.45)';
 
     context.font = 'bold 78px Arial';
     context.fillText('drop', canvas.width * 0.5, canvas.height * 0.48);
