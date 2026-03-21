@@ -1545,7 +1545,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       context.fillText(String(ballsTotal), ballsX, ballsY + 10);
 
       context.fillStyle = '#16326a';
-      context.font = 'bold 44px Arial';
+      context.font = 'bold 40px Arial';
       context.fillText('BALLS!', ballsX, ballsY + 83);
     } else {
       context.save();
