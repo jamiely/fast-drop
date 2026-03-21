@@ -127,7 +127,7 @@ Implemented in this pass:
 - deterministic round-end conditions (timer expiry or immediate ball exhaustion),
 - end-of-round summary overlay with Play Again (`Enter`/`Space` shortcuts),
 - e2e regressions for summary/round-end behavior,
-- configurable drop cooldown (default 80ms, debug-tunable),
+- configurable drop cooldown (default 160ms, debug-tunable),
 - click-anywhere drop input (outside UI controls),
 - visual style refresh inspired by the neon reference image,
 - decorative outer ring around the jar orbit,
