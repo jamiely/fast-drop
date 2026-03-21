@@ -133,6 +133,7 @@ Implemented in this pass:
 - decorative outer ring around the jar orbit,
 - in-world status display above the jars (left timer ring shifts from green to red with a needle, right side shows balls remaining),
 - status display visual refresh: rounded monitor-style bezel, recessed screen, and larger default scale (1.3),
+- round-end status display now uses stronger depth cues (layered screen glass/frame, pedestal/jar shadows, richer gradients, and raised result badge styling),
 - LED chase effect on the outer ring with moving multi-color heads, soft gradient blending, and trailing glow,
 - center dome now receives a subtle shader-based animated reflection driven by the outer-ring LED phase,
 - material/lighting polish pass (metallic center, glass jars, red rubber balls),
@@ -160,6 +161,10 @@ Implemented in this pass:
 ### Round summary overlay
 
 ![Round summary desktop](docs/history/2026-03-14-final-polish-audio-ui/round-summary-polish.png)
+
+### In-world game-over/status display depth refresh
+
+![In-world game-over display depth refresh](docs/history/2026-03-20-game-over-3d-depth/game-over-3d-desktop.png)
 
 ### Neon gameplay (mobile)
 

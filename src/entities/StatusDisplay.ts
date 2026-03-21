@@ -231,11 +231,59 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
     })
   );
 
+  const innerFrameShape = createRoundedRectShape(
+    SCREEN_WIDTH * 1.09,
+    SCREEN_HEIGHT * 1.11,
+    0.14
+  );
+  const innerFrameCutout = createRoundedRectShape(
+    SCREEN_WIDTH * 1.005,
+    SCREEN_HEIGHT * 1.01,
+    0.112
+  );
+  innerFrameShape.holes.push(innerFrameCutout);
+
+  const innerFrameGeometry = new ExtrudeGeometry(innerFrameShape, {
+    depth: 0.025,
+    bevelEnabled: false,
+    curveSegments: 14
+  });
+  innerFrameGeometry.translate(0, 0, -0.0125);
+
+  const innerFrame = new Mesh(
+    innerFrameGeometry,
+    new MeshPhysicalMaterial({
+      color: '#3a4ba0',
+      metalness: 0.34,
+      roughness: 0.24,
+      clearcoat: 1,
+      clearcoatRoughness: 0.18,
+      emissive: '#3852b2',
+      emissiveIntensity: 0.12
+    })
+  );
+
+  const screenGlass = new Mesh(
+    screenGeometry.clone(),
+    new MeshPhysicalMaterial({
+      color: '#d9f2ff',
+      transparent: true,
+      opacity: 0.12,
+      metalness: 0,
+      roughness: 0.05,
+      clearcoat: 1,
+      clearcoatRoughness: 0,
+      transmission: 0.18
+    })
+  );
+
   const housingFrontZ = HOUSING_DEPTH * 0.5;
   screen.position.z = housingFrontZ + 0.001;
   bezel.position.z = housingFrontZ + 0.004;
+  innerFrame.position.z = housingFrontZ + 0.008;
+  screenGlass.position.z = housingFrontZ + 0.01;
 
-  group.add(housing, screen, bezel);
+  group.add(housing, screen, bezel, innerFrame, screenGlass);
 
   const getNowMs = () =>
     typeof performance !== 'undefined' ? performance.now() : Date.now();
@@ -503,10 +551,37 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
     context.clearRect(0, 0, canvas.width, canvas.height);
 
     const bg = context.createLinearGradient(0, 0, 0, canvas.height);
-    bg.addColorStop(0, '#8fd9ff');
-    bg.addColorStop(1, '#6bc8ff');
+    if (showEndedLayout) {
+      bg.addColorStop(0, '#9ce0ff');
+      bg.addColorStop(0.58, '#7ed0fb');
+      bg.addColorStop(1, '#6cb5ea');
+    } else {
+      bg.addColorStop(0, '#8fd9ff');
+      bg.addColorStop(1, '#6bc8ff');
+    }
     context.fillStyle = bg;
     context.fillRect(0, 0, canvas.width, canvas.height);
+
+    if (showEndedLayout) {
+      const bloom = context.createRadialGradient(
+        canvas.width * 0.26,
+        canvas.height * 0.24,
+        40,
+        canvas.width * 0.26,
+        canvas.height * 0.24,
+        canvas.width * 0.72
+      );
+      bloom.addColorStop(0, 'rgba(255,255,255,0.22)');
+      bloom.addColorStop(1, 'rgba(255,255,255,0)');
+      context.fillStyle = bloom;
+      context.fillRect(0, 0, canvas.width, canvas.height);
+
+      const floor = context.createLinearGradient(0, canvas.height * 0.62, 0, canvas.height);
+      floor.addColorStop(0, 'rgba(63,110,167,0)');
+      floor.addColorStop(1, 'rgba(50,86,142,0.32)');
+      context.fillStyle = floor;
+      context.fillRect(0, canvas.height * 0.62, canvas.width, canvas.height * 0.38);
+    }
 
     const timerX = canvas.width * 0.29;
     const timerY = canvas.height * 0.3 + 142;
@@ -608,7 +683,38 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       const pedestalHeight = 26;
       const pedestalBottomY = pedestalTopY + pedestalHeight;
 
-      context.fillStyle = '#5f82cd';
+      const pedestalShadow = context.createRadialGradient(
+        jarX,
+        pedestalBottomY + 30,
+        pedestalWidth * 0.2,
+        jarX,
+        pedestalBottomY + 30,
+        pedestalWidth * 0.72
+      );
+      pedestalShadow.addColorStop(0, 'rgba(12, 33, 68, 0.38)');
+      pedestalShadow.addColorStop(1, 'rgba(12, 33, 68, 0)');
+      context.fillStyle = pedestalShadow;
+      context.beginPath();
+      context.ellipse(
+        jarX,
+        pedestalBottomY + 30,
+        pedestalWidth * 0.72,
+        34,
+        0,
+        0,
+        Math.PI * 2
+      );
+      context.fill();
+
+      const pedestalTop = context.createLinearGradient(
+        jarX,
+        pedestalTopY - 14,
+        jarX,
+        pedestalTopY + 16
+      );
+      pedestalTop.addColorStop(0, '#8fb2ff');
+      pedestalTop.addColorStop(1, '#5f82cd');
+      context.fillStyle = pedestalTop;
       context.beginPath();
       context.ellipse(
         jarX,
@@ -621,7 +727,16 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       );
       context.fill();
 
-      context.fillStyle = '#4367b8';
+      const pedestalBody = context.createLinearGradient(
+        jarX - pedestalWidth * 0.5,
+        pedestalTopY,
+        jarX + pedestalWidth * 0.5,
+        pedestalTopY
+      );
+      pedestalBody.addColorStop(0, '#36579f');
+      pedestalBody.addColorStop(0.5, '#4f74c3');
+      pedestalBody.addColorStop(1, '#2f4d8d');
+      context.fillStyle = pedestalBody;
       context.fillRect(
         jarX - pedestalWidth * 0.5,
         pedestalTopY,
@@ -634,7 +749,16 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       const supportHeight = 82;
       const supportBottomY = supportTopY + supportHeight;
 
-      context.fillStyle = '#35579f';
+      const supportBody = context.createLinearGradient(
+        jarX - supportWidth * 0.5,
+        supportTopY,
+        jarX + supportWidth * 0.5,
+        supportTopY
+      );
+      supportBody.addColorStop(0, '#28467f');
+      supportBody.addColorStop(0.45, '#4369b6');
+      supportBody.addColorStop(1, '#1f386f');
+      context.fillStyle = supportBody;
       context.fillRect(
         jarX - supportWidth * 0.5,
         supportTopY,
@@ -655,7 +779,15 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       );
       context.fill();
 
-      context.fillStyle = '#2c4d92';
+      const pedestalLip = context.createLinearGradient(
+        jarX,
+        pedestalBottomY - 20,
+        jarX,
+        pedestalBottomY + 18
+      );
+      pedestalLip.addColorStop(0, '#4f73be');
+      pedestalLip.addColorStop(1, '#284780');
+      context.fillStyle = pedestalLip;
       context.beginPath();
       context.ellipse(
         jarX,
@@ -867,12 +999,22 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
 
       endedDisplayedCount = Math.min(endedJarBalls.length, enteredCount);
 
-      context.fillStyle = 'rgba(216, 242, 255, 0.24)';
+      context.fillStyle = 'rgba(11, 33, 66, 0.28)';
       context.beginPath();
-      context.ellipse(jarX, jarBottom, jarWidth * 0.5, 22, 0, 0, Math.PI * 2);
+      context.ellipse(jarX + 6, jarBottom + 16, jarWidth * 0.52, 24, 0, 0, Math.PI * 2);
       context.fill();
 
-      context.fillStyle = 'rgba(180, 225, 255, 0.2)';
+      const jarBody = context.createLinearGradient(
+        jarX - jarWidth * 0.5,
+        jarTop,
+        jarX + jarWidth * 0.5,
+        jarTop
+      );
+      jarBody.addColorStop(0, 'rgba(233, 250, 255, 0.3)');
+      jarBody.addColorStop(0.24, 'rgba(196, 236, 255, 0.2)');
+      jarBody.addColorStop(0.72, 'rgba(155, 214, 248, 0.16)');
+      jarBody.addColorStop(1, 'rgba(110, 183, 228, 0.28)');
+      context.fillStyle = jarBody;
       context.fillRect(
         jarX - jarWidth * 0.5,
         jarTop + 18,
@@ -889,7 +1031,13 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       context.lineTo(jarX + jarWidth * 0.5, jarBottom);
       context.stroke();
 
-      context.fillStyle = 'rgba(230, 247, 255, 0.42)';
+      context.fillStyle = 'rgba(255, 255, 255, 0.26)';
+      context.fillRect(jarX - jarWidth * 0.33, jarTop + 28, 16, jarHeight - 48);
+
+      context.fillStyle = 'rgba(18, 55, 109, 0.24)';
+      context.fillRect(jarX + jarWidth * 0.3, jarTop + 22, 10, jarHeight - 32);
+
+      context.fillStyle = 'rgba(230, 247, 255, 0.48)';
       context.strokeStyle = '#111111';
       context.lineWidth = 10;
       context.beginPath();
@@ -905,8 +1053,8 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       context.fill();
       context.stroke();
 
-      context.fillStyle = 'rgba(230, 247, 255, 0.24)';
-      context.strokeStyle = 'rgba(17, 17, 17, 0.55)';
+      context.fillStyle = 'rgba(240, 252, 255, 0.28)';
+      context.strokeStyle = 'rgba(17, 17, 17, 0.58)';
       context.lineWidth = 7;
       context.beginPath();
       context.ellipse(jarX, jarBottom, jarWidth * 0.5, 22, 0, 0, Math.PI * 2);
@@ -954,11 +1102,23 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       context.font = 'bold 30px Arial';
       context.fillText('BALLS', jarX, jarTop + jarHeight * 0.52 + 38);
 
-      context.strokeStyle = '#31559b';
+      const dividerX = canvas.width * 0.5;
+      const divider = context.createLinearGradient(0, 116, 0, canvas.height - 72);
+      divider.addColorStop(0, 'rgba(59, 102, 176, 0.35)');
+      divider.addColorStop(0.5, 'rgba(45, 85, 154, 0.7)');
+      divider.addColorStop(1, 'rgba(46, 81, 140, 0.3)');
+      context.strokeStyle = divider;
       context.lineWidth = 3;
       context.beginPath();
-      context.moveTo(canvas.width * 0.5, 116);
-      context.lineTo(canvas.width * 0.5, canvas.height - 72);
+      context.moveTo(dividerX, 116);
+      context.lineTo(dividerX, canvas.height - 72);
+      context.stroke();
+
+      context.strokeStyle = 'rgba(212, 233, 255, 0.48)';
+      context.lineWidth = 1;
+      context.beginPath();
+      context.moveTo(dividerX + 4, 118);
+      context.lineTo(dividerX + 4, canvas.height - 74);
       context.stroke();
 
       const resultCenterY = ballsY - 20;
@@ -982,12 +1142,46 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
         context.save();
         context.globalAlpha = clamp01(alpha);
 
-        context.fillStyle = '#f5f8ff';
+        context.fillStyle = 'rgba(17, 50, 103, 0.22)';
+        context.beginPath();
+        context.ellipse(
+          ballsX + 8,
+          centerY + resultRadius * 0.76,
+          resultRadius * 0.72,
+          24,
+          0,
+          0,
+          Math.PI * 2
+        );
+        context.fill();
+
+        const badgeGradient = context.createLinearGradient(
+          ballsX,
+          centerY - resultRadius,
+          ballsX,
+          centerY + resultRadius
+        );
+        badgeGradient.addColorStop(0, '#ffffff');
+        badgeGradient.addColorStop(0.52, '#f5f8ff');
+        badgeGradient.addColorStop(1, '#e3ebfb');
+        context.fillStyle = badgeGradient;
         context.strokeStyle = '#dc4a68';
         context.lineWidth = 6;
         context.beginPath();
         context.arc(ballsX, centerY, resultRadius, 0, Math.PI * 2);
         context.fill();
+        context.stroke();
+
+        context.strokeStyle = 'rgba(255,255,255,0.7)';
+        context.lineWidth = 3;
+        context.beginPath();
+        context.arc(
+          ballsX,
+          centerY,
+          resultRadius - 12,
+          Math.PI * 1.02,
+          Math.PI * 1.92
+        );
         context.stroke();
 
         context.textAlign = 'center';
