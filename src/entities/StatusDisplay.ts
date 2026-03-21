@@ -893,15 +893,24 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       const releaseProgress =
         enteredCount <= 0
           ? 1
-          : clamp01((nowMs - endedDropSequenceStartAtMs) / totalReleaseDurationMs);
+          : clamp01(
+              (nowMs - endedDropSequenceStartAtMs) / totalReleaseDurationMs
+            );
       const easedReleaseProgress = easeOutQuad(releaseProgress);
       const targetReleasedCount = Math.min(
         enteredCount,
         Math.floor(easedReleaseProgress * enteredCount)
       );
-      const releaseBatchCount = Math.max(0, targetReleasedCount - releasedCount);
+      const releaseBatchCount = Math.max(
+        0,
+        targetReleasedCount - releasedCount
+      );
 
-      for (let releaseIndex = 0; releaseIndex < releaseBatchCount; releaseIndex += 1) {
+      for (
+        let releaseIndex = 0;
+        releaseIndex < releaseBatchCount;
+        releaseIndex += 1
+      ) {
         endedFallingBalls.push({
           x: jarX + (Math.random() - 0.5) * (jarInnerWidth * 0.42),
           y: 18,
