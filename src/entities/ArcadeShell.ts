@@ -1,8 +1,10 @@
 import {
   CanvasTexture,
+  CircleGeometry,
   CylinderGeometry,
   Group,
   Mesh,
+  MeshBasicMaterial,
   MeshPhysicalMaterial,
   MeshStandardMaterial,
   SRGBColorSpace,
@@ -20,10 +22,6 @@ const createDropLabelTexture = (): CanvasTexture => {
     context.font = 'bold 82px Arial';
     context.textAlign = 'center';
     context.textBaseline = 'middle';
-    context.lineJoin = 'round';
-    context.lineWidth = 8;
-    context.strokeStyle = 'rgba(255, 255, 255, 0.9)';
-    context.strokeText('DROP', canvas.width * 0.5, canvas.height * 0.54);
     context.fillStyle = '#000000';
     context.fillText('DROP', canvas.width * 0.5, canvas.height * 0.54);
   }
@@ -59,8 +57,7 @@ export const createDropButtonVisual = (): DropButtonVisual => {
     clearcoat: 1,
     clearcoatRoughness: 0.08,
     emissive: '#ff2c32',
-    emissiveIntensity: 0.4,
-    map: createDropLabelTexture()
+    emissiveIntensity: 0.4
   });
 
   const cap = new Mesh(new CylinderGeometry(0.34, 0.38, 0.12, 52), capMaterial);
@@ -68,7 +65,18 @@ export const createDropButtonVisual = (): DropButtonVisual => {
   const capPressTravel = 0.04;
   cap.position.y = capRestY;
 
-  group.add(base, cap);
+  const label = new Mesh(
+    new CircleGeometry(0.24, 64),
+    new MeshBasicMaterial({
+      map: createDropLabelTexture(),
+      transparent: true
+    })
+  );
+  const labelOffsetY = 0.061;
+  label.rotation.x = -Math.PI * 0.5;
+  label.position.y = capRestY + labelOffsetY;
+
+  group.add(base, cap, label);
 
   return {
     group,
@@ -79,6 +87,7 @@ export const createDropButtonVisual = (): DropButtonVisual => {
     setPressAmount: (value: number) => {
       const amount = Math.max(0, Math.min(1, value));
       cap.position.y = capRestY - capPressTravel * amount;
+      label.position.y = cap.position.y + labelOffsetY;
     }
   };
 };
