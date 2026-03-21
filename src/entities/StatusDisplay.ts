@@ -639,7 +639,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       context.fill();
 
       const incrementCount = 12;
-      const markerRadius = timerRadius - 20;
+      const markerRadius = timerRadius;
       for (let index = 0; index < incrementCount; index += 1) {
         const angle = startAngle + (index / incrementCount) * Math.PI * 2;
         const markerX = timerX + Math.cos(angle) * markerRadius;
@@ -1175,7 +1175,11 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       context.font = `bold ${Math.round(72 * jarScale)}px Arial`;
       context.textAlign = 'center';
       context.textBaseline = 'middle';
-      context.fillText(String(endedDisplayedCount), jarX, jarBadgeCenterY - 3 * jarScale);
+      context.fillText(
+        String(endedDisplayedCount),
+        jarX,
+        jarBadgeCenterY - 3 * jarScale
+      );
       context.fillStyle = '#2a4a90';
       context.font = `bold ${Math.round(30 * jarScale)}px Arial`;
       context.fillText('BALLS', jarX, jarBadgeCenterY + 38 * jarScale);
