@@ -81,10 +81,6 @@ const ENDED_SCORE_STEP_MS = 380;
 const ENDED_SCORE_SLIDE_MS = 320;
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
-const easeOutQuad = (value: number) => {
-  const t = clamp01(value);
-  return 1 - (1 - t) * (1 - t);
-};
 
 export interface StatusDisplayData {
   timeRemaining: number;
@@ -855,7 +851,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       );
       context.fill();
 
-      const jarScale = 1.5;
+      const jarScale = 1.2;
       const jarWidth = 196 * jarScale;
       const jarHeight = 254 * jarScale;
       const jarBottom = pedestalTopY - 4 * jarScale;
@@ -1344,23 +1340,19 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
           ENDED_SCORE_SLIDE_MS,
           totalScoreSteps * ENDED_SCORE_STEP_MS
         );
-        const linearProgress = clamp01(scoreRevealElapsedMs / totalAnimationMs);
-        const easedProgress = easeOutQuad(linearProgress);
-        const stepFloat = easedProgress * totalScoreSteps;
+        const stepDurationMs = totalAnimationMs / totalScoreSteps;
+        const stepFloat = Math.min(
+          totalScoreSteps,
+          Math.max(0, scoreRevealElapsedMs / stepDurationMs)
+        );
         const completedSteps = Math.floor(stepFloat);
 
-        if (linearProgress >= 1 || completedSteps >= totalScoreSteps) {
+        if (stepFloat >= totalScoreSteps || completedSteps >= totalScoreSteps) {
           drawResultCircle(resultCenterY, roundedScore);
         } else {
           const toStep = Math.min(totalScoreSteps, completedSteps + 1);
           const toValue = toStep * ENDED_SCORE_INCREMENT;
-          const slideProgress = easeOutQuad(stepFloat - completedSteps);
-
-          if (toStep === totalScoreSteps && linearProgress >= 0.94) {
-            drawResultCircle(resultCenterY, roundedScore);
-            texture.needsUpdate = true;
-            return;
-          }
+          const slideProgress = stepFloat - completedSteps;
           const fromValue = completedSteps * ENDED_SCORE_INCREMENT;
           const fromContent: 'great' | number =
             completedSteps <= 0 ? 'great' : fromValue;
