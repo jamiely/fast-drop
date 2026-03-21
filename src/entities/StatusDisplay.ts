@@ -664,19 +664,29 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
 
       const needleTipX = timerX + Math.cos(needleAngle) * needleLength;
       const needleTipY = timerY + Math.sin(needleAngle) * needleLength;
-      context.strokeStyle = '#1e5fb8';
-      context.lineWidth = 22;
-      context.lineCap = 'round';
-      context.beginPath();
-      context.moveTo(timerX, timerY);
-      context.lineTo(needleTipX, needleTipY);
-      context.stroke();
+      const needlePerpX = -Math.sin(needleAngle);
+      const needlePerpY = Math.cos(needleAngle);
+      const needleBaseHalfWidth = 7;
+      const needleTailLength = 10;
+      const needleTailX = timerX - Math.cos(needleAngle) * needleTailLength;
+      const needleTailY = timerY - Math.sin(needleAngle) * needleTailLength;
 
-      context.strokeStyle = '#9be9ff';
-      context.lineWidth = 14;
+      context.fillStyle = '#9be9ff';
+      context.strokeStyle = '#1e5fb8';
+      context.lineWidth = 4;
       context.beginPath();
-      context.moveTo(timerX, timerY);
+      context.moveTo(
+        timerX + needlePerpX * needleBaseHalfWidth,
+        timerY + needlePerpY * needleBaseHalfWidth
+      );
       context.lineTo(needleTipX, needleTipY);
+      context.lineTo(
+        timerX - needlePerpX * needleBaseHalfWidth,
+        timerY - needlePerpY * needleBaseHalfWidth
+      );
+      context.lineTo(needleTailX, needleTailY);
+      context.closePath();
+      context.fill();
       context.stroke();
     }
 
