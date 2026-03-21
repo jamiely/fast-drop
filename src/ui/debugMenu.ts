@@ -12,6 +12,7 @@ export interface DebugMenuControls {
   addScore: () => void;
   spawnBall: () => void;
   forceGameOver: () => void;
+  forcePerfectGameOver: () => void;
   setSpeedMultiplier: (multiplier: number) => void;
   applyGameplayTuning: (key: keyof GameplayTuning, value: number) => void;
   applyCameraTuning: (key: keyof CameraTuning, value: number) => void;
@@ -282,6 +283,7 @@ export const createDebugMenu = (
       <button type="button" data-action="add-score">+100</button>
       <button type="button" data-action="spawn-ball">Spawn Ball</button>
       <button type="button" data-action="force-game-over">Force Game Over</button>
+      <button type="button" data-action="force-perfect-game-over">Force Perfect Game Over</button>
       <button type="button" data-action="speed-05">0.5x</button>
       <button type="button" data-action="speed-1">1x</button>
       <button type="button" data-action="speed-2">2x</button>
@@ -384,6 +386,9 @@ export const createDebugMenu = (
           break;
         case 'force-game-over':
           controls?.forceGameOver();
+          break;
+        case 'force-perfect-game-over':
+          controls?.forcePerfectGameOver();
           break;
         case 'speed-05':
           controls?.setSpeedMultiplier(0.5);

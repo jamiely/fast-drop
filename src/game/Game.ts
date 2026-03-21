@@ -90,6 +90,7 @@ export class Game {
       addScore: () => this.setScore(this.state.score + 100),
       spawnBall: () => this.spawnBall(),
       forceGameOver: () => this.forceGameOver(),
+      forcePerfectGameOver: () => this.forcePerfectGameOver(),
       setSpeedMultiplier: (multiplier) => this.setSpeedMultiplier(multiplier),
       applyGameplayTuning: (key, value) => this.applyGameplayTuning(key, value),
       applyCameraTuning: (key, value) => {
@@ -414,6 +415,25 @@ export class Game {
   private forceGameOver(): void {
     this.endRound();
     this.ballsExhaustedAtSeconds = null;
+    this.syncStatusDisplayFromState();
+    this.uiSystem.render(this.state);
+  }
+
+  private forcePerfectGameOver(): void {
+    const totalBalls = Math.max(0, Math.floor(this.runtimeConfig.ballsTotal));
+    this.state = {
+      ...this.state,
+      phase: 'ended',
+      score: totalBalls * 10,
+      ballsRemaining: 0,
+      ballsDropped: totalBalls,
+      hits: totalBalls,
+      misses: 0,
+      timeRemaining: Math.max(0, this.state.timeRemaining)
+    };
+    this.ballsExhaustedAtSeconds = null;
+    this.sceneRoot.resetRound();
+    this.audioSystem.play('game-over');
     this.syncStatusDisplayFromState();
     this.uiSystem.render(this.state);
   }
