@@ -81,6 +81,8 @@ const MISSED_BALL_CLEANUP_Y = -3.5;
 const BALL_COLLISION_RESTITUTION = 0.45;
 const OUTER_RING_LED_REVERSE_CHECK_SECONDS = 2.4;
 const BRIDGE_CENTER_DOME_UNDERLAP = 0.35;
+const STATUS_DISPLAY_END_Z = 2.6;
+const STATUS_DISPLAY_END_ANIMATION_SECONDS = 2;
 
 export class SceneRoot {
   public readonly renderer: WebGLRenderer | null;
@@ -141,6 +143,9 @@ export class SceneRoot {
   private statusDisplayY = 2.25;
   private statusDisplayZ = 1.7;
   private statusDisplayScale = 1.3;
+  private statusDisplayRoundEnded = false;
+  private statusDisplayEndAnimationElapsed = 0;
+  private statusDisplayEndAnimationStartZ = this.statusDisplayZ;
   private readonly shaderEffectsEnabled: boolean;
 
   public constructor(
@@ -478,6 +483,19 @@ export class SceneRoot {
     score: number,
     ballsEntered: number
   ): void {
+    if (roundEnded && !this.statusDisplayRoundEnded) {
+      this.statusDisplayEndAnimationElapsed = 0;
+      this.statusDisplayEndAnimationStartZ = this.statusDisplay.group.position.z;
+    } else if (!roundEnded && this.statusDisplayRoundEnded) {
+      this.statusDisplay.setPlacement(
+        this.statusDisplayX,
+        this.statusDisplayY,
+        this.statusDisplayZ
+      );
+    }
+
+    this.statusDisplayRoundEnded = roundEnded;
+
     this.statusDisplay.updateData({
       timeRemaining,
       timeTotal,
@@ -528,6 +546,7 @@ export class SceneRoot {
 
     this.syncPlayfieldVisuals();
     this.updateOuterRingLeds(dt);
+    this.updateStatusDisplayAnimation(dt);
 
     this.dropButtonLightPulse = Math.max(
       0,
@@ -668,6 +687,26 @@ export class SceneRoot {
       this.statusDisplayZ
     );
     this.statusDisplay.setScale(this.statusDisplayScale);
+  }
+
+  private updateStatusDisplayAnimation(dt: number): void {
+    if (!this.statusDisplayRoundEnded) {
+      return;
+    }
+
+    this.statusDisplayEndAnimationElapsed = Math.min(
+      STATUS_DISPLAY_END_ANIMATION_SECONDS,
+      this.statusDisplayEndAnimationElapsed + dt
+    );
+
+    const progress =
+      this.statusDisplayEndAnimationElapsed /
+      STATUS_DISPLAY_END_ANIMATION_SECONDS;
+    const nextZ =
+      this.statusDisplayEndAnimationStartZ +
+      (STATUS_DISPLAY_END_Z - this.statusDisplayEndAnimationStartZ) * progress;
+
+    this.statusDisplay.setPlacement(this.statusDisplayX, this.statusDisplayY, nextZ);
   }
 
   private syncJarScale(): void {
