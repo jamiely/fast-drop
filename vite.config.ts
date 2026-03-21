@@ -2,8 +2,12 @@
 import { defineConfig } from 'vite';
 
 const repositoryName = process.env.GITHUB_REPOSITORY?.split('/')[1];
+const explicitBasePath = process.env.VITE_BASE_PATH;
+const shouldUsePagesBase =
+  process.env.GITHUB_ACTIONS === 'true' && process.env.GITHUB_PAGES === 'true';
 const pagesBase =
-  process.env.GITHUB_ACTIONS && repositoryName ? `/${repositoryName}/` : '/';
+  explicitBasePath ??
+  (shouldUsePagesBase && repositoryName ? `/${repositoryName}/` : '/');
 const isGitHubCI = process.env.GITHUB_ACTIONS === 'true';
 const testTimeoutMs = isGitHubCI ? 20_000 : 10_000;
 
