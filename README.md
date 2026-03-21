@@ -98,10 +98,14 @@ To reduce flakiness in CI, Playwright also runs with `1` worker and `1` retry wh
 
 - Hooks are installed via `npm run prepare` (also runs during `npm install`).
 - Pre-commit runs:
+  - `npm run format` (Prettier `--write`)
+  - re-stages previously staged files after formatting
+  - `npm run format:check`
   - `npm run lint`
   - `npm run test`
   - `npm run coverage` (enforces global 90% minimum for statements/branches/functions/lines)
   - `npm run test:e2e`
+- `.gitattributes` enforces LF line endings across platforms to prevent Windows CRLF drift from failing `npm run format:check` in CI.
 - Coverage excludes runtime-heavy orchestration/render/audio UI files (`Game.ts`, `SceneRoot.ts`, `scene/lighting.ts`, `ui/debugMenu.ts`, `systems/AudioSystem.ts`, `systems/OrbitSystem.ts`, `ui/hud.ts`, `entities/StatusDisplay.ts`, `entities/ArcadeShell.ts`, `stories/**`) and pure type-only modules from threshold accounting so the 90% gate targets deterministic unit-testable logic.
 
 ## CI/CD

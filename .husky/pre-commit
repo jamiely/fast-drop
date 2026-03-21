@@ -1,1 +1,19 @@
-npm run format && npm run lint && npm run test && npm run coverage && npm run test:e2e
+#!/bin/sh
+set -e
+
+STAGED_FILES=$(mktemp)
+git diff --cached --name-only --diff-filter=ACMR -z > "$STAGED_FILES"
+
+npm run format
+
+if [ -s "$STAGED_FILES" ]; then
+  xargs -0 git add < "$STAGED_FILES"
+fi
+
+rm -f "$STAGED_FILES"
+
+npm run format:check
+npm run lint
+npm run test
+npm run coverage
+npm run test:e2e

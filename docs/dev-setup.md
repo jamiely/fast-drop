@@ -33,8 +33,9 @@ npm run prepare
 ```
 
 - Installs Husky hooks at `.husky/`.
-- Pre-commit now auto-runs `npm run format` (Prettier `--write`) before quality gates.
+- Pre-commit now auto-runs `npm run format` (Prettier `--write`), re-stages formatted staged files, then verifies with `npm run format:check` before quality gates.
 - Pre-commit enforces lint, tests, coverage (>=90%), and e2e before allowing commit.
+- `.gitattributes` enforces LF line endings across platforms so Windows checkouts do not trigger CRLF-only Prettier failures in CI.
 
 ## E2E + coverage notes
 
@@ -94,4 +95,4 @@ This validates required packaging inputs (`dist/index.html`, `electron/main.mjs`
 
 - `.github/workflows/quality.yml`: typecheck/lint/format/coverage gate.
 - `.github/workflows/deploy-pages.yml`: Pages deployment from `main` after quality + e2e.
-- `.github/workflows/release-electron.yml`: Windows Electron packaging for published releases/workflow dispatch, with artifact upload and failure diagnostics retention.
+- `.github/workflows/release-electron.yml`: Windows Electron packaging on pull requests, pushes to `main`, published releases, and manual dispatch, with artifact upload and failure diagnostics retention.
