@@ -125,10 +125,18 @@ describe('DOM systems and UI helpers', () => {
     );
   });
 
-  it('wires keyboard, pointer, and touch events in InputSystem', () => {
+  it('wires keyboard, pointer, and click events in InputSystem', () => {
     let drops = 0;
     let playAgain = 0;
     let ended = false;
+
+    const nowSpy = vi
+      .spyOn(performance, 'now')
+      .mockReturnValueOnce(100)
+      .mockReturnValueOnce(200)
+      .mockReturnValueOnce(700)
+      .mockReturnValueOnce(1200)
+      .mockReturnValue(1700);
 
     new InputSystem({
       onDrop: () => {
@@ -144,6 +152,7 @@ describe('DOM systems and UI helpers', () => {
     window.dispatchEvent(new KeyboardEvent('keyup', { code: 'Space' }));
     window.dispatchEvent(new MouseEvent('pointerup', { button: 0 }));
     window.dispatchEvent(new MouseEvent('pointerup', { button: 1 }));
+    window.dispatchEvent(new MouseEvent('click', { button: 0 }));
 
     const touchPointerEvent = new Event('pointerup') as PointerEvent;
     Object.defineProperty(touchPointerEvent, 'pointerType', {
@@ -154,8 +163,6 @@ describe('DOM systems and UI helpers', () => {
     });
     window.dispatchEvent(touchPointerEvent);
 
-    window.dispatchEvent(new Event('touchend'));
-
     const button = document.createElement('button');
     document.body.appendChild(button);
     button.dispatchEvent(
@@ -163,9 +170,11 @@ describe('DOM systems and UI helpers', () => {
     );
 
     ended = true;
-    window.dispatchEvent(new Event('touchend'));
+    window.dispatchEvent(new MouseEvent('click', { button: 0 }));
     window.dispatchEvent(new KeyboardEvent('keyup', { code: 'Enter' }));
     window.dispatchEvent(new KeyboardEvent('keyup', { code: 'Space' }));
+
+    nowSpy.mockRestore();
 
     expect(drops).toBe(3);
     expect(playAgain).toBe(3);

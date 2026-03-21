@@ -18,7 +18,7 @@ const isInteractiveTarget = (target: EventTarget | null): boolean => {
 
 export class InputSystem {
   public constructor(options: InputSystemOptions) {
-    let lastTouchPointerUpAt = Number.NEGATIVE_INFINITY;
+    let lastPointerPrimaryAt = Number.NEGATIVE_INFINITY;
 
     const triggerPrimaryAction = (target: EventTarget | null): void => {
       if (isInteractiveTarget(target)) {
@@ -53,22 +53,20 @@ export class InputSystem {
     });
 
     window.addEventListener('pointerup', (event) => {
-      if (event.pointerType === 'touch') {
-        lastTouchPointerUpAt = performance.now();
-        triggerPrimaryAction(event.target);
+      const pointerType = event.pointerType;
+      if (
+        (pointerType && pointerType !== 'mouse' && pointerType !== 'touch') ||
+        event.button !== 0
+      ) {
         return;
       }
 
-      if (event.button !== 0) {
-        return;
-      }
-
+      lastPointerPrimaryAt = performance.now();
       triggerPrimaryAction(event.target);
     });
 
-    window.addEventListener('touchend', (event) => {
-      if (performance.now() - lastTouchPointerUpAt < 48) {
-        lastTouchPointerUpAt = Number.NEGATIVE_INFINITY;
+    window.addEventListener('click', (event) => {
+      if (performance.now() - lastPointerPrimaryAt < 400 || event.button !== 0) {
         return;
       }
 
