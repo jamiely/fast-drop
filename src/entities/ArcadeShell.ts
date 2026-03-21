@@ -56,17 +56,17 @@ export const createDropButtonVisual = (): DropButtonVisual => {
 
   const capMaterial = new MeshPhysicalMaterial({
     color: '#cf1e2a',
-    metalness: 0.05,
-    roughness: 0.16,
+    metalness: 0.03,
+    roughness: 0.12,
     transparent: true,
-    opacity: 0.9,
-    transmission: 0.38,
-    thickness: 0.35,
-    ior: 1.4,
+    opacity: 0.96,
+    transmission: 0.72,
+    thickness: 0.48,
+    ior: 1.5,
     clearcoat: 1,
-    clearcoatRoughness: 0.08,
-    emissive: '#ff2c32',
-    emissiveIntensity: 0.4
+    clearcoatRoughness: 0.06,
+    emissive: '#ff3040',
+    emissiveIntensity: 0.55
   });
 
   const cap = new Mesh(new CylinderGeometry(0.34, 0.38, 0.12, 52), capMaterial);
@@ -91,8 +91,9 @@ export const createDropButtonVisual = (): DropButtonVisual => {
   return {
     group,
     setLitIntensity: (value: number) => {
-      capMaterial.emissiveIntensity =
-        0.35 + Math.max(0, Math.min(1, value)) * 1.8;
+      const amount = Math.max(0, Math.min(1, value));
+      capMaterial.emissiveIntensity = 0.5 + amount * 3.8;
+      capMaterial.transmission = 0.6 + amount * 0.35;
     },
     setPressAmount: (value: number) => {
       const amount = Math.max(0, Math.min(1, value));
