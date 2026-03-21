@@ -79,6 +79,7 @@ const ENDED_SCORE_REVEAL_DELAY_MS = 2000;
 const ENDED_SCORE_INCREMENT = 10;
 const ENDED_SCORE_STEP_MS = 380;
 const ENDED_SCORE_SLIDE_MS = 320;
+const ENDED_SCORE_ANIMATION_SPEED = 2;
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 const easeOutQuad = (value: number) => {
@@ -1344,10 +1345,11 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
           ENDED_SCORE_SLIDE_MS,
           totalScoreSteps * ENDED_SCORE_STEP_MS
         );
-        const stepDurationMs = totalAnimationMs / totalScoreSteps;
+        const stepDurationMs =
+          totalAnimationMs / totalScoreSteps / ENDED_SCORE_ANIMATION_SPEED;
         const stepFloat = Math.min(
           totalScoreSteps,
-          Math.max(0, (scoreRevealElapsedMs / stepDurationMs) * 1.25)
+          Math.max(0, scoreRevealElapsedMs / stepDurationMs)
         );
         const completedSteps = Math.floor(stepFloat);
 
