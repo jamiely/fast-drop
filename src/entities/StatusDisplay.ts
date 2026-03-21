@@ -83,6 +83,10 @@ const ENDED_SCORE_SLIDE_MS = 320;
 const ENDED_SCORE_ANIMATION_SPEED = 1;
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
+const easeOutQuad = (value: number) => {
+  const t = clamp01(value);
+  return 1 - (1 - t) * (1 - t);
+};
 const easeOutCubic = (value: number) => {
   const t = clamp01(value);
   return 1 - (1 - t) * (1 - t) * (1 - t);
@@ -342,7 +346,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
   let endedDisplayedCount = 0;
   let endedFallingBalls: EndedDropBall[] = [];
   let endedJarBalls: EndedJarBall[] = [];
-  let endedLastReleaseAtMs = 0;
+  let endedDropSequenceStartAtMs: number | null = null;
   let endedLastFrameAtMs: number | null = null;
 
   const getBallRadius = () => BASE_BALL_RADIUS * ballsSphereScale;
@@ -545,7 +549,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       endedDisplayedCount = 0;
       endedFallingBalls = [];
       endedJarBalls = [];
-      endedLastReleaseAtMs = 0;
+      endedDropSequenceStartAtMs = null;
       endedLastFrameAtMs = null;
     }
 
@@ -879,10 +883,25 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       );
       endedLastFrameAtMs = nowMs;
 
-      while (
-        endedJarBalls.length + endedFallingBalls.length < enteredCount &&
-        nowMs - endedLastReleaseAtMs >= ENDED_COUNT_RELEASE_INTERVAL_MS
-      ) {
+      endedDropSequenceStartAtMs ??= nowMs;
+
+      const releasedCount = endedJarBalls.length + endedFallingBalls.length;
+      const totalReleaseDurationMs = Math.max(
+        ENDED_COUNT_RELEASE_INTERVAL_MS,
+        enteredCount * ENDED_COUNT_RELEASE_INTERVAL_MS
+      );
+      const releaseProgress =
+        enteredCount <= 0
+          ? 1
+          : clamp01((nowMs - endedDropSequenceStartAtMs) / totalReleaseDurationMs);
+      const easedReleaseProgress = easeOutQuad(releaseProgress);
+      const targetReleasedCount = Math.min(
+        enteredCount,
+        Math.floor(easedReleaseProgress * enteredCount)
+      );
+      const releaseBatchCount = Math.max(0, targetReleasedCount - releasedCount);
+
+      for (let releaseIndex = 0; releaseIndex < releaseBatchCount; releaseIndex += 1) {
         endedFallingBalls.push({
           x: jarX + (Math.random() - 0.5) * (jarInnerWidth * 0.42),
           y: 18,
@@ -891,7 +910,6 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
           vy: 18,
           vz: (Math.random() - 0.5) * 10
         });
-        endedLastReleaseAtMs = nowMs;
       }
 
       const jarBallRadius = getBallRadius() * ENDED_BALL_RADIUS_SCALE;
