@@ -117,6 +117,7 @@ To reduce flakiness in CI, Playwright also runs with `1` worker and `1` retry wh
 Windows Electron workflow behavior:
 
 - runs on pull requests and pushes to `main` to continuously validate desktop packaging,
+- uses Node.js 20 LTS for stable `electron-builder` compatibility on `windows-latest`,
 - runs `npm run check`, `npm run build`, and `npm run electron:smoke`,
 - builds `nsis` + `portable` artifacts via `electron-builder`,
 - uploads packaged output as a 14-day workflow artifact on every run,

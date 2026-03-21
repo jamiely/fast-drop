@@ -95,4 +95,4 @@ This validates required packaging inputs (`dist/index.html`, `electron/main.mjs`
 
 - `.github/workflows/quality.yml`: typecheck/lint/format/coverage gate.
 - `.github/workflows/deploy-pages.yml`: Pages deployment from `main` after quality + e2e.
-- `.github/workflows/release-electron.yml`: Windows Electron packaging on pull requests, pushes to `main`, published releases, and manual dispatch, with artifact upload and failure diagnostics retention.
+- `.github/workflows/release-electron.yml`: Windows Electron packaging on pull requests, pushes to `main`, published releases, and manual dispatch (Node.js 20 LTS runner), with artifact upload and failure diagnostics retention.
