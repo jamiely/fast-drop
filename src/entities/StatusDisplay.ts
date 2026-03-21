@@ -1343,7 +1343,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
         const stepDurationMs = totalAnimationMs / totalScoreSteps;
         const stepFloat = Math.min(
           totalScoreSteps,
-          Math.max(0, scoreRevealElapsedMs / stepDurationMs)
+          Math.max(0, (scoreRevealElapsedMs / stepDurationMs) * 10)
         );
         const completedSteps = Math.floor(stepFloat);
 
