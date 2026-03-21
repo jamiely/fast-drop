@@ -1240,7 +1240,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       context.lineTo(dividerX + 4, canvas.height - 74);
       context.stroke();
 
-      const resultCenterY = ballsY - 20;
+      const resultCenterY = ballsY;
       const resultRadius = 141;
       const resultSlideDistance = resultRadius * 2.2;
       const resultTopStartY = -resultRadius - 8;
