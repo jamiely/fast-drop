@@ -108,14 +108,15 @@ To reduce flakiness in CI, Playwright also runs with `1` worker and `1` retry wh
 
 - Quality workflow: `.github/workflows/quality.yml`
 - GitHub Pages deployment: `.github/workflows/deploy-pages.yml`
-- Windows Electron release packaging: `.github/workflows/release-electron.yml` (runs on published releases or manual dispatch)
+- Windows Electron build + release packaging: `.github/workflows/release-electron.yml` (runs on pull requests, pushes to `main`, published releases, or manual dispatch)
 
-Windows release workflow behavior:
+Windows Electron workflow behavior:
 
-- installs Chromium for Playwright so `npm run check` can execute e2e in CI,
+- runs on pull requests and pushes to `main` to continuously validate desktop packaging,
 - runs `npm run check`, `npm run build`, and `npm run electron:smoke`,
 - builds `nsis` + `portable` artifacts via `electron-builder`,
-- uploads artifacts to the GitHub Release and as a 14-day workflow artifact,
+- uploads packaged output as a 14-day workflow artifact on every run,
+- publishes assets to the GitHub Release only for `release.published` events,
 - uploads diagnostics (`dist_electron/`, `test-results/`, `playwright-report/`) on failures.
 
 ## Current status
