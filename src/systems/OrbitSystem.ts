@@ -22,7 +22,7 @@ export class OrbitSystem implements OrbitSystemContract {
       return;
     }
 
-    this.angle += dt * this.speed * this.speedMultiplier;
+    this.angle -= dt * this.speed * this.speedMultiplier;
     const spacing = (Math.PI * 2) / this.targets.length;
 
     this.targets.forEach((target, index) => {
