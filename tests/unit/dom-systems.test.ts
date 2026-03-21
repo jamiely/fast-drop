@@ -125,7 +125,7 @@ describe('DOM systems and UI helpers', () => {
     );
   });
 
-  it('wires keyup and pointerup events in InputSystem', () => {
+  it('wires keyboard, pointer, and touch events in InputSystem', () => {
     let drops = 0;
     let playAgain = 0;
     let ended = false;
@@ -145,6 +145,17 @@ describe('DOM systems and UI helpers', () => {
     window.dispatchEvent(new MouseEvent('pointerup', { button: 0 }));
     window.dispatchEvent(new MouseEvent('pointerup', { button: 1 }));
 
+    const touchPointerEvent = new Event('pointerup') as PointerEvent;
+    Object.defineProperty(touchPointerEvent, 'pointerType', {
+      value: 'touch'
+    });
+    Object.defineProperty(touchPointerEvent, 'button', {
+      value: 0
+    });
+    window.dispatchEvent(touchPointerEvent);
+
+    window.dispatchEvent(new Event('touchend'));
+
     const button = document.createElement('button');
     document.body.appendChild(button);
     button.dispatchEvent(
@@ -152,11 +163,11 @@ describe('DOM systems and UI helpers', () => {
     );
 
     ended = true;
-    window.dispatchEvent(new MouseEvent('pointerup', { button: 0 }));
+    window.dispatchEvent(new Event('touchend'));
     window.dispatchEvent(new KeyboardEvent('keyup', { code: 'Enter' }));
     window.dispatchEvent(new KeyboardEvent('keyup', { code: 'Space' }));
 
-    expect(drops).toBe(2);
+    expect(drops).toBe(3);
     expect(playAgain).toBe(3);
   });
 

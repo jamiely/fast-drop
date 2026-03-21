@@ -18,6 +18,19 @@ const isInteractiveTarget = (target: EventTarget | null): boolean => {
 
 export class InputSystem {
   public constructor(options: InputSystemOptions) {
+    const triggerPrimaryAction = (target: EventTarget | null): void => {
+      if (isInteractiveTarget(target)) {
+        return;
+      }
+
+      if (options.isRoundEnded?.()) {
+        options.onPlayAgain?.();
+        return;
+      }
+
+      options.onDrop();
+    };
+
     window.addEventListener('keyup', (event) => {
       const isEnded = options.isRoundEnded?.() ?? false;
       const isSpace = event.code === 'Space';
@@ -38,20 +51,15 @@ export class InputSystem {
     });
 
     window.addEventListener('pointerup', (event) => {
-      if (event.pointerType !== 'touch' && event.button !== 0) {
+      if (event.pointerType === 'touch' || event.button !== 0) {
         return;
       }
 
-      if (isInteractiveTarget(event.target)) {
-        return;
-      }
+      triggerPrimaryAction(event.target);
+    });
 
-      if (options.isRoundEnded?.()) {
-        options.onPlayAgain?.();
-        return;
-      }
-
-      options.onDrop();
+    window.addEventListener('touchend', (event) => {
+      triggerPrimaryAction(event.target);
     });
   }
 }
