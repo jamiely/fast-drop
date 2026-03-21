@@ -81,6 +81,10 @@ const ENDED_SCORE_STEP_MS = 380;
 const ENDED_SCORE_SLIDE_MS = 320;
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
+const easeOutQuad = (value: number) => {
+  const t = clamp01(value);
+  return 1 - (1 - t) * (1 - t);
+};
 
 export interface StatusDisplayData {
   timeRemaining: number;
@@ -1343,7 +1347,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
         const stepDurationMs = totalAnimationMs / totalScoreSteps;
         const stepFloat = Math.min(
           totalScoreSteps,
-          Math.max(0, scoreRevealElapsedMs / stepDurationMs)
+          Math.max(0, (scoreRevealElapsedMs / stepDurationMs) * 1.25)
         );
         const completedSteps = Math.floor(stepFloat);
 
@@ -1353,15 +1357,18 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
           const toStep = Math.min(totalScoreSteps, completedSteps + 1);
           const toValue = toStep * ENDED_SCORE_INCREMENT;
           const slideProgress = stepFloat - completedSteps;
+          const easedSlideProgress = easeOutQuad(slideProgress);
           const fromValue = completedSteps * ENDED_SCORE_INCREMENT;
           const fromContent: 'great' | number =
             completedSteps <= 0 ? 'great' : fromValue;
-          const fromY = resultCenterY + slideProgress * resultSlideDistance;
+          const fromY =
+            resultCenterY + easedSlideProgress * resultSlideDistance;
           const toY =
-            resultTopStartY + (resultCenterY - resultTopStartY) * slideProgress;
+            resultTopStartY +
+            (resultCenterY - resultTopStartY) * easedSlideProgress;
 
-          drawResultCircle(fromY, fromContent, 1 - slideProgress * 0.25);
-          drawResultCircle(toY, toValue, 0.8 + slideProgress * 0.2);
+          drawResultCircle(fromY, fromContent, 1 - easedSlideProgress * 0.25);
+          drawResultCircle(toY, toValue, 0.8 + easedSlideProgress * 0.2);
         }
       }
 
