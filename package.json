@@ -23,7 +23,7 @@
     "prepare": "husky",
     "electron:start": "npm run build && electron electron/main.mjs",
     "electron:smoke": "node scripts/electron-smoke.mjs",
-    "build:electron:win": "npm run build && electron-builder --win portable nsis",
+    "build:electron:win": "npm run build && electron-builder --win portable nsis --publish never",
     "release:electron:win": "npm run check && npm run build:electron:win"
   },
   "dependencies": {

@@ -121,7 +121,7 @@ Windows Electron workflow behavior:
 - runs on pull requests and pushes to `main` to continuously validate desktop packaging,
 - uses Node.js 20 LTS for stable `electron-builder` compatibility on `windows-latest`,
 - runs `npm run check`, `npm run build`, and `npm run electron:smoke`,
-- builds `nsis` + `portable` artifacts via `electron-builder`,
+- builds `nsis` + `portable` artifacts via `electron-builder --publish never` (disables implicit CI publishing/token requirement),
 - uploads packaged output as a 14-day workflow artifact on every run,
 - publishes assets to the GitHub Release only for `release.published` events (workflow grants `contents: write` for this),
 - uploads diagnostics (`dist_electron/`, `test-results/`, `playwright-report/`) on failures.
