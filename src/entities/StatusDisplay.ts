@@ -79,12 +79,12 @@ const ENDED_SCORE_REVEAL_DELAY_MS = 2000;
 const ENDED_SCORE_INCREMENT = 10;
 const ENDED_SCORE_STEP_MS = 380;
 const ENDED_SCORE_SLIDE_MS = 320;
-const ENDED_SCORE_ANIMATION_SPEED = 2;
+const ENDED_SCORE_ANIMATION_SPEED = 4;
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
-const easeOutQuad = (value: number) => {
+const easeOutCubic = (value: number) => {
   const t = clamp01(value);
-  return 1 - (1 - t) * (1 - t);
+  return 1 - (1 - t) * (1 - t) * (1 - t);
 };
 
 export interface StatusDisplayData {
@@ -1359,7 +1359,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
           const toStep = Math.min(totalScoreSteps, completedSteps + 1);
           const toValue = toStep * ENDED_SCORE_INCREMENT;
           const slideProgress = stepFloat - completedSteps;
-          const easedSlideProgress = easeOutQuad(slideProgress);
+          const easedSlideProgress = easeOutCubic(slideProgress);
           const fromValue = completedSteps * ENDED_SCORE_INCREMENT;
           const fromContent: 'great' | number =
             completedSteps <= 0 ? 'great' : fromValue;
