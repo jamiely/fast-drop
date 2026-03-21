@@ -576,11 +576,21 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       context.fillStyle = bloom;
       context.fillRect(0, 0, canvas.width, canvas.height);
 
-      const floor = context.createLinearGradient(0, canvas.height * 0.62, 0, canvas.height);
+      const floor = context.createLinearGradient(
+        0,
+        canvas.height * 0.62,
+        0,
+        canvas.height
+      );
       floor.addColorStop(0, 'rgba(63,110,167,0)');
       floor.addColorStop(1, 'rgba(50,86,142,0.32)');
       context.fillStyle = floor;
-      context.fillRect(0, canvas.height * 0.62, canvas.width, canvas.height * 0.38);
+      context.fillRect(
+        0,
+        canvas.height * 0.62,
+        canvas.width,
+        canvas.height * 0.38
+      );
     }
 
     const timerX = canvas.width * 0.29;
@@ -1001,7 +1011,15 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
 
       context.fillStyle = 'rgba(11, 33, 66, 0.28)';
       context.beginPath();
-      context.ellipse(jarX + 6, jarBottom + 16, jarWidth * 0.52, 24, 0, 0, Math.PI * 2);
+      context.ellipse(
+        jarX + 6,
+        jarBottom + 16,
+        jarWidth * 0.52,
+        24,
+        0,
+        0,
+        Math.PI * 2
+      );
       context.fill();
 
       const jarBody = context.createLinearGradient(
@@ -1010,10 +1028,10 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
         jarX + jarWidth * 0.5,
         jarTop
       );
-      jarBody.addColorStop(0, 'rgba(233, 250, 255, 0.3)');
-      jarBody.addColorStop(0.24, 'rgba(196, 236, 255, 0.2)');
-      jarBody.addColorStop(0.72, 'rgba(155, 214, 248, 0.16)');
-      jarBody.addColorStop(1, 'rgba(110, 183, 228, 0.28)');
+      jarBody.addColorStop(0, 'rgba(233, 250, 255, 0.28)');
+      jarBody.addColorStop(0.24, 'rgba(196, 236, 255, 0.18)');
+      jarBody.addColorStop(0.72, 'rgba(155, 214, 248, 0.14)');
+      jarBody.addColorStop(1, 'rgba(110, 183, 228, 0.24)');
       context.fillStyle = jarBody;
       context.fillRect(
         jarX - jarWidth * 0.5,
@@ -1022,8 +1040,8 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
         jarHeight - 18
       );
 
-      context.strokeStyle = '#111111';
-      context.lineWidth = 8;
+      context.strokeStyle = 'rgba(93, 156, 212, 0.65)';
+      context.lineWidth = 3;
       context.beginPath();
       context.moveTo(jarX - jarWidth * 0.5, jarTop + 18);
       context.lineTo(jarX - jarWidth * 0.5, jarBottom);
@@ -1031,13 +1049,25 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       context.lineTo(jarX + jarWidth * 0.5, jarBottom);
       context.stroke();
 
-      context.fillStyle = 'rgba(255, 255, 255, 0.26)';
+      context.fillStyle = 'rgba(255, 255, 255, 0.24)';
       context.fillRect(jarX - jarWidth * 0.33, jarTop + 28, 16, jarHeight - 48);
 
-      context.fillStyle = 'rgba(18, 55, 109, 0.24)';
+      context.fillStyle = 'rgba(18, 55, 109, 0.18)';
       context.fillRect(jarX + jarWidth * 0.3, jarTop + 22, 10, jarHeight - 32);
 
-      context.fillStyle = 'rgba(230, 247, 255, 0.48)';
+      context.fillStyle = 'rgba(230, 247, 255, 0.42)';
+      context.beginPath();
+      context.ellipse(
+        jarX,
+        jarTop + 18,
+        jarWidth * 0.5,
+        20,
+        0,
+        0,
+        Math.PI * 2
+      );
+      context.fill();
+
       context.strokeStyle = '#111111';
       context.lineWidth = 10;
       context.beginPath();
@@ -1050,12 +1080,25 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
         0,
         Math.PI * 2
       );
-      context.fill();
       context.stroke();
 
-      context.fillStyle = 'rgba(240, 252, 255, 0.28)';
-      context.strokeStyle = 'rgba(17, 17, 17, 0.58)';
-      context.lineWidth = 7;
+      context.strokeStyle = 'rgba(208, 235, 255, 0.7)';
+      context.lineWidth = 2;
+      context.beginPath();
+      context.ellipse(
+        jarX,
+        jarTop + 18,
+        jarWidth * 0.46,
+        17,
+        0,
+        Math.PI,
+        Math.PI * 2
+      );
+      context.stroke();
+
+      context.fillStyle = 'rgba(240, 252, 255, 0.22)';
+      context.strokeStyle = 'rgba(95, 156, 212, 0.42)';
+      context.lineWidth = 3;
       context.beginPath();
       context.ellipse(jarX, jarBottom, jarWidth * 0.5, 22, 0, 0, Math.PI * 2);
       context.fill();
@@ -1103,7 +1146,12 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       context.fillText('BALLS', jarX, jarTop + jarHeight * 0.52 + 38);
 
       const dividerX = canvas.width * 0.5;
-      const divider = context.createLinearGradient(0, 116, 0, canvas.height - 72);
+      const divider = context.createLinearGradient(
+        0,
+        116,
+        0,
+        canvas.height - 72
+      );
       divider.addColorStop(0, 'rgba(59, 102, 176, 0.35)');
       divider.addColorStop(0.5, 'rgba(45, 85, 154, 0.7)');
       divider.addColorStop(1, 'rgba(46, 81, 140, 0.3)');
