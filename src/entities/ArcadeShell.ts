@@ -56,8 +56,13 @@ export const createDropButtonVisual = (): DropButtonVisual => {
 
   const capMaterial = new MeshPhysicalMaterial({
     color: '#cf1e2a',
-    metalness: 0.15,
-    roughness: 0.22,
+    metalness: 0.05,
+    roughness: 0.16,
+    transparent: true,
+    opacity: 0.9,
+    transmission: 0.38,
+    thickness: 0.35,
+    ior: 1.4,
     clearcoat: 1,
     clearcoatRoughness: 0.08,
     emissive: '#ff2c32',
