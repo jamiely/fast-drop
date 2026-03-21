@@ -1171,7 +1171,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       context.restore();
 
       const jarBadgeCenterY = jarTop + jarHeight * 0.52;
-      const jarBadgeRadius = 46 * jarScale;
+      const jarBadgeRadius = 56 * jarScale;
       context.fillStyle = '#eff7ff';
       context.strokeStyle = '#27488f';
       context.lineWidth = 6 * jarScale;
@@ -1181,17 +1181,17 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       context.stroke();
 
       context.fillStyle = '#e54161';
-      context.font = `bold ${Math.round(72 * jarScale)}px Arial`;
+      context.font = `bold ${Math.round(78 * jarScale)}px Arial`;
       context.textAlign = 'center';
       context.textBaseline = 'middle';
       context.fillText(
         String(endedDisplayedCount),
         jarX,
-        jarBadgeCenterY - 3 * jarScale
+        jarBadgeCenterY - 6 * jarScale
       );
       context.fillStyle = '#2a4a90';
-      context.font = `bold ${Math.round(30 * jarScale)}px Arial`;
-      context.fillText('BALLS', jarX, jarBadgeCenterY + 38 * jarScale);
+      context.font = `bold ${Math.round(32 * jarScale)}px Arial`;
+      context.fillText('BALLS', jarX, jarBadgeCenterY + 42 * jarScale);
 
       const dividerX = canvas.width * 0.5;
       const divider = context.createLinearGradient(
