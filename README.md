@@ -42,6 +42,8 @@ Storybook stories currently included:
   - `http://localhost:5173/?debug=1`
 - Use `?effects=0` (or `?fx=0`) to disable shader-driven LED/reflection effects on lower-end devices:
   - `http://localhost:5173/?effects=0`
+- Use `?inputDebug=1` to print pointer/touch/click input decisions in the browser console (handy for mobile simulator debugging):
+  - `http://localhost:5173/?inputDebug=1`
 - Debug panel includes:
   - pause/resume + step
   - score/time mutators

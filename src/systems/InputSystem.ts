@@ -18,19 +18,48 @@ const isInteractiveTarget = (target: EventTarget | null): boolean => {
 
 export class InputSystem {
   public constructor(options: InputSystemOptions) {
+    const inputDebugEnabled =
+      new URLSearchParams(window.location.search).get('inputDebug') === '1';
+
     let lastPointerPrimaryAt = Number.NEGATIVE_INFINITY;
     let touchActionInProgress = false;
 
-    const triggerPrimaryAction = (target: EventTarget | null): void => {
+    const logInput = (
+      phase: string,
+      target: EventTarget | null,
+      details?: Record<string, unknown>
+    ): void => {
+      if (!inputDebugEnabled) {
+        return;
+      }
+
+      const targetLabel =
+        target instanceof Element
+          ? `${target.tagName.toLowerCase()}${target.id ? `#${target.id}` : ''}`
+          : 'non-element-target';
+
+      console.info('[InputSystem]', phase, {
+        target: targetLabel,
+        ...details
+      });
+    };
+
+    const triggerPrimaryAction = (
+      target: EventTarget | null,
+      source: string
+    ): void => {
       if (isInteractiveTarget(target)) {
+        logInput('ignored-interactive', target, { source });
         return;
       }
 
       if (options.isRoundEnded?.()) {
+        logInput('play-again', target, { source });
         options.onPlayAgain?.();
         return;
       }
 
+      logInput('drop', target, { source });
       options.onDrop();
     };
 
@@ -53,61 +82,98 @@ export class InputSystem {
       options.onDrop();
     });
 
-    window.addEventListener('touchstart', (event) => {
-      if (event.touches.length > 1) {
-        return;
-      }
+    document.addEventListener(
+      'touchstart',
+      (event) => {
+        if (event.touches.length > 1) {
+          return;
+        }
 
-      touchActionInProgress = true;
-      lastPointerPrimaryAt = performance.now();
-      triggerPrimaryAction(event.target);
-    });
+        touchActionInProgress = true;
+        lastPointerPrimaryAt = performance.now();
+        triggerPrimaryAction(event.target, 'touchstart');
+      },
+      { capture: true }
+    );
 
-    window.addEventListener('pointerup', (event) => {
-      const pointerType = event.pointerType;
-      if (pointerType && !['mouse', 'touch', 'pen'].includes(pointerType)) {
-        return;
-      }
+    document.addEventListener(
+      'pointerup',
+      (event) => {
+        const pointerType = event.pointerType;
+        if (pointerType && !['mouse', 'touch', 'pen'].includes(pointerType)) {
+          return;
+        }
 
-      if (pointerType === 'touch' && touchActionInProgress) {
-        return;
-      }
+        if (pointerType === 'touch' && touchActionInProgress) {
+          return;
+        }
 
-      if ((pointerType === 'mouse' || !pointerType) && event.button !== 0) {
-        return;
-      }
+        if ((pointerType === 'mouse' || !pointerType) && event.button !== 0) {
+          return;
+        }
 
-      lastPointerPrimaryAt = performance.now();
-      triggerPrimaryAction(event.target);
-    });
+        lastPointerPrimaryAt = performance.now();
+        triggerPrimaryAction(event.target, 'pointerup');
+      },
+      { capture: true }
+    );
 
-    window.addEventListener('touchend', (event) => {
-      if (touchActionInProgress) {
+    document.addEventListener(
+      'touchend',
+      (event) => {
+        if (touchActionInProgress) {
+          touchActionInProgress = false;
+          return;
+        }
+
+        if (performance.now() - lastPointerPrimaryAt < 250) {
+          return;
+        }
+
+        lastPointerPrimaryAt = performance.now();
+        triggerPrimaryAction(event.target, 'touchend-fallback');
+      },
+      { capture: true }
+    );
+
+    document.addEventListener(
+      'touchcancel',
+      () => {
         touchActionInProgress = false;
-        return;
-      }
+      },
+      { capture: true }
+    );
 
-      if (performance.now() - lastPointerPrimaryAt < 250) {
-        return;
-      }
+    document.addEventListener(
+      'mousedown',
+      (event) => {
+        if (event.button !== 0) {
+          return;
+        }
 
-      lastPointerPrimaryAt = performance.now();
-      triggerPrimaryAction(event.target);
-    });
+        if (performance.now() - lastPointerPrimaryAt < 250) {
+          return;
+        }
 
-    window.addEventListener('touchcancel', () => {
-      touchActionInProgress = false;
-    });
+        lastPointerPrimaryAt = performance.now();
+        triggerPrimaryAction(event.target, 'mousedown-fallback');
+      },
+      { capture: true }
+    );
 
-    window.addEventListener('click', (event) => {
-      if (
-        performance.now() - lastPointerPrimaryAt < 400 ||
-        event.button !== 0
-      ) {
-        return;
-      }
+    document.addEventListener(
+      'click',
+      (event) => {
+        if (
+          performance.now() - lastPointerPrimaryAt < 400 ||
+          event.button !== 0
+        ) {
+          return;
+        }
 
-      triggerPrimaryAction(event.target);
-    });
+        triggerPrimaryAction(event.target, 'click-fallback');
+      },
+      { capture: true }
+    );
   }
 }
