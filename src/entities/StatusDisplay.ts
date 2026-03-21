@@ -638,6 +638,22 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       context.arc(timerX, timerY, timerRadius - 27, 0, Math.PI * 2);
       context.fill();
 
+      const incrementCount = 12;
+      const markerRadius = timerRadius - 20;
+      for (let index = 0; index < incrementCount; index += 1) {
+        const angle = startAngle + (index / incrementCount) * Math.PI * 2;
+        const markerX = timerX + Math.cos(angle) * markerRadius;
+        const markerY = timerY + Math.sin(angle) * markerRadius;
+        const isMajor = index % 3 === 0;
+
+        context.fillStyle = isMajor
+          ? 'rgba(255, 255, 255, 0.78)'
+          : 'rgba(255, 255, 255, 0.5)';
+        context.beginPath();
+        context.arc(markerX, markerY, isMajor ? 4.8 : 3.1, 0, Math.PI * 2);
+        context.fill();
+      }
+
       const needleAngle = startAngle + Math.PI * 2 * elapsed;
       const needleLength = timerRadius - 18;
 
@@ -810,12 +826,13 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       );
       context.fill();
 
-      const jarWidth = 196;
-      const jarHeight = 254;
-      const jarBottom = pedestalTopY - 4;
+      const jarScale = 1.5;
+      const jarWidth = 196 * jarScale;
+      const jarHeight = 254 * jarScale;
+      const jarBottom = pedestalTopY - 4 * jarScale;
       const jarTop = jarBottom - jarHeight;
-      const jarMouthY = jarTop + 16;
-      const jarInnerInset = 12;
+      const jarMouthY = jarTop + 16 * jarScale;
+      const jarInnerInset = 12 * jarScale;
       const jarInnerWidth = jarWidth - jarInnerInset * 2;
 
       if (endedLastFrameAtMs === null) {
@@ -1009,13 +1026,15 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
 
       endedDisplayedCount = Math.min(endedJarBalls.length, enteredCount);
 
+      const jarNeckY = jarTop + 18 * jarScale;
+
       context.fillStyle = 'rgba(11, 33, 66, 0.28)';
       context.beginPath();
       context.ellipse(
-        jarX + 6,
-        jarBottom + 16,
+        jarX + 6 * jarScale,
+        jarBottom + 16 * jarScale,
         jarWidth * 0.52,
-        24,
+        24 * jarScale,
         0,
         0,
         Math.PI * 2
@@ -1035,33 +1054,43 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       context.fillStyle = jarBody;
       context.fillRect(
         jarX - jarWidth * 0.5,
-        jarTop + 18,
+        jarNeckY,
         jarWidth,
-        jarHeight - 18
+        jarHeight - 18 * jarScale
       );
 
       context.strokeStyle = 'rgba(93, 156, 212, 0.65)';
-      context.lineWidth = 3;
+      context.lineWidth = 3 * jarScale;
       context.beginPath();
-      context.moveTo(jarX - jarWidth * 0.5, jarTop + 18);
+      context.moveTo(jarX - jarWidth * 0.5, jarNeckY);
       context.lineTo(jarX - jarWidth * 0.5, jarBottom);
-      context.moveTo(jarX + jarWidth * 0.5, jarTop + 18);
+      context.moveTo(jarX + jarWidth * 0.5, jarNeckY);
       context.lineTo(jarX + jarWidth * 0.5, jarBottom);
       context.stroke();
 
       context.fillStyle = 'rgba(255, 255, 255, 0.24)';
-      context.fillRect(jarX - jarWidth * 0.33, jarTop + 28, 16, jarHeight - 48);
+      context.fillRect(
+        jarX - jarWidth * 0.33,
+        jarTop + 28 * jarScale,
+        16 * jarScale,
+        jarHeight - 48 * jarScale
+      );
 
       context.fillStyle = 'rgba(18, 55, 109, 0.18)';
-      context.fillRect(jarX + jarWidth * 0.3, jarTop + 22, 10, jarHeight - 32);
+      context.fillRect(
+        jarX + jarWidth * 0.3,
+        jarTop + 22 * jarScale,
+        10 * jarScale,
+        jarHeight - 32 * jarScale
+      );
 
       context.fillStyle = 'rgba(230, 247, 255, 0.42)';
       context.beginPath();
       context.ellipse(
         jarX,
-        jarTop + 18,
+        jarNeckY,
         jarWidth * 0.5,
-        20,
+        20 * jarScale,
         0,
         0,
         Math.PI * 2
@@ -1069,13 +1098,13 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       context.fill();
 
       context.strokeStyle = '#111111';
-      context.lineWidth = 10;
+      context.lineWidth = 10 * jarScale;
       context.beginPath();
       context.ellipse(
         jarX,
-        jarTop + 18,
+        jarNeckY,
         jarWidth * 0.52,
-        22,
+        22 * jarScale,
         0,
         0,
         Math.PI * 2
@@ -1083,13 +1112,13 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       context.stroke();
 
       context.strokeStyle = 'rgba(208, 235, 255, 0.7)';
-      context.lineWidth = 2;
+      context.lineWidth = 2 * jarScale;
       context.beginPath();
       context.ellipse(
         jarX,
-        jarTop + 18,
+        jarNeckY,
         jarWidth * 0.46,
-        17,
+        17 * jarScale,
         0,
         Math.PI,
         Math.PI * 2
@@ -1098,9 +1127,17 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
 
       context.fillStyle = 'rgba(240, 252, 255, 0.22)';
       context.strokeStyle = 'rgba(95, 156, 212, 0.42)';
-      context.lineWidth = 3;
+      context.lineWidth = 3 * jarScale;
       context.beginPath();
-      context.ellipse(jarX, jarBottom, jarWidth * 0.5, 22, 0, 0, Math.PI * 2);
+      context.ellipse(
+        jarX,
+        jarBottom,
+        jarWidth * 0.5,
+        22 * jarScale,
+        0,
+        0,
+        Math.PI * 2
+      );
       context.fill();
       context.stroke();
 
@@ -1108,9 +1145,9 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       context.beginPath();
       context.rect(
         jarX - jarInnerWidth * 0.5,
-        jarMouthY - 4,
+        jarMouthY - 4 * jarScale,
         jarInnerWidth,
-        jarBottom - jarMouthY + 8
+        jarBottom - jarMouthY + 8 * jarScale
       );
       context.clip();
 
@@ -1124,26 +1161,24 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
 
       context.restore();
 
+      const jarBadgeCenterY = jarTop + jarHeight * 0.52;
+      const jarBadgeRadius = 46 * jarScale;
       context.fillStyle = '#eff7ff';
       context.strokeStyle = '#27488f';
-      context.lineWidth = 6;
+      context.lineWidth = 6 * jarScale;
       context.beginPath();
-      context.arc(jarX, jarTop + jarHeight * 0.52, 46, 0, Math.PI * 2);
+      context.arc(jarX, jarBadgeCenterY, jarBadgeRadius, 0, Math.PI * 2);
       context.fill();
       context.stroke();
 
       context.fillStyle = '#e54161';
-      context.font = 'bold 72px Arial';
+      context.font = `bold ${Math.round(72 * jarScale)}px Arial`;
       context.textAlign = 'center';
       context.textBaseline = 'middle';
-      context.fillText(
-        String(endedDisplayedCount),
-        jarX,
-        jarTop + jarHeight * 0.52 - 3
-      );
+      context.fillText(String(endedDisplayedCount), jarX, jarBadgeCenterY - 3 * jarScale);
       context.fillStyle = '#2a4a90';
-      context.font = 'bold 30px Arial';
-      context.fillText('BALLS', jarX, jarTop + jarHeight * 0.52 + 38);
+      context.font = `bold ${Math.round(30 * jarScale)}px Arial`;
+      context.fillText('BALLS', jarX, jarBadgeCenterY + 38 * jarScale);
 
       const dividerX = canvas.width * 0.5;
       const divider = context.createLinearGradient(
