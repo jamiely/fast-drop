@@ -116,7 +116,7 @@ Windows Electron workflow behavior:
 - runs `npm run check`, `npm run build`, and `npm run electron:smoke`,
 - builds `nsis` + `portable` artifacts via `electron-builder`,
 - uploads packaged output as a 14-day workflow artifact on every run,
-- publishes assets to the GitHub Release only for `release.published` events,
+- publishes assets to the GitHub Release only for `release.published` events (workflow grants `contents: write` for this),
 - uploads diagnostics (`dist_electron/`, `test-results/`, `playwright-report/`) on failures.
 
 ## Current status
