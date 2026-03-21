@@ -80,7 +80,7 @@ const ENDED_SCORE_INCREMENT = 10;
 const ENDED_SCORE_FAST_INCREMENT = 100;
 const ENDED_SCORE_STEP_MS = 380;
 const ENDED_SCORE_SLIDE_MS = 320;
-const ENDED_SCORE_ANIMATION_SPEED = 4;
+const ENDED_SCORE_ANIMATION_SPEED = 1;
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 const easeOutCubic = (value: number) => {
@@ -1253,7 +1253,9 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       );
       const fastScoreTotal = fastScoreSteps * ENDED_SCORE_FAST_INCREMENT;
       const remainderScore = roundedScore - fastScoreTotal;
-      const finalScoreSteps = Math.floor(remainderScore / ENDED_SCORE_INCREMENT);
+      const finalScoreSteps = Math.floor(
+        remainderScore / ENDED_SCORE_INCREMENT
+      );
       const totalScoreSteps = fastScoreSteps + finalScoreSteps;
       const scoreAtStep = (step: number): number => {
         if (step <= 0) {
