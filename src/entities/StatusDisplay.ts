@@ -679,7 +679,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
         context.fillText('UP', timerX, timerY + 48);
       } else {
         const needleAngle = startAngle + Math.PI * 2 * elapsed;
-        const needleLength = timerRadius + 28;
+        const needleLength = timerRadius + 21;
 
         const needleTipX = timerX + Math.cos(needleAngle) * needleLength;
         const needleTipY = timerY + Math.sin(needleAngle) * needleLength;
