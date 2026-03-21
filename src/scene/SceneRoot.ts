@@ -83,6 +83,8 @@ const OUTER_RING_LED_REVERSE_CHECK_SECONDS = 2.4;
 const BRIDGE_CENTER_DOME_UNDERLAP = 0.35;
 const STATUS_DISPLAY_END_Z = 2.6;
 const STATUS_DISPLAY_END_ANIMATION_SECONDS = 2;
+const DROP_TUBE_END_HEIGHT = 5;
+const DROP_TUBE_END_ANIMATION_SECONDS = 1;
 
 export class SceneRoot {
   public readonly renderer: WebGLRenderer | null;
@@ -121,6 +123,9 @@ export class SceneRoot {
   private dropButtonPress = 0;
 
   private dropPoint = { x: 0, z: 2.2, y: 2.5 };
+  private configuredDropHeight = this.dropPoint.y;
+  private dropTubeEndAnimationElapsed = 0;
+  private dropTubeEndAnimationStartY = this.dropPoint.y;
   private dropButtonZ = 3.75;
   private orbitRadius = 2.2;
   private jarDiameterScale = 1;
@@ -349,8 +354,12 @@ export class SceneRoot {
     }
 
     if (key === 'dropHeight') {
-      this.dropPoint.y = value;
-      this.dropTube.setDropHeight(this.dropPoint.y);
+      this.configuredDropHeight = value;
+
+      if (!this.statusDisplayRoundEnded) {
+        this.dropPoint.y = value;
+        this.dropTube.setDropHeight(this.dropPoint.y);
+      }
       return;
     }
 
@@ -485,13 +494,18 @@ export class SceneRoot {
   ): void {
     if (roundEnded && !this.statusDisplayRoundEnded) {
       this.statusDisplayEndAnimationElapsed = 0;
-      this.statusDisplayEndAnimationStartZ = this.statusDisplay.group.position.z;
+      this.statusDisplayEndAnimationStartZ =
+        this.statusDisplay.group.position.z;
+      this.dropTubeEndAnimationElapsed = 0;
+      this.dropTubeEndAnimationStartY = this.dropPoint.y;
     } else if (!roundEnded && this.statusDisplayRoundEnded) {
       this.statusDisplay.setPlacement(
         this.statusDisplayX,
         this.statusDisplayY,
         this.statusDisplayZ
       );
+      this.dropPoint.y = this.configuredDropHeight;
+      this.dropTube.setDropHeight(this.dropPoint.y);
     }
 
     this.statusDisplayRoundEnded = roundEnded;
@@ -547,6 +561,7 @@ export class SceneRoot {
     this.syncPlayfieldVisuals();
     this.updateOuterRingLeds(dt);
     this.updateStatusDisplayAnimation(dt);
+    this.updateDropTubeAnimation(dt);
 
     this.dropButtonLightPulse = Math.max(
       0,
@@ -706,7 +721,31 @@ export class SceneRoot {
       this.statusDisplayEndAnimationStartZ +
       (STATUS_DISPLAY_END_Z - this.statusDisplayEndAnimationStartZ) * progress;
 
-    this.statusDisplay.setPlacement(this.statusDisplayX, this.statusDisplayY, nextZ);
+    this.statusDisplay.setPlacement(
+      this.statusDisplayX,
+      this.statusDisplayY,
+      nextZ
+    );
+  }
+
+  private updateDropTubeAnimation(dt: number): void {
+    if (!this.statusDisplayRoundEnded) {
+      return;
+    }
+
+    this.dropTubeEndAnimationElapsed = Math.min(
+      DROP_TUBE_END_ANIMATION_SECONDS,
+      this.dropTubeEndAnimationElapsed + dt
+    );
+
+    const progress =
+      this.dropTubeEndAnimationElapsed / DROP_TUBE_END_ANIMATION_SECONDS;
+    const nextDropHeight =
+      this.dropTubeEndAnimationStartY +
+      (DROP_TUBE_END_HEIGHT - this.dropTubeEndAnimationStartY) * progress;
+
+    this.dropPoint.y = nextDropHeight;
+    this.dropTube.setDropHeight(nextDropHeight);
   }
 
   private syncJarScale(): void {
