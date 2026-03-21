@@ -1210,8 +1210,8 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
         jarBadgeCenterY - 6 * jarScale
       );
       context.fillStyle = '#2a4a90';
-      context.font = `bold ${Math.round(32 * jarScale)}px Arial`;
-      context.fillText('BALLS', jarX, jarBadgeCenterY + 42 * jarScale);
+      context.font = `bold ${Math.round(16 * jarScale)}px Arial`;
+      context.fillText('BALLS', jarX, jarBadgeCenterY + 36 * jarScale);
 
       const dividerX = canvas.width * 0.5;
       const divider = context.createLinearGradient(
