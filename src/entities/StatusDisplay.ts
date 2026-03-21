@@ -81,6 +81,10 @@ const ENDED_SCORE_STEP_MS = 380;
 const ENDED_SCORE_SLIDE_MS = 320;
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
+const easeOutQuad = (value: number) => {
+  const t = clamp01(value);
+  return 1 - (1 - t) * (1 - t);
+};
 
 export interface StatusDisplayData {
   timeRemaining: number;
@@ -1028,25 +1032,8 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
           totalScoreSteps * ENDED_SCORE_STEP_MS
         );
         const linearProgress = clamp01(scoreRevealElapsedMs / totalAnimationMs);
-        const fastPhaseEnd = 0.58;
-        const fastPhaseStepCount = Math.max(
-          1,
-          Math.floor(totalScoreSteps * 0.72)
-        );
-
-        let stepFloat = 0;
-        if (linearProgress <= fastPhaseEnd) {
-          const localProgress = clamp01(linearProgress / fastPhaseEnd);
-          const fastLocal = 1 - (1 - localProgress) ** 3.8;
-          stepFloat = fastLocal * fastPhaseStepCount;
-        } else {
-          const tailProgress = clamp01(
-            (linearProgress - fastPhaseEnd) / (1 - fastPhaseEnd)
-          );
-          stepFloat =
-            fastPhaseStepCount +
-            tailProgress * (totalScoreSteps - fastPhaseStepCount);
-        }
+        const easedProgress = easeOutQuad(linearProgress);
+        const stepFloat = easedProgress * totalScoreSteps;
         const completedSteps = Math.floor(stepFloat);
 
         if (linearProgress >= 1 || completedSteps >= totalScoreSteps) {
@@ -1054,7 +1041,7 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
         } else {
           const toStep = Math.min(totalScoreSteps, completedSteps + 1);
           const toValue = toStep * ENDED_SCORE_INCREMENT;
-          const slideProgress = clamp01(stepFloat - completedSteps);
+          const slideProgress = easeOutQuad(stepFloat - completedSteps);
 
           if (toStep === totalScoreSteps && linearProgress >= 0.94) {
             drawResultCircle(resultCenterY, roundedScore);
