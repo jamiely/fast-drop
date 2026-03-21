@@ -1533,20 +1533,20 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       context.textAlign = 'center';
       context.textBaseline = 'middle';
       context.font = 'bold 26px Arial';
-      context.fillText('YOU', ballsX, ballsY - 94);
+      context.fillText('YOU', ballsX, ballsY - 88);
       context.font = 'bold 24px Arial';
-      context.fillText('DROPPED ALL', ballsX, ballsY - 60);
+      context.fillText('DROPPED ALL', ballsX, ballsY - 64);
 
       context.fillStyle = '#e54161';
       context.strokeStyle = '#ffffff';
       context.lineWidth = 5;
       context.font = 'bold 138px Arial';
-      context.strokeText(String(ballsTotal), ballsX, ballsY);
-      context.fillText(String(ballsTotal), ballsX, ballsY);
+      context.strokeText(String(ballsTotal), ballsX, ballsY + 10);
+      context.fillText(String(ballsTotal), ballsX, ballsY + 10);
 
       context.fillStyle = '#16326a';
       context.font = 'bold 44px Arial';
-      context.fillText('BALLS!', ballsX, ballsY + 78);
+      context.fillText('BALLS!', ballsX, ballsY + 83);
     } else {
       context.save();
       context.beginPath();
