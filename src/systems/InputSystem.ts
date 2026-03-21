@@ -66,7 +66,10 @@ export class InputSystem {
     });
 
     window.addEventListener('click', (event) => {
-      if (performance.now() - lastPointerPrimaryAt < 400 || event.button !== 0) {
+      if (
+        performance.now() - lastPointerPrimaryAt < 400 ||
+        event.button !== 0
+      ) {
         return;
       }
 
