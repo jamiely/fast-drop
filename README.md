@@ -55,7 +55,7 @@ Storybook stories currently included:
   - preset save/load
 - Controls:
   - click/tap the page (outside UI controls) or press `Space` to drop
-  - on round summary, press `Enter` or `Space` to play again
+  - when a round ends, tap/click the playfield (outside UI controls) or press `Enter` / `Space` to play again
   - in `?debug=1`, scroll wheel zooms camera in/out (outside debug UI elements)
 
 ## Scripts

@@ -157,7 +157,7 @@ describe('DOM systems and UI helpers', () => {
     window.dispatchEvent(new KeyboardEvent('keyup', { code: 'Space' }));
 
     expect(drops).toBe(2);
-    expect(playAgain).toBe(2);
+    expect(playAgain).toBe(3);
   });
 
   it('handles ended-key input without play-again handler', () => {

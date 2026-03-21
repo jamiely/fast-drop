@@ -47,6 +47,7 @@ export class InputSystem {
       }
 
       if (options.isRoundEnded?.()) {
+        options.onPlayAgain?.();
         return;
       }
 
