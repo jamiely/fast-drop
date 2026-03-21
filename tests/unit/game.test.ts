@@ -442,6 +442,34 @@ describe('Game', () => {
     expect(latestState.misses).toBe(0);
   });
 
+  it('substeps orbit and scene updates on long frames', async () => {
+    const { Game } = await import('../../src/game/Game');
+    const game = new Game(document.createElement('div'));
+
+    let nextId = 0;
+    const callbacks: Array<(now: number) => void> = [];
+
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      vi.fn((cb: (now: number) => void) => {
+        callbacks.push(cb);
+        nextId += 1;
+        return nextId;
+      })
+    );
+    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+    vi.spyOn(performance, 'now').mockReturnValue(1000);
+
+    game.start();
+    callbacks[0]?.(1050);
+
+    expect(gameMocks.orbitUpdate.mock.calls.length).toBeGreaterThan(1);
+    expect(gameMocks.sceneUpdate.mock.calls.length).toBeGreaterThan(1);
+    expect(gameMocks.orbitUpdate).toHaveBeenCalledTimes(
+      gameMocks.sceneUpdate.mock.calls.length
+    );
+  });
+
   it('starts and destroys animation loop', async () => {
     const { Game } = await import('../../src/game/Game');
     const game = new Game(document.createElement('div'));

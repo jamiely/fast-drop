@@ -32,6 +32,7 @@ import { createDebugMenu } from '../ui/debugMenu';
 
 const DEV_PRESET_STORAGE_KEY = 'fast-drop-debug-preset';
 const BALLS_EXHAUSTED_END_DELAY_SECONDS = 3;
+const MAX_SIMULATION_SUBSTEP_SECONDS = 1 / 60;
 
 export class Game {
   private readonly sceneRoot: SceneRoot;
@@ -534,68 +535,100 @@ export class Game {
     this.sceneRoot.applyCameraTuning(this.runtimeConfig.camera);
   }
 
+  private processSceneSettlements(settlements: SceneBallSettlement[]): void {
+    if (this.state.phase !== 'playing') {
+      return;
+    }
+
+    for (const settlement of settlements) {
+      const scoringResult = this.scoringSystem.onBallSettled(
+        this.toBallSettledEvent(settlement)
+      );
+
+      this.state = applyBallSettledState(
+        this.state,
+        scoringResult.scoreDelta,
+        scoringResult.bonusTimeDelta
+      );
+    }
+
+    const bounceCount = this.sceneRoot.consumeBounceCount();
+    if (bounceCount > 0) {
+      this.audioSystem.play('ball-settled');
+    }
+
+    const missedCount = this.sceneRoot.consumeMissedBallCount();
+    if (missedCount > 0) {
+      this.state = applyMissState(this.state, missedCount);
+    }
+
+    if (this.state.timeRemaining <= 8 && !this.hasPlayedWarning) {
+      this.audioSystem.play('time-warning');
+      this.hasPlayedWarning = true;
+    }
+
+    if (
+      this.state.ballsRemaining <= 0 &&
+      this.ballsExhaustedAtSeconds === null
+    ) {
+      this.ballsExhaustedAtSeconds = this.simulationTimeSeconds;
+    }
+
+    if (this.state.ballsRemaining > 0) {
+      this.ballsExhaustedAtSeconds = null;
+    }
+
+    if (this.state.timeRemaining <= 0) {
+      this.endRound();
+    } else if (
+      this.state.ballsRemaining <= 0 &&
+      this.ballsExhaustedAtSeconds !== null &&
+      this.simulationTimeSeconds - this.ballsExhaustedAtSeconds >=
+        BALLS_EXHAUSTED_END_DELAY_SECONDS
+    ) {
+      this.endRound();
+    }
+  }
+
   private step(dt: number, renderFrame = true): void {
     const simDt = this.paused ? 0 : dt * this.speedMultiplier;
+    const settlements: SceneBallSettlement[] = [];
 
     if (!this.paused) {
-      if (this.state.phase === 'playing') {
-        this.simulationTimeSeconds += simDt;
-        this.state = tickState(this.state, simDt);
+      let remainingOrbitDt = dt;
+      while (remainingOrbitDt > 0) {
+        const orbitStepDt = Math.min(
+          MAX_SIMULATION_SUBSTEP_SECONDS,
+          remainingOrbitDt
+        );
+        this.orbitSystem.update(orbitStepDt);
+        remainingOrbitDt -= orbitStepDt;
       }
-      this.orbitSystem.update(dt);
+
+      if (simDt > 0) {
+        let remainingSimDt = simDt;
+        while (remainingSimDt > 0) {
+          const simulationStepDt = Math.min(
+            MAX_SIMULATION_SUBSTEP_SECONDS,
+            remainingSimDt
+          );
+
+          if (this.state.phase === 'playing') {
+            this.simulationTimeSeconds += simulationStepDt;
+            this.state = tickState(this.state, simulationStepDt);
+          }
+
+          settlements.push(...this.sceneRoot.update(simulationStepDt));
+          remainingSimDt -= simulationStepDt;
+        }
+      } else {
+        settlements.push(...this.sceneRoot.update(0));
+      }
+    } else {
+      settlements.push(...this.sceneRoot.update(0));
     }
 
-    const settlements = this.sceneRoot.update(simDt);
-    if (this.state.phase === 'playing') {
-      for (const settlement of settlements) {
-        const scoringResult = this.scoringSystem.onBallSettled(
-          this.toBallSettledEvent(settlement)
-        );
-
-        this.state = applyBallSettledState(
-          this.state,
-          scoringResult.scoreDelta,
-          scoringResult.bonusTimeDelta
-        );
-      }
-
-      const bounceCount = this.sceneRoot.consumeBounceCount();
-      if (bounceCount > 0) {
-        this.audioSystem.play('ball-settled');
-      }
-
-      const missedCount = this.sceneRoot.consumeMissedBallCount();
-      if (missedCount > 0) {
-        this.state = applyMissState(this.state, missedCount);
-      }
-
-      if (this.state.timeRemaining <= 8 && !this.hasPlayedWarning) {
-        this.audioSystem.play('time-warning');
-        this.hasPlayedWarning = true;
-      }
-
-      if (
-        this.state.ballsRemaining <= 0 &&
-        this.ballsExhaustedAtSeconds === null
-      ) {
-        this.ballsExhaustedAtSeconds = this.simulationTimeSeconds;
-      }
-
-      if (this.state.ballsRemaining > 0) {
-        this.ballsExhaustedAtSeconds = null;
-      }
-
-      if (this.state.timeRemaining <= 0) {
-        this.endRound();
-      } else if (
-        this.state.ballsRemaining <= 0 &&
-        this.ballsExhaustedAtSeconds !== null &&
-        this.simulationTimeSeconds - this.ballsExhaustedAtSeconds >=
-          BALLS_EXHAUSTED_END_DELAY_SECONDS
-      ) {
-        this.endRound();
-      }
-    }
+    this.processSceneSettlements(settlements);
 
     this.physicsWorld?.step();
     this.syncStatusDisplayFromState();
