@@ -1532,9 +1532,9 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       context.fillStyle = '#16326a';
       context.textAlign = 'center';
       context.textBaseline = 'middle';
-      context.font = 'bold 34px Arial';
+      context.font = 'bold 26px Arial';
       context.fillText('YOU', ballsX, ballsY - 94);
-      context.font = 'bold 32px Arial';
+      context.font = 'bold 24px Arial';
       context.fillText('DROPPED ALL', ballsX, ballsY - 60);
 
       context.fillStyle = '#e54161';
