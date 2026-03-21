@@ -13,9 +13,15 @@
   box-sizing: border-box;
 }
 
+html,
 body {
   margin: 0;
   min-height: 100vh;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
   background:
     radial-gradient(
       120% 90% at 20% 8%,
@@ -38,12 +44,12 @@ body {
   height: 100dvh;
   min-height: 100svh;
   overflow: hidden;
-  touch-action: manipulation;
+  touch-action: none;
 }
 
 canvas {
   display: block;
-  touch-action: manipulation;
+  touch-action: none;
 }
 
 [hidden] {
