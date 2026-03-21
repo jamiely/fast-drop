@@ -19,11 +19,15 @@ const createDropLabelTexture = (): CanvasTexture => {
 
   if (context) {
     context.clearRect(0, 0, canvas.width, canvas.height);
-    context.font = 'bold 82px Arial';
     context.textAlign = 'center';
     context.textBaseline = 'middle';
     context.fillStyle = '#000000';
-    context.fillText('DROP', canvas.width * 0.5, canvas.height * 0.54);
+
+    context.font = 'bold 78px Arial';
+    context.fillText('drop', canvas.width * 0.5, canvas.height * 0.48);
+
+    context.font = 'bold 168px Arial';
+    context.fillText('⇓', canvas.width * 0.5, canvas.height * 0.76);
   }
 
   const texture = new CanvasTexture(canvas);
@@ -74,6 +78,7 @@ export const createDropButtonVisual = (): DropButtonVisual => {
   );
   const labelOffsetY = 0.061;
   label.rotation.x = -Math.PI * 0.5;
+  label.rotation.z = -Math.PI * 0.5;
   label.position.y = capRestY + labelOffsetY;
 
   group.add(base, cap, label);
