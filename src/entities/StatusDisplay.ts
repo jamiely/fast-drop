@@ -936,162 +936,162 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       }
 
       for (const ball of endedJarBalls) {
-          const isSleeping = ball.sleepFrames >= ENDED_JAR_SLEEP_FRAMES;
+        const isSleeping = ball.sleepFrames >= ENDED_JAR_SLEEP_FRAMES;
 
-          if (!isSleeping) {
-            ball.vy += ENDED_DROP_GRAVITY * endedDt;
-            ball.vx *= 0.95;
-            ball.vy *= 0.965;
-            ball.vz *= 0.985;
-            ball.x += ball.vx * endedDt;
-            ball.y += ball.vy * endedDt;
-            ball.z += ball.vz * endedDt;
-          }
+        if (!isSleeping) {
+          ball.vy += ENDED_DROP_GRAVITY * endedDt;
+          ball.vx *= 0.95;
+          ball.vy *= 0.965;
+          ball.vz *= 0.985;
+          ball.x += ball.vx * endedDt;
+          ball.y += ball.vy * endedDt;
+          ball.z += ball.vz * endedDt;
+        }
 
-          if (ball.x < jarLeft) {
-            ball.x = jarLeft;
-            if (ball.vx < 0) {
-              const priorVx = ball.vx;
-              ball.vx *= -0.22;
-              if (Math.abs(priorVx) > 20) {
-                ball.sleepFrames = 0;
-              }
-            }
-          } else if (ball.x > jarRight) {
-            ball.x = jarRight;
-            if (ball.vx > 0) {
-              const priorVx = ball.vx;
-              ball.vx *= -0.22;
-              if (Math.abs(priorVx) > 20) {
-                ball.sleepFrames = 0;
-              }
+        if (ball.x < jarLeft) {
+          ball.x = jarLeft;
+          if (ball.vx < 0) {
+            const priorVx = ball.vx;
+            ball.vx *= -0.22;
+            if (Math.abs(priorVx) > 20) {
+              ball.sleepFrames = 0;
             }
           }
-
-          if (ball.y > jarFloor) {
-            ball.y = jarFloor;
-            if (ball.vy > 0) {
-              ball.vy *= -0.14;
-            }
-            if (Math.abs(ball.vy) < 16) {
-              ball.vy = 0;
-            }
-            ball.vx *= 0.8;
-            ball.vz *= 0.98;
-          } else if (ball.y < jarCeiling) {
-            ball.y = jarCeiling;
-            if (ball.vy < 0) {
-              ball.vy *= -0.1;
-            }
-            ball.sleepFrames = 0;
-          }
-
-          if (ball.z < jarBack) {
-            ball.z = jarBack;
-            if (ball.vz < 0) {
-              ball.vz *= -0.16;
-            }
-          } else if (ball.z > jarFront) {
-            ball.z = jarFront;
-            if (ball.vz > 0) {
-              ball.vz *= -0.16;
+        } else if (ball.x > jarRight) {
+          ball.x = jarRight;
+          if (ball.vx > 0) {
+            const priorVx = ball.vx;
+            ball.vx *= -0.22;
+            if (Math.abs(priorVx) > 20) {
+              ball.sleepFrames = 0;
             }
           }
+        }
 
-          const speedNow = Math.hypot(ball.vx, ball.vy, ball.vz);
-          if (speedNow < ENDED_JAR_SLEEP_SPEED) {
-            ball.sleepFrames += 1;
-          } else {
-            ball.sleepFrames = 0;
+        if (ball.y > jarFloor) {
+          ball.y = jarFloor;
+          if (ball.vy > 0) {
+            ball.vy *= -0.14;
           }
-
-          if (ball.sleepFrames >= ENDED_JAR_SLEEP_FRAMES) {
-            ball.vx = 0;
+          if (Math.abs(ball.vy) < 16) {
             ball.vy = 0;
-            ball.vz = 0;
           }
+          ball.vx *= 0.8;
+          ball.vz *= 0.98;
+        } else if (ball.y < jarCeiling) {
+          ball.y = jarCeiling;
+          if (ball.vy < 0) {
+            ball.vy *= -0.1;
+          }
+          ball.sleepFrames = 0;
+        }
+
+        if (ball.z < jarBack) {
+          ball.z = jarBack;
+          if (ball.vz < 0) {
+            ball.vz *= -0.16;
+          }
+        } else if (ball.z > jarFront) {
+          ball.z = jarFront;
+          if (ball.vz > 0) {
+            ball.vz *= -0.16;
+          }
+        }
+
+        const speedNow = Math.hypot(ball.vx, ball.vy, ball.vz);
+        if (speedNow < ENDED_JAR_SLEEP_SPEED) {
+          ball.sleepFrames += 1;
+        } else {
+          ball.sleepFrames = 0;
+        }
+
+        if (ball.sleepFrames >= ENDED_JAR_SLEEP_FRAMES) {
+          ball.vx = 0;
+          ball.vy = 0;
+          ball.vz = 0;
+        }
       }
 
       for (let i = 0; i < endedJarBalls.length; i += 1) {
-          for (let j = i + 1; j < endedJarBalls.length; j += 1) {
-            const left = endedJarBalls[i];
-            const right = endedJarBalls[j];
-            if (
-              left.sleepFrames >= ENDED_JAR_SLEEP_FRAMES &&
-              right.sleepFrames >= ENDED_JAR_SLEEP_FRAMES
-            ) {
-              continue;
-            }
-
-            const dx = right.x - left.x;
-            const dy = right.y - left.y;
-            const dz = right.z - left.z;
-            const distance = Math.hypot(dx, dy, dz);
-            const minimumDistance = jarBallRadius * 2;
-
-            if (distance >= minimumDistance || distance <= 0.0001) {
-              continue;
-            }
-
-            const nx = dx / distance;
-            const ny = dy / distance;
-            const nz = dz / distance;
-            const overlap = minimumDistance - distance;
-            const leftSleeping = left.sleepFrames >= ENDED_JAR_SLEEP_FRAMES;
-            const rightSleeping = right.sleepFrames >= ENDED_JAR_SLEEP_FRAMES;
-
-            if (leftSleeping && !rightSleeping) {
-              right.x += nx * overlap;
-              right.y += ny * overlap;
-              right.z += nz * overlap;
-            } else if (!leftSleeping && rightSleeping) {
-              left.x -= nx * overlap;
-              left.y -= ny * overlap;
-              left.z -= nz * overlap;
-            } else {
-              left.x -= nx * overlap * 0.5;
-              left.y -= ny * overlap * 0.5;
-              left.z -= nz * overlap * 0.5;
-              right.x += nx * overlap * 0.5;
-              right.y += ny * overlap * 0.5;
-              right.z += nz * overlap * 0.5;
-            }
-
-            const relativeVelocity =
-              (right.vx - left.vx) * nx +
-              (right.vy - left.vy) * ny +
-              (right.vz - left.vz) * nz;
-
-            if (relativeVelocity < -4) {
-              const impulse = -relativeVelocity * 0.06;
-              if (!leftSleeping) {
-                left.vx -= nx * impulse;
-                left.vy -= ny * impulse;
-                left.vz -= nz * impulse;
-                left.vx *= 0.92;
-                left.vy *= 0.92;
-                left.vz *= 0.92;
-                left.sleepFrames = 0;
-              }
-              if (!rightSleeping) {
-                right.vx += nx * impulse;
-                right.vy += ny * impulse;
-                right.vz += nz * impulse;
-                right.vx *= 0.92;
-                right.vy *= 0.92;
-                right.vz *= 0.92;
-                right.sleepFrames = 0;
-              }
-            }
-
-            left.x = Math.max(jarLeft, Math.min(jarRight, left.x));
-            right.x = Math.max(jarLeft, Math.min(jarRight, right.x));
-            left.y = Math.max(jarCeiling, Math.min(jarFloor, left.y));
-            right.y = Math.max(jarCeiling, Math.min(jarFloor, right.y));
-            left.z = Math.max(jarBack, Math.min(jarFront, left.z));
-            right.z = Math.max(jarBack, Math.min(jarFront, right.z));
+        for (let j = i + 1; j < endedJarBalls.length; j += 1) {
+          const left = endedJarBalls[i];
+          const right = endedJarBalls[j];
+          if (
+            left.sleepFrames >= ENDED_JAR_SLEEP_FRAMES &&
+            right.sleepFrames >= ENDED_JAR_SLEEP_FRAMES
+          ) {
+            continue;
           }
+
+          const dx = right.x - left.x;
+          const dy = right.y - left.y;
+          const dz = right.z - left.z;
+          const distance = Math.hypot(dx, dy, dz);
+          const minimumDistance = jarBallRadius * 2;
+
+          if (distance >= minimumDistance || distance <= 0.0001) {
+            continue;
+          }
+
+          const nx = dx / distance;
+          const ny = dy / distance;
+          const nz = dz / distance;
+          const overlap = minimumDistance - distance;
+          const leftSleeping = left.sleepFrames >= ENDED_JAR_SLEEP_FRAMES;
+          const rightSleeping = right.sleepFrames >= ENDED_JAR_SLEEP_FRAMES;
+
+          if (leftSleeping && !rightSleeping) {
+            right.x += nx * overlap;
+            right.y += ny * overlap;
+            right.z += nz * overlap;
+          } else if (!leftSleeping && rightSleeping) {
+            left.x -= nx * overlap;
+            left.y -= ny * overlap;
+            left.z -= nz * overlap;
+          } else {
+            left.x -= nx * overlap * 0.5;
+            left.y -= ny * overlap * 0.5;
+            left.z -= nz * overlap * 0.5;
+            right.x += nx * overlap * 0.5;
+            right.y += ny * overlap * 0.5;
+            right.z += nz * overlap * 0.5;
+          }
+
+          const relativeVelocity =
+            (right.vx - left.vx) * nx +
+            (right.vy - left.vy) * ny +
+            (right.vz - left.vz) * nz;
+
+          if (relativeVelocity < -4) {
+            const impulse = -relativeVelocity * 0.06;
+            if (!leftSleeping) {
+              left.vx -= nx * impulse;
+              left.vy -= ny * impulse;
+              left.vz -= nz * impulse;
+              left.vx *= 0.92;
+              left.vy *= 0.92;
+              left.vz *= 0.92;
+              left.sleepFrames = 0;
+            }
+            if (!rightSleeping) {
+              right.vx += nx * impulse;
+              right.vy += ny * impulse;
+              right.vz += nz * impulse;
+              right.vx *= 0.92;
+              right.vy *= 0.92;
+              right.vz *= 0.92;
+              right.sleepFrames = 0;
+            }
+          }
+
+          left.x = Math.max(jarLeft, Math.min(jarRight, left.x));
+          right.x = Math.max(jarLeft, Math.min(jarRight, right.x));
+          left.y = Math.max(jarCeiling, Math.min(jarFloor, left.y));
+          right.y = Math.max(jarCeiling, Math.min(jarFloor, right.y));
+          left.z = Math.max(jarBack, Math.min(jarFront, left.z));
+          right.z = Math.max(jarBack, Math.min(jarFront, right.z));
         }
+      }
 
       endedDisplayedCount = Math.min(endedJarBalls.length, enteredCount);
 
@@ -1532,21 +1532,21 @@ export const createStatusDisplay = (): StatusDisplayVisual => {
       context.fillStyle = '#16326a';
       context.textAlign = 'center';
       context.textBaseline = 'middle';
-      context.font = 'bold 38px Arial';
-      context.fillText('YOU', ballsX, ballsY - 70);
-      context.font = 'bold 36px Arial';
-      context.fillText('DROPPED ALL', ballsX, ballsY - 26);
+      context.font = 'bold 34px Arial';
+      context.fillText('YOU', ballsX, ballsY - 122);
+      context.font = 'bold 32px Arial';
+      context.fillText('DROPPED ALL', ballsX, ballsY - 86);
 
       context.fillStyle = '#e54161';
       context.strokeStyle = '#ffffff';
       context.lineWidth = 5;
-      context.font = 'bold 92px Arial';
-      context.strokeText(String(ballsTotal), ballsX, ballsY + 42);
-      context.fillText(String(ballsTotal), ballsX, ballsY + 42);
+      context.font = 'bold 184px Arial';
+      context.strokeText(String(ballsTotal), ballsX, ballsY);
+      context.fillText(String(ballsTotal), ballsX, ballsY);
 
       context.fillStyle = '#16326a';
-      context.font = 'bold 50px Arial';
-      context.fillText('BALLS!', ballsX, ballsY + 102);
+      context.font = 'bold 44px Arial';
+      context.fillText('BALLS!', ballsX, ballsY + 110);
     } else {
       context.save();
       context.beginPath();
