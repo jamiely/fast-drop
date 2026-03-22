@@ -41,6 +41,23 @@ jobs:
       - name: Package Windows app
         run: npm run build:electron:win
 
+      - name: Publish rolling latest prerelease
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main' && github.event_name != 'release'
+        with:
+          tag_name: latest
+          name: latest
+          prerelease: true
+          make_latest: false
+          target_commitish: ${{ github.sha }}
+          body: |
+            Automated rolling Windows build from commit `${{ github.sha }}`.
+          files: |
+            dist_electron/*.exe
+            dist_electron/*.zip
+            dist_electron/*.yml
+          overwrite_files: true
+
       - name: Upload release artifacts
         uses: softprops/action-gh-release@v2
         if: github.event_name == 'release'
