@@ -33,6 +33,7 @@ import { createDebugMenu } from '../ui/debugMenu';
 const DEV_PRESET_STORAGE_KEY = 'fast-drop-debug-preset';
 const BALLS_EXHAUSTED_END_DELAY_SECONDS = 3;
 const MAX_SIMULATION_SUBSTEP_SECONDS = 1 / 60;
+const GAME_OVER_RESTART_LOCK_MS = 3000;
 
 export class Game {
   private readonly sceneRoot: SceneRoot;
@@ -55,6 +56,7 @@ export class Game {
   private simulationTimeSeconds = 0;
   private lastDropAtSeconds: number | null = null;
   private ballsExhaustedAtSeconds: number | null = null;
+  private roundEndedAtMs: number | null = null;
   private readonly runtimeConfig = createRuntimeConfig();
 
   public constructor(host: HTMLElement) {
@@ -115,7 +117,7 @@ export class Game {
     this.sceneRoot.applyCameraTuning(this.runtimeConfig.camera);
 
     this.uiSystem.onPlayAgain(() => {
-      this.startRound();
+      this.tryRestartRoundFromGameOver();
     });
 
     new InputSystem({
@@ -123,7 +125,7 @@ export class Game {
         this.dropBall();
       },
       onPlayAgain: () => {
-        this.startRound();
+        this.tryRestartRoundFromGameOver();
       },
       isRoundEnded: () => this.state.phase === 'ended'
     });
@@ -396,12 +398,29 @@ export class Game {
     this.simulationTimeSeconds = 0;
     this.lastDropAtSeconds = null;
     this.ballsExhaustedAtSeconds = null;
+    this.roundEndedAtMs = null;
     this.hasPlayedWarning = false;
     this.paused = false;
     this.orbitSystem.setPaused(false);
     this.sceneRoot.resetRound();
     this.syncStatusDisplayFromState();
     this.uiSystem.render(this.state);
+  }
+
+  private canRestartRoundFromGameOver(): boolean {
+    if (this.state.phase !== 'ended' || this.roundEndedAtMs === null) {
+      return false;
+    }
+
+    return performance.now() - this.roundEndedAtMs >= GAME_OVER_RESTART_LOCK_MS;
+  }
+
+  private tryRestartRoundFromGameOver(): void {
+    if (!this.canRestartRoundFromGameOver()) {
+      return;
+    }
+
+    this.startRound();
   }
 
   private endRound(): void {
@@ -411,6 +430,7 @@ export class Game {
     }
 
     this.state = next;
+    this.roundEndedAtMs = performance.now();
     this.audioSystem.play('game-over');
   }
 
@@ -434,6 +454,7 @@ export class Game {
       timeRemaining: Math.max(0, this.state.timeRemaining)
     };
     this.ballsExhaustedAtSeconds = null;
+    this.roundEndedAtMs = performance.now();
     this.sceneRoot.resetRound();
     this.audioSystem.play('game-over');
     this.syncStatusDisplayFromState();

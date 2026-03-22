@@ -417,16 +417,28 @@ describe('Game', () => {
     expect(latestState.phase).toBe('ended');
   });
 
-  it('restarts round from play again handler', async () => {
+  it('delays restart from play again handler until score reveal window passes', async () => {
+    const nowSpy = vi.spyOn(performance, 'now').mockReturnValue(1000);
     const { Game } = await import('../../src/game/Game');
     const game = new Game(document.createElement('div'));
 
     await game.init();
 
     gameMocks.getBridge().stepFrames(1801);
+    gameMocks.sceneResetRound.mockClear();
+
     gameMocks.getPlayAgainHandler()();
 
-    const latestState = gameMocks.uiRender.mock.calls.at(-1)?.[0] as {
+    const endedState = gameMocks.uiRender.mock.calls.at(-1)?.[0] as {
+      phase: string;
+    };
+    expect(gameMocks.sceneResetRound).not.toHaveBeenCalled();
+    expect(endedState.phase).toBe('ended');
+
+    nowSpy.mockReturnValue(4100);
+    gameMocks.getPlayAgainHandler()();
+
+    const restartedState = gameMocks.uiRender.mock.calls.at(-1)?.[0] as {
       phase: string;
       score: number;
       ballsRemaining: number;
@@ -434,12 +446,14 @@ describe('Game', () => {
       misses: number;
     };
 
-    expect(gameMocks.sceneResetRound).toHaveBeenCalled();
-    expect(latestState.phase).toBe('playing');
-    expect(latestState.score).toBe(0);
-    expect(latestState.ballsRemaining).toBe(50);
-    expect(latestState.hits).toBe(0);
-    expect(latestState.misses).toBe(0);
+    expect(gameMocks.sceneResetRound).toHaveBeenCalledTimes(1);
+    expect(restartedState.phase).toBe('playing');
+    expect(restartedState.score).toBe(0);
+    expect(restartedState.ballsRemaining).toBe(50);
+    expect(restartedState.hits).toBe(0);
+    expect(restartedState.misses).toBe(0);
+
+    nowSpy.mockRestore();
   });
 
   it('substeps orbit and scene updates on long frames', async () => {
