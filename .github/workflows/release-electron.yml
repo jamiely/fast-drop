@@ -1,4 +1,4 @@
-name: Release Electron (Windows)
+name: Release Electron (Desktop)
 
 permissions:
   contents: write
@@ -6,15 +6,55 @@ permissions:
 on:
   workflow_dispatch:
   pull_request:
+    paths:
+      - 'src/**'
+      - 'electron/**'
+      - 'scripts/**'
+      - 'public/**'
+      - 'index.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig*.json'
+      - 'vite.config.ts'
+      - '.github/workflows/release-electron.yml'
   push:
     branches: ['main']
-  release:
-    types: [published]
+    paths:
+      - 'src/**'
+      - 'electron/**'
+      - 'scripts/**'
+      - 'public/**'
+      - 'index.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig*.json'
+      - 'vite.config.ts'
+      - '.github/workflows/release-electron.yml'
 
 jobs:
-  windows-build:
-    runs-on: windows-latest
-    timeout-minutes: 45
+  desktop-build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: win
+            buildScript: build:electron:win
+            artifactName: electron-windows-artifacts
+            runSmoke: true
+          - os: macos-latest
+            platform: mac
+            buildScript: build:electron:mac
+            artifactName: electron-macos-artifacts
+            runSmoke: true
+          - os: ubuntu-latest
+            platform: linux
+            buildScript: build:electron:linux
+            artifactName: electron-linux-artifacts
+            runSmoke: false
+
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
 
     steps:
       - name: Checkout
@@ -36,41 +76,16 @@ jobs:
         run: npm run build
 
       - name: Desktop smoke check
+        if: matrix.runSmoke
         run: npm run electron:smoke
 
-      - name: Package Windows app
-        run: npm run build:electron:win
-
-      - name: Publish rolling latest prerelease
-        uses: softprops/action-gh-release@v2
-        if: github.ref == 'refs/heads/main' && github.event_name != 'release'
-        with:
-          tag_name: latest
-          name: latest
-          prerelease: true
-          make_latest: false
-          target_commitish: ${{ github.sha }}
-          body: |
-            Automated rolling Windows build from commit `${{ github.sha }}`.
-          files: |
-            dist_electron/*.exe
-            dist_electron/*.zip
-            dist_electron/*.yml
-          overwrite_files: true
-
-      - name: Upload release artifacts
-        uses: softprops/action-gh-release@v2
-        if: github.event_name == 'release'
-        with:
-          files: |
-            dist_electron/*.exe
-            dist_electron/*.zip
-            dist_electron/*.yml
+      - name: Package desktop app
+        run: npm run ${{ matrix.buildScript }}
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: electron-windows-artifacts
+          name: ${{ matrix.artifactName }}
           path: dist_electron
           if-no-files-found: error
           retention-days: 14
@@ -79,10 +94,56 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: release-electron-diagnostics
+          name: release-electron-diagnostics-${{ matrix.platform }}
           path: |
             dist_electron
             test-results
             playwright-report
           if-no-files-found: warn
           retention-days: 14
+
+  publish-latest:
+    needs: desktop-build
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: electron-windows-artifacts
+          path: release-assets/windows
+
+      - name: Download macOS artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: electron-macos-artifacts
+          path: release-assets/macos
+
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: electron-linux-artifacts
+          path: release-assets/linux
+
+      - name: Publish rolling latest prerelease
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: latest
+          prerelease: true
+          make_latest: false
+          target_commitish: ${{ github.sha }}
+          body: |
+            Automated rolling desktop builds from commit `${{ github.sha }}`.
+          files: |
+            release-assets/windows/*.exe
+            release-assets/windows/*.zip
+            release-assets/windows/*.yml
+            release-assets/macos/*.dmg
+            release-assets/macos/*.zip
+            release-assets/macos/*.yml
+            release-assets/linux/*.AppImage
+            release-assets/linux/*.tar.gz
+            release-assets/linux/*.yml
+          overwrite_files: true

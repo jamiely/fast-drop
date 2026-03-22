@@ -79,6 +79,8 @@ Storybook stories currently included:
 - `npm run electron:start` — run desktop app using built web assets
 - `npm run electron:smoke` — validate packaging inputs and perform a real Electron startup/load smoke check
 - `npm run build:electron:win` — package Windows desktop artifacts
+- `npm run build:electron:mac` — package macOS desktop artifacts (`dmg` + `zip`)
+- `npm run build:electron:linux` — package Linux desktop artifacts (`AppImage` + `tar.gz`)
 - `npm run release:electron:win` — run full quality gate, then package Windows artifacts
 
 ## Test timeout policy
@@ -114,17 +116,20 @@ To reduce flakiness in CI, Playwright also runs with `1` worker and `1` retry wh
 
 - Quality workflow: `.github/workflows/quality.yml`
 - GitHub Pages deployment: `.github/workflows/deploy-pages.yml`
-- Windows Electron build + release packaging: `.github/workflows/release-electron.yml` (runs on pull requests, pushes to `main`, published releases, or manual dispatch)
+- Electron desktop build + release packaging: `.github/workflows/release-electron.yml` (runs on pull requests, pushes to `main`, or manual dispatch)
 
-Windows Electron workflow behavior:
+Electron desktop workflow behavior:
 
-- runs on pull requests and pushes to `main` to continuously validate desktop packaging,
-- uses Node.js 20 LTS for stable `electron-builder` compatibility on `windows-latest`,
-- runs `npm run check`, `npm run build`, and `npm run electron:smoke`,
-- builds `nsis` + `portable` artifacts via `electron-builder --publish never` (disables implicit CI publishing/token requirement),
-- uploads packaged output as a 14-day workflow artifact on every run,
-- updates a rolling prerelease tagged `latest` on pushes to `main` (overwrites Windows assets each run),
-- still publishes assets to explicit GitHub Releases for `release.published` events,
+- only runs when app/source files change (for example `src/**`, `electron/**`, build/test config, and package manifests), so markdown-only/doc-only changes do not trigger desktop packaging,
+- runs a build matrix on `windows-latest`, `macos-latest`, and `ubuntu-latest`,
+- runs `npm run check` and `npm run build` on each platform,
+- runs `npm run electron:smoke` on Windows and macOS,
+- builds platform artifacts via:
+  - `build:electron:win` (`nsis` + `portable`)
+  - `build:electron:mac` (`dmg` + `zip`)
+  - `build:electron:linux` (`AppImage` + `tar.gz`)
+- uploads platform artifacts with 14-day retention on every run,
+- updates a rolling prerelease tagged `latest` on pushes to `main` with Windows + macOS + Linux assets,
 - uploads diagnostics (`dist_electron/`, `test-results/`, `playwright-report/`) on failures.
 
 ## Current status

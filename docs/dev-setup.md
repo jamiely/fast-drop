@@ -74,7 +74,29 @@ Typical outputs include:
 - `Fast Drop Setup <version>.exe` (NSIS installer)
 - `Fast Drop <version>.exe` (portable)
 
-For a local release-grade check:
+### macOS packaging
+
+```bash
+npm run build:electron:mac
+```
+
+Typical outputs include:
+
+- `Fast Drop-<version>.dmg`
+- `Fast Drop-<version>-mac.zip`
+
+### Linux packaging
+
+```bash
+npm run build:electron:linux
+```
+
+Typical outputs include:
+
+- `Fast Drop-<version>.AppImage`
+- `fast-drop-<version>.tar.gz`
+
+For a local release-grade Windows check:
 
 ```bash
 npm run release:electron:win
@@ -95,4 +117,4 @@ This validates required packaging inputs (`dist/index.html`, `electron/main.mjs`
 
 - `.github/workflows/quality.yml`: typecheck/lint/format/coverage gate.
 - `.github/workflows/deploy-pages.yml`: Pages deployment from `main` after quality + e2e.
-- `.github/workflows/release-electron.yml`: Windows Electron packaging on pull requests, pushes to `main`, published releases, and manual dispatch (Node.js 20 LTS runner), with artifact upload and failure diagnostics retention.
+- `.github/workflows/release-electron.yml`: desktop Electron packaging (Windows + macOS + Linux) on pull requests, pushes to `main`, and manual dispatch (Node.js 20 LTS runner), with source-file path filtering (markdown-only changes skip this workflow), rolling `latest` prerelease asset updates on `main`, artifact upload, and failure diagnostics retention.
