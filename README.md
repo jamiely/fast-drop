@@ -40,8 +40,15 @@ Storybook stories currently included:
 
 - Use `?debug=1` in the URL to open the debug panel:
   - `http://localhost:5173/?debug=1`
-- Use `?effects=0` (or `?fx=0`) to disable shader-driven LED/reflection effects on lower-end devices:
+- Mobile auto-performance mode is enabled by default on mobile user agents:
+  - shader effects default to off (unless explicitly overridden),
+  - renderer starts with lower pixel ratio / antialias off,
+  - gameplay visuals start in a lighter LED preset,
+  - adaptive quality drops further if FPS stays low.
+- Use `?effects=0` (or `?fx=0`) to force-disable shader-driven LED/reflection effects on any device:
   - `http://localhost:5173/?effects=0`
+- Use `?effects=1` to force-enable shader effects on mobile when you want max visuals.
+- Use `?mobileQuality=0` (or `?mq=0`) to disable automatic mobile quality tuning.
 - Use `?inputDebug=1` to print pointer/touch/click input decisions in the browser console (handy for mobile simulator debugging):
   - `http://localhost:5173/?inputDebug=1`
 - Debug panel includes:

@@ -16,7 +16,10 @@ import {
 } from './state';
 import type { BallSettledEvent, GameState, TestBridgeContract } from './types';
 import { PhysicsWorld } from '../physics/PhysicsWorld';
-import type { SceneBallSettlement } from '../scene/SceneRoot';
+import type {
+  SceneBallSettlement,
+  SceneRendererConfig
+} from '../scene/SceneRoot';
 import { SceneRoot } from '../scene/SceneRoot';
 import type { LightPropertyKey, LightType } from '../scene/lighting';
 import { AudioSystem } from '../systems/AudioSystem';
@@ -34,6 +37,12 @@ const DEV_PRESET_STORAGE_KEY = 'fast-drop-debug-preset';
 const BALLS_EXHAUSTED_END_DELAY_SECONDS = 3;
 const MAX_SIMULATION_SUBSTEP_SECONDS = 1 / 60;
 const GAME_OVER_RESTART_LOCK_MS = 3000;
+const MOBILE_SLOW_FPS_THRESHOLD = 48;
+const MOBILE_RECOVERY_FPS_THRESHOLD = 56;
+const MOBILE_QUALITY_DOWNGRADE_SECONDS = 1.2;
+const MOBILE_QUALITY_UPGRADE_SECONDS = 5;
+
+type PerformanceQualityTier = 'balanced' | 'low';
 
 export class Game {
   private readonly sceneRoot: SceneRoot;
@@ -43,8 +52,17 @@ export class Game {
   private readonly orbitSystem: OrbitSystem;
   private readonly urlParams = new URLSearchParams(window.location.search);
   private readonly debugEnabled = this.urlParams.get('debug') === '1';
+  private readonly mobileDevice = this.detectMobileDevice();
+  private readonly explicitEffectsParam =
+    this.urlParams.get('effects') ?? this.urlParams.get('fx');
   private readonly shaderEffectsEnabled =
-    this.urlParams.get('effects') !== '0' && this.urlParams.get('fx') !== '0';
+    this.explicitEffectsParam === null
+      ? !this.mobileDevice
+      : this.explicitEffectsParam !== '0';
+  private readonly autoMobileQualityEnabled =
+    this.mobileDevice &&
+    this.urlParams.get('mobileQuality') !== '0' &&
+    this.urlParams.get('mq') !== '0';
   private state: GameState;
   private physicsWorld: PhysicsWorld | null = null;
   private rafId = 0;
@@ -58,16 +76,23 @@ export class Game {
   private ballsExhaustedAtSeconds: number | null = null;
   private roundEndedAtMs: number | null = null;
   private readonly runtimeConfig = createRuntimeConfig();
+  private performanceQualityTier: PerformanceQualityTier = 'balanced';
+  private smoothedFrameMs = 16.67;
+  private lowFpsDurationSeconds = 0;
+  private highFpsDurationSeconds = 0;
 
   public constructor(host: HTMLElement) {
     this.state = createInitialState();
+
+    const rendererConfig = this.getRendererConfig();
     this.sceneRoot = new SceneRoot(
       host,
       this.runtimeConfig.jarCount,
       this.runtimeConfig.tuning.ringRadius,
       this.runtimeConfig.bonusBucketCount,
       this.debugEnabled,
-      this.shaderEffectsEnabled
+      this.shaderEffectsEnabled,
+      rendererConfig
     );
     this.uiSystem = new UISystem(host);
     this.scoringSystem = new ScoringSystem();
@@ -80,6 +105,10 @@ export class Game {
 
     for (const [key, value] of Object.entries(this.runtimeConfig.tuning)) {
       this.applyGameplayTuning(key as keyof GameplayTuning, Number(value));
+    }
+
+    if (this.autoMobileQualityEnabled) {
+      this.applyPerformanceQualityTier('balanced');
     }
 
     this.syncStatusDisplayFromState();
@@ -168,6 +197,7 @@ export class Game {
     const loop = (now: number): void => {
       const dt = Math.min(0.05, (now - this.lastTime) / 1000);
       this.lastTime = now;
+      this.updateAdaptiveMobileQuality(dt);
       this.step(dt);
       this.rafId = requestAnimationFrame(loop);
     };
@@ -205,6 +235,101 @@ export class Game {
       },
       spawnBall: () => this.spawnBall()
     };
+  }
+
+  private detectMobileDevice(): boolean {
+    const agent = navigator.userAgent || '';
+    const mobilePattern = /Android|iPhone|iPad|iPod|Mobi|Mobile/i;
+    return mobilePattern.test(agent);
+  }
+
+  private getRendererConfig(): SceneRendererConfig {
+    if (!this.mobileDevice) {
+      return {
+        antialias: true,
+        pixelRatioCap: 2,
+        powerPreference: 'high-performance'
+      };
+    }
+
+    return {
+      antialias: false,
+      pixelRatioCap: this.autoMobileQualityEnabled ? 1.2 : 1.3,
+      powerPreference: 'high-performance'
+    };
+  }
+
+  private applyPerformanceQualityTier(tier: PerformanceQualityTier): void {
+    this.performanceQualityTier = tier;
+
+    if (tier === 'low') {
+      this.sceneRoot.setRenderPixelRatioCap(1);
+      this.applyGameplayTuning('outerRingLedEnabled', 0);
+      this.applyGameplayTuning('outerRingLedHeadCount', 2);
+      this.applyGameplayTuning('outerRingLedTrail', 0.3);
+      this.applyGameplayTuning('outerRingLedReverseChance', 0.08);
+      this.applyGameplayTuning('dropCooldownMs', 210);
+      return;
+    }
+
+    this.sceneRoot.setRenderPixelRatioCap(1.2);
+    this.applyGameplayTuning('outerRingLedEnabled', 1);
+    this.applyGameplayTuning('outerRingLedHeadCount', 3);
+    this.applyGameplayTuning('outerRingLedTrail', 0.45);
+    this.applyGameplayTuning('outerRingLedReverseChance', 0.14);
+    this.applyGameplayTuning('dropCooldownMs', 185);
+  }
+
+  private updateAdaptiveMobileQuality(frameDtSeconds: number): void {
+    if (!this.autoMobileQualityEnabled) {
+      return;
+    }
+
+    const frameMs = frameDtSeconds * 1000;
+    this.smoothedFrameMs = this.smoothedFrameMs * 0.92 + frameMs * 0.08;
+    const fps = 1000 / Math.max(0.001, this.smoothedFrameMs);
+
+    if (fps <= MOBILE_SLOW_FPS_THRESHOLD) {
+      this.lowFpsDurationSeconds += frameDtSeconds;
+      this.highFpsDurationSeconds = Math.max(
+        0,
+        this.highFpsDurationSeconds - frameDtSeconds * 0.5
+      );
+    } else if (fps >= MOBILE_RECOVERY_FPS_THRESHOLD) {
+      this.highFpsDurationSeconds += frameDtSeconds;
+      this.lowFpsDurationSeconds = Math.max(
+        0,
+        this.lowFpsDurationSeconds - frameDtSeconds
+      );
+    } else {
+      this.lowFpsDurationSeconds = Math.max(
+        0,
+        this.lowFpsDurationSeconds - frameDtSeconds * 0.25
+      );
+      this.highFpsDurationSeconds = Math.max(
+        0,
+        this.highFpsDurationSeconds - frameDtSeconds * 0.5
+      );
+    }
+
+    if (
+      this.performanceQualityTier !== 'low' &&
+      this.lowFpsDurationSeconds >= MOBILE_QUALITY_DOWNGRADE_SECONDS
+    ) {
+      this.applyPerformanceQualityTier('low');
+      this.lowFpsDurationSeconds = 0;
+      this.highFpsDurationSeconds = 0;
+      return;
+    }
+
+    if (
+      this.performanceQualityTier !== 'balanced' &&
+      this.highFpsDurationSeconds >= MOBILE_QUALITY_UPGRADE_SECONDS
+    ) {
+      this.applyPerformanceQualityTier('balanced');
+      this.lowFpsDurationSeconds = 0;
+      this.highFpsDurationSeconds = 0;
+    }
   }
 
   private toBallSettledEvent(
@@ -401,8 +526,17 @@ export class Game {
     this.roundEndedAtMs = null;
     this.hasPlayedWarning = false;
     this.paused = false;
+    this.lowFpsDurationSeconds = 0;
+    this.highFpsDurationSeconds = 0;
+    this.smoothedFrameMs = 16.67;
     this.orbitSystem.setPaused(false);
     this.sceneRoot.resetRound();
+    if (
+      this.autoMobileQualityEnabled &&
+      this.performanceQualityTier !== 'balanced'
+    ) {
+      this.applyPerformanceQualityTier('balanced');
+    }
     this.syncStatusDisplayFromState();
     this.uiSystem.render(this.state);
   }

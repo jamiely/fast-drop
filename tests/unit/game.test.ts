@@ -13,6 +13,7 @@ const gameMocks = vi.hoisted(() => {
   const sceneSpawnDropBall = vi.fn();
   const sceneApplyCameraTuning = vi.fn();
   const sceneApplyGameplayTuning = vi.fn();
+  const sceneSetRenderPixelRatioCap = vi.fn();
   const sceneResetRound = vi.fn();
   const sceneHasUnresolvedBalls = vi.fn(() => true);
   const sceneConsumeMissedBallCount = vi.fn(() => 0);
@@ -40,6 +41,7 @@ const gameMocks = vi.hoisted(() => {
   let debugControls: {
     applyGameplayTuning: (key: string, value: number) => void;
   } | null = null;
+  let latestSceneRootConstructorArgs: unknown[] = [];
 
   return {
     uiRender,
@@ -53,6 +55,7 @@ const gameMocks = vi.hoisted(() => {
     sceneSpawnDropBall,
     sceneApplyCameraTuning,
     sceneApplyGameplayTuning,
+    sceneSetRenderPixelRatioCap,
     sceneResetRound,
     sceneHasUnresolvedBalls,
     sceneConsumeMissedBallCount,
@@ -109,7 +112,12 @@ const gameMocks = vi.hoisted(() => {
         throw new Error('Missing debug controls');
       }
       return debugControls;
-    }
+    },
+    setLatestSceneRootConstructorArgs: (args: unknown[]): void => {
+      latestSceneRootConstructorArgs = args;
+    },
+    getLatestSceneRootConstructorArgs: (): unknown[] =>
+      latestSceneRootConstructorArgs
   };
 });
 
@@ -119,11 +127,18 @@ vi.mock('../../src/scene/SceneRoot', () => ({
       { position: { x: 0, z: 0 } },
       { position: { x: 0, z: 0 } }
     ];
+
+    public constructor(...args: unknown[]) {
+      gameMocks.setLatestSceneRootConstructorArgs(args);
+    }
+
     public readonly resize = gameMocks.sceneResize;
     public readonly render = gameMocks.sceneRender;
     public readonly spawnDropBall = gameMocks.sceneSpawnDropBall;
     public readonly applyCameraTuning = gameMocks.sceneApplyCameraTuning;
     public readonly applyGameplayTuning = gameMocks.sceneApplyGameplayTuning;
+    public readonly setRenderPixelRatioCap =
+      gameMocks.sceneSetRenderPixelRatioCap;
     public readonly update = gameMocks.sceneUpdate;
     public readonly consumeMissedBallCount =
       gameMocks.sceneConsumeMissedBallCount;
@@ -221,9 +236,15 @@ vi.mock('../../src/testhooks/testBridge', () => ({
 
 describe('Game', () => {
   beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
     vi.clearAllMocks();
     document.body.innerHTML = '';
     window.history.pushState({}, '', '/');
+    Object.defineProperty(window.navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0)',
+      configurable: true
+    });
     gameMocks.sceneHasUnresolvedBalls.mockReturnValue(true);
     gameMocks.sceneConsumeMissedBallCount.mockReturnValue(0);
     gameMocks.sceneConsumeBounceCount.mockReturnValue(0);
@@ -241,6 +262,89 @@ describe('Game', () => {
       host,
       true,
       expect.any(Object)
+    );
+  });
+
+  it('applies automatic mobile renderer/perf defaults', async () => {
+    Object.defineProperty(window.navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)',
+      configurable: true
+    });
+
+    const { Game } = await import('../../src/game/Game');
+    new Game(document.createElement('div'));
+
+    const sceneRootArgs = gameMocks.getLatestSceneRootConstructorArgs();
+    expect(sceneRootArgs[5]).toBe(false);
+    expect(sceneRootArgs[6]).toMatchObject({
+      antialias: false,
+      pixelRatioCap: 1.2
+    });
+
+    expect(gameMocks.sceneSetRenderPixelRatioCap).toHaveBeenCalledWith(1.2);
+
+    const tuningCalls = gameMocks.sceneApplyGameplayTuning.mock.calls;
+    expect(tuningCalls).toEqual(
+      expect.arrayContaining([
+        ['outerRingLedHeadCount', 3],
+        ['outerRingLedTrail', 0.45],
+        ['dropCooldownMs', 185]
+      ])
+    );
+  });
+
+  it('keeps shader effects enabled on mobile when effects=1 is provided', async () => {
+    Object.defineProperty(window.navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (Android 15; Mobile)',
+      configurable: true
+    });
+    window.history.pushState({}, '', '/?effects=1');
+
+    const { Game } = await import('../../src/game/Game');
+    new Game(document.createElement('div'));
+
+    const sceneRootArgs = gameMocks.getLatestSceneRootConstructorArgs();
+    expect(sceneRootArgs[5]).toBe(true);
+  });
+
+  it('downgrades mobile quality tier under sustained low FPS', async () => {
+    Object.defineProperty(window.navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (Android 15; Mobile)',
+      configurable: true
+    });
+
+    const { Game } = await import('../../src/game/Game');
+    const game = new Game(document.createElement('div'));
+
+    let nextId = 0;
+    const callbacks: Array<(now: number) => void> = [];
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      vi.fn((cb: (now: number) => void) => {
+        callbacks.push(cb);
+        nextId += 1;
+        return nextId;
+      })
+    );
+    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+    vi.spyOn(performance, 'now').mockReturnValue(0);
+
+    game.start();
+    gameMocks.sceneApplyGameplayTuning.mockClear();
+    gameMocks.sceneSetRenderPixelRatioCap.mockClear();
+
+    for (let frame = 1; frame <= 30; frame += 1) {
+      callbacks[frame - 1]?.(frame * 50);
+    }
+
+    expect(gameMocks.sceneSetRenderPixelRatioCap).toHaveBeenCalledWith(1);
+    expect(gameMocks.sceneApplyGameplayTuning).toHaveBeenCalledWith(
+      'outerRingLedEnabled',
+      0
+    );
+    expect(gameMocks.sceneApplyGameplayTuning).toHaveBeenCalledWith(
+      'dropCooldownMs',
+      210
     );
   });
 

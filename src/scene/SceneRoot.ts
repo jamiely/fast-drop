@@ -60,6 +60,12 @@ interface ActiveBallVisual {
   settledOffsetZ: number;
 }
 
+export interface SceneRendererConfig {
+  antialias?: boolean;
+  pixelRatioCap?: number;
+  powerPreference?: WebGLPowerPreference;
+}
+
 export interface SceneBallSettlement {
   ballId: number | null;
   jarIndex: number;
@@ -155,6 +161,7 @@ export class SceneRoot {
   private statusDisplayEndAnimationElapsed = 0;
   private statusDisplayEndAnimationStartZ = this.statusDisplayZ;
   private readonly shaderEffectsEnabled: boolean;
+  private renderPixelRatioCap = 2;
 
   public constructor(
     private readonly host: HTMLElement,
@@ -162,7 +169,8 @@ export class SceneRoot {
     jarOrbitRadius = 2.2,
     bonusBucketCount = 2,
     showLightHelpers = false,
-    shaderEffectsEnabled = true
+    shaderEffectsEnabled = true,
+    rendererConfig: SceneRendererConfig = {}
   ) {
     this.shaderEffectsEnabled = shaderEffectsEnabled;
     this.orbitRadius = Math.max(0.5, jarOrbitRadius);
@@ -173,9 +181,19 @@ export class SceneRoot {
     this.camera = createCamera(aspect);
     this.applyViewportCameraFill();
 
+    this.renderPixelRatioCap = Math.max(
+      0.5,
+      Math.min(2, rendererConfig.pixelRatioCap ?? 2)
+    );
+
     try {
-      this.renderer = new WebGLRenderer({ antialias: true });
-      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      this.renderer = new WebGLRenderer({
+        antialias: rendererConfig.antialias ?? true,
+        powerPreference: rendererConfig.powerPreference ?? 'high-performance'
+      });
+      this.renderer.setPixelRatio(
+        Math.min(window.devicePixelRatio, this.renderPixelRatioCap)
+      );
       this.renderer.setSize(host.clientWidth, host.clientHeight);
       host.appendChild(this.renderer.domElement);
     } catch (error) {
@@ -673,7 +691,23 @@ export class SceneRoot {
     this.camera.aspect = width / height;
     this.applyViewportCameraFill();
     this.camera.updateProjectionMatrix();
-    this.renderer?.setSize(width, height);
+    if (this.renderer) {
+      this.renderer.setPixelRatio(
+        Math.min(window.devicePixelRatio, this.renderPixelRatioCap)
+      );
+      this.renderer.setSize(width, height);
+    }
+  }
+
+  public setRenderPixelRatioCap(cap: number): void {
+    this.renderPixelRatioCap = Math.max(0.5, Math.min(2, cap));
+    if (!this.renderer) {
+      return;
+    }
+
+    this.renderer.setPixelRatio(
+      Math.min(window.devicePixelRatio, this.renderPixelRatioCap)
+    );
   }
 
   public render(): void {
