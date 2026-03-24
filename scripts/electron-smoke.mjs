@@ -6,7 +6,7 @@ import electronPath from 'electron';
 const projectRoot = process.cwd();
 const distIndex = path.join(projectRoot, 'dist', 'index.html');
 const mainFile = path.join(projectRoot, 'electron', 'main.mjs');
-const preloadFile = path.join(projectRoot, 'electron', 'preload.mjs');
+const preloadFile = path.join(projectRoot, 'electron', 'preload.cjs');
 
 const failures = [];
 
@@ -15,7 +15,7 @@ if (!fs.existsSync(mainFile)) {
 }
 
 if (!fs.existsSync(preloadFile)) {
-  failures.push('Missing electron/preload.mjs');
+  failures.push('Missing electron/preload.cjs');
 }
 
 if (!fs.existsSync(distIndex)) {

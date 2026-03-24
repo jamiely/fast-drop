@@ -58,7 +58,6 @@ npm run prepare
 ### Run desktop app locally
 
 ```bash
-npm run build
 npm run electron:start
 ```
 
@@ -107,11 +106,10 @@ This runs `npm run check` before packaging.
 ### Desktop smoke check
 
 ```bash
-npm run build
 npm run electron:smoke
 ```
 
-This validates required packaging inputs (`dist/index.html`, `electron/main.mjs`, `electron/preload.mjs`) and performs a real Electron boot/load check in smoke mode.
+This builds Electron-friendly renderer assets (`vite build --base ./`), validates required packaging inputs (`dist/index.html`, `electron/main.mjs`, `electron/preload.cjs`), and performs a real Electron boot/load check in smoke mode.
 
 ## GitHub Actions
 

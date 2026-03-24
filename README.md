@@ -72,7 +72,8 @@ Storybook stories currently included:
 - `npm run dev` — start dev server
 - `npm run storybook` — run StorybookJS locally on port 6006
 - `npm run build-storybook` — build static StorybookJS output
-- `npm run build` — typecheck + production build
+- `npm run build` — typecheck + production web build (root-relative assets)
+- `npm run build:electron:web` — typecheck + Electron-friendly web build (relative assets)
 - `npm run preview` — preview production build
 - `npm run typecheck` — TypeScript checks
 - `npm run lint` — ESLint
@@ -83,8 +84,8 @@ Storybook stories currently included:
 - `npm run coverage` — Vitest with coverage metrics (`text`, `json-summary`, `html`, `lcov`)
 - `npm run test:e2e` — Playwright tests
 - `npm run check` — typecheck + lint + prettier check + coverage
-- `npm run electron:start` — run desktop app using built web assets
-- `npm run electron:smoke` — validate packaging inputs and perform a real Electron startup/load smoke check
+- `npm run electron:start` — build Electron-friendly web assets, then run desktop app
+- `npm run electron:smoke` — build Electron-friendly web assets, validate packaging inputs, and perform a real Electron startup/load smoke check
 - `npm run build:electron:win` — package Windows desktop artifacts
 - `npm run build:electron:mac` — package macOS desktop artifacts (`dmg` + `zip`)
 - `npm run build:electron:linux` — package Linux desktop artifacts (`AppImage` + `tar.gz`)
