@@ -1,4 +1,4 @@
-import logoUrl from '../assets/logo.png';
+import logoUrl from '../assets/logo.jpg';
 
 const DROP_IN_DURATION_MS = 700;
 const HOLD_DURATION_MS = 380;
