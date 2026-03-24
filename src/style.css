@@ -62,9 +62,11 @@ canvas {
 }
 
 .startup-logo-overlay__image {
-  width: min(72vw, 380px);
-  max-width: 380px;
-  height: auto;
+  width: 100vw;
+  max-width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  object-fit: contain;
   opacity: 0;
   transform: translateY(-150vh);
   filter: drop-shadow(0 12px 30px rgba(0, 0, 0, 0.45));
