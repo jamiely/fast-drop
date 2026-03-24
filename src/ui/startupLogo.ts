@@ -1,7 +1,7 @@
 import logoUrl from '../assets/logo.jpg';
 
 const DROP_IN_DURATION_MS = 700;
-const HOLD_DURATION_MS = 380;
+const HOLD_DURATION_MS = 2380;
 const DROP_OUT_DURATION_MS = 650;
 const CLEANUP_BUFFER_MS = 120;
 
