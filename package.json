@@ -77,6 +77,13 @@
         "nsis",
         "portable"
       ]
+    },
+    "mac": {
+      "icon": "electron/resources/icon.icns",
+      "target": [
+        "dmg",
+        "zip"
+      ]
     }
   }
 }
