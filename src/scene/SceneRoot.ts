@@ -802,12 +802,28 @@ export class SceneRoot {
       );
     }
 
-    for (const object of [
-      this.statusDisplay.group,
-      this.dropTube.group,
-      this.dropButton.group
+    // The display slides to STATUS_DISPLAY_END_Z and the drop tube rises to DROP_TUBE_END_HEIGHT when a round ends;
+    // each box covers both ends of its travel so the framing holds through the animation and the restart.
+    const displayBox = new Box3().setFromObject(this.statusDisplay.group);
+    const displayZ = this.statusDisplay.group.position.z;
+    const displayEnd = displayBox
+      .clone()
+      .translate(new Vector3(0, 0, STATUS_DISPLAY_END_Z - displayZ));
+    const displayRest = displayBox
+      .clone()
+      .translate(new Vector3(0, 0, this.statusDisplayZ - displayZ));
+    const tubeBox = new Box3().setFromObject(this.dropTube.group);
+    const tubeShift = this.configuredDropHeight - this.dropPoint.y;
+    const tubeRest = tubeBox.clone().translate(new Vector3(0, tubeShift, 0));
+    const tubeEnd = tubeBox
+      .clone()
+      .translate(new Vector3(0, DROP_TUBE_END_HEIGHT - this.dropPoint.y, 0));
+
+    for (const box of [
+      displayRest.union(displayEnd),
+      tubeRest.union(tubeEnd),
+      new Box3().setFromObject(this.dropButton.group)
     ]) {
-      const box = new Box3().setFromObject(object);
       if (box.isEmpty()) {
         continue;
       }

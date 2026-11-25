@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { Box3, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { BALL_RADIUS } from '../../src/entities/Ball';
 import { JAR_HEIGHT, JAR_RADIUS } from '../../src/entities/Jar';
@@ -41,6 +42,53 @@ describe('SceneRoot', () => {
     root.resize();
     expect(root.layout).toBe('landscape');
     expect(host.dataset.layout).toBe('landscape');
+  });
+
+  it('keeps the display and drop tube in frame through the round-end animation, resizes and restart', () => {
+    const host = document.createElement('div');
+    let width = 750;
+    let height = 1000;
+    Object.defineProperty(host, 'clientWidth', { get: () => width });
+    Object.defineProperty(host, 'clientHeight', { get: () => height });
+    const root = new SceneRoot(host, 5);
+    const groups = root.scene.children.filter(
+      (child) => child.type === 'Group'
+    );
+    const maxNdc = (): number => {
+      root.camera.updateMatrixWorld();
+      let max = 0;
+      for (const group of groups) {
+        const box = new Box3().setFromObject(group);
+        if (box.isEmpty()) {
+          continue;
+        }
+        for (const x of [box.min.x, box.max.x]) {
+          for (const y of [box.min.y, box.max.y]) {
+            for (const z of [box.min.z, box.max.z]) {
+              const ndc = new Vector3(x, y, z).project(root.camera);
+              max = Math.max(max, Math.abs(ndc.x), Math.abs(ndc.y));
+            }
+          }
+        }
+      }
+      return max;
+    };
+    const setRound = (ended: boolean): void =>
+      root.setStatusDisplayState(10, 30, 5, 50, ended, 0, 0);
+
+    setRound(true);
+    for (let frame = 0; frame < 150; frame += 1) {
+      root.update(1 / 60);
+      expect(maxNdc()).toBeLessThan(1);
+    }
+
+    // Resize to a near-square portrait window after the round ended, then restart.
+    width = 990;
+    root.resize();
+    expect(maxNdc()).toBeLessThan(1);
+    setRound(false);
+    root.update(1 / 60);
+    expect(maxNdc()).toBeLessThan(1);
   });
 
   it('emits a single clean-entry settlement event for a ball', () => {
