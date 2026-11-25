@@ -233,7 +233,8 @@ export class Game {
       togglePause: () => {
         this.paused = this.orbitSystem.togglePause();
       },
-      spawnBall: () => this.spawnBall()
+      spawnBall: () => this.spawnBall(),
+      getFraming: () => this.sceneRoot.getFraming()
     };
   }
 

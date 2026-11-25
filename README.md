@@ -91,6 +91,13 @@ Storybook stories currently included:
 - `npm run build:electron:linux` — package Linux desktop artifacts (`AppImage` + `tar.gz`)
 - `npm run release:electron:win` — run full quality gate, then package Windows artifacts
 
+## Desktop window, fullscreen and vertical monitors
+
+- The Electron window opens maximized to the primary display's work area in whatever orientation it has, so a rotated (portrait) cabinet monitor gets a tall window instead of a fixed 1280×800 landscape one.
+- `--fullscreen` starts the app fullscreen, e.g. `"Fast Drop.exe" --fullscreen` (for LaunchBox, add `--fullscreen` to the application's command-line parameters).
+- **F11** toggles fullscreen at any time.
+- When the window (or browser viewport) is taller than it is wide, the game switches to a portrait layout with no flags: the camera looks down more steeply and backs off until the whole ring, jars, platform and drop button fit, and the status display rises above the ring and grows so time, balls and the final score stay readable. Resizing back to landscape restores the original view. `#app[data-layout]` reports the active layout (`landscape` / `portrait`).
+
 ## Test timeout policy
 
 The project keeps test timeouts intentionally short to surface hangs quickly.
@@ -179,6 +186,12 @@ Implemented in this pass:
 ### Neon gameplay (desktop)
 
 ![Neon gameplay desktop](docs/history/2026-03-14-final-polish-audio-ui/gameplay-desktop-polish.png)
+
+### Vertical cabinet monitor (1080×1920)
+
+| Before                                                                           | Portrait layout                                                                     | Round end                                                                              |
+| -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| ![Portrait before](docs/history/2026-11-25-vertical-monitor/portrait-before.png) | ![Portrait layout](docs/history/2026-11-25-vertical-monitor/portrait-1080x1920.png) | ![Portrait round end](docs/history/2026-11-25-vertical-monitor/portrait-round-end.png) |
 
 ### Round summary overlay
 

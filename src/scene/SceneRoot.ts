@@ -1,4 +1,5 @@
 import {
+  Box3,
   Color,
   Group,
   Mesh,
@@ -7,6 +8,7 @@ import {
   Scene,
   ShaderMaterial,
   TorusGeometry,
+  Vector3,
   WebGLRenderer
 } from 'three';
 import type { CameraTuning, GameplayTuning } from '../game/config';
@@ -30,7 +32,14 @@ import {
   createStatusDisplay,
   type StatusDisplayVisual
 } from '../entities/StatusDisplay';
-import { applyCameraTuning, createCamera } from './camera';
+import {
+  PORTRAIT_CAMERA,
+  applyCameraTuning,
+  createCamera,
+  fitCameraToPoints,
+  layoutForAspect,
+  type ViewLayout
+} from './camera';
 import {
   addLighting,
   type LightPropertyKey,
@@ -153,6 +162,15 @@ export class SceneRoot {
   private outerRingLedHeadCount = 4;
   private outerRingLedTrail = 0.58;
   private outerRingLedReverseChance = 0.2;
+  private viewLayout: ViewLayout = 'landscape';
+  private cameraTuning: CameraTuning = {
+    distance: 6,
+    pitch: 2.1,
+    yaw: 0,
+    panX: 0,
+    targetY: 1.45,
+    targetZ: 2.2
+  };
   private statusDisplayX = 0;
   private statusDisplayY = 2.25;
   private statusDisplayZ = 1.7;
@@ -320,6 +338,7 @@ export class SceneRoot {
 
     this.syncJarScale();
     this.updateCenterDomeScale();
+    this.applyLayoutCamera();
   }
 
   public applyGameplayTuning(key: keyof GameplayTuning, value: number): void {
@@ -481,8 +500,23 @@ export class SceneRoot {
     }
   }
 
+  public get layout(): ViewLayout {
+    return this.viewLayout;
+  }
+
+  public getFraming(): { layout: ViewLayout; maxNdc: number } {
+    this.camera.updateMatrixWorld();
+    let maxNdc = 0;
+    for (const point of this.getPortraitFitPoints()) {
+      const ndc = point.project(this.camera);
+      maxNdc = Math.max(maxNdc, Math.abs(ndc.x), Math.abs(ndc.y));
+    }
+    return { layout: this.viewLayout, maxNdc };
+  }
+
   public applyCameraTuning(tuning: CameraTuning): void {
-    applyCameraTuning(this.camera, tuning);
+    this.cameraTuning = { ...tuning };
+    this.applyLayoutCamera();
   }
 
   public getLightSnapshot(): LightSnapshot[] {
@@ -523,7 +557,7 @@ export class SceneRoot {
     } else if (!roundEnded && this.statusDisplayRoundEnded) {
       this.statusDisplay.setPlacement(
         this.statusDisplayX,
-        this.statusDisplayY,
+        this.getStatusDisplayY(),
         this.statusDisplayZ
       );
       this.dropPoint.y = this.configuredDropHeight;
@@ -691,6 +725,7 @@ export class SceneRoot {
     this.camera.aspect = width / height;
     this.applyViewportCameraFill();
     this.camera.updateProjectionMatrix();
+    this.applyLayoutCamera();
     if (this.renderer) {
       this.renderer.setPixelRatio(
         Math.min(window.devicePixelRatio, this.renderPixelRatioCap)
@@ -734,10 +769,77 @@ export class SceneRoot {
     );
   }
 
+  /**
+   * Landscape uses the tuned camera. Portrait (a window taller than wide, e.g. a rotated cabinet monitor) looks
+   * down more steeply and backs off until the whole enclosure, display, drop tube and button fit the screen.
+   */
+  private applyLayoutCamera(): void {
+    if (this.viewLayout === 'landscape') {
+      applyCameraTuning(this.camera, this.cameraTuning);
+      return;
+    }
+
+    fitCameraToPoints(
+      this.camera,
+      PORTRAIT_CAMERA.target,
+      PORTRAIT_CAMERA.direction,
+      this.getPortraitFitPoints(),
+      PORTRAIT_CAMERA.margin
+    );
+  }
+
+  private getPortraitFitPoints(): Vector3[] {
+    const points: Vector3[] = [];
+    const enclosure = new Box3().setFromObject(this.enclosure);
+    const radius = Math.max(enclosure.max.x, enclosure.max.z);
+    for (let index = 0; index < 24; index += 1) {
+      const angle = (index / 24) * Math.PI * 2;
+      const x = Math.cos(angle) * radius;
+      const z = Math.sin(angle) * radius;
+      points.push(
+        new Vector3(x, enclosure.min.y, z),
+        new Vector3(x, enclosure.max.y, z)
+      );
+    }
+
+    for (const object of [
+      this.statusDisplay.group,
+      this.dropTube.group,
+      this.dropButton.group
+    ]) {
+      const box = new Box3().setFromObject(object);
+      if (box.isEmpty()) {
+        continue;
+      }
+      for (const x of [box.min.x, box.max.x]) {
+        for (const y of [box.min.y, box.max.y]) {
+          for (const z of [box.min.z, box.max.z]) {
+            points.push(new Vector3(x, y, z));
+          }
+        }
+      }
+    }
+
+    return points;
+  }
+
   private applyViewportCameraFill(): void {
     const width = Math.max(1, this.host.clientWidth);
     const height = Math.max(1, this.host.clientHeight);
     const aspect = width / height;
+    const layout = layoutForAspect(aspect);
+    if (layout !== this.viewLayout) {
+      this.viewLayout = layout;
+      if (this.statusDisplay) {
+        this.syncStatusDisplayPlacement();
+      }
+    }
+    this.host.dataset.layout = layout;
+    if (layout === 'portrait') {
+      this.camera.zoom = 1;
+      return;
+    }
+
     const aspectZoom = aspect / CAMERA_FILL_REFERENCE_ASPECT;
 
     this.camera.zoom = Math.min(
@@ -749,10 +851,23 @@ export class SceneRoot {
   private syncStatusDisplayPlacement(): void {
     this.statusDisplay.setPlacement(
       this.statusDisplayX,
-      this.statusDisplayY,
-      this.statusDisplayZ
+      this.getStatusDisplayY(),
+      this.statusDisplayRoundEnded
+        ? this.statusDisplay.group.position.z
+        : this.statusDisplayZ
     );
-    this.statusDisplay.setScale(this.statusDisplayScale);
+    this.statusDisplay.setScale(
+      this.statusDisplayScale *
+        (this.viewLayout === 'portrait' ? PORTRAIT_CAMERA.displayScale : 1)
+    );
+  }
+
+  /** Portrait lifts the display above the ring, into the tall screen's top band. */
+  private getStatusDisplayY(): number {
+    return (
+      this.statusDisplayY +
+      (this.viewLayout === 'portrait' ? PORTRAIT_CAMERA.displayLift : 0)
+    );
   }
 
   private updateStatusDisplayAnimation(dt: number): void {
@@ -774,7 +889,7 @@ export class SceneRoot {
 
     this.statusDisplay.setPlacement(
       this.statusDisplayX,
-      this.statusDisplayY,
+      this.getStatusDisplayY(),
       nextZ
     );
   }

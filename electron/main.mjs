@@ -1,4 +1,4 @@
-import { app, BrowserWindow, nativeImage } from 'electron';
+import { app, BrowserWindow, nativeImage, screen } from 'electron';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -8,6 +8,7 @@ const __dirname = path.dirname(__filename);
 
 const isDev = !!process.env.VITE_DEV_SERVER_URL;
 const isSmokeMode = process.env.FAST_DROP_ELECTRON_SMOKE === '1';
+const startFullscreen = process.argv.includes('--fullscreen');
 
 const resolveAppIconPath = () => {
   const candidatePaths = [
@@ -21,9 +22,12 @@ const resolveAppIconPath = () => {
 const createWindow = async () => {
   const iconPath = resolveAppIconPath();
 
+  // Fill the display's work area in whatever orientation it has (a rotated cabinet monitor is tall), or start
+  // fullscreen with `--fullscreen`. F11 toggles fullscreen at any time.
+  const { workArea } = screen.getPrimaryDisplay();
   const win = new BrowserWindow({
-    width: 1280,
-    height: 800,
+    ...workArea,
+    fullscreen: startFullscreen && !isSmokeMode,
     autoHideMenuBar: true,
     show: !isSmokeMode,
     ...(iconPath ? { icon: iconPath } : {}),
@@ -35,8 +39,23 @@ const createWindow = async () => {
     }
   });
 
+  if (!startFullscreen && !isSmokeMode) {
+    win.maximize();
+  }
+
+  win.webContents.on('before-input-event', (event, input) => {
+    if (input.type === 'keyDown' && input.key === 'F11') {
+      event.preventDefault();
+      win.setFullScreen(!win.isFullScreen());
+    }
+  });
+
   if (isSmokeMode) {
     win.webContents.once('did-finish-load', () => {
+      const bounds = win.getContentBounds();
+      console.log(
+        `[electron-smoke] window=${bounds.width}x${bounds.height} workArea=${workArea.width}x${workArea.height}`
+      );
       console.log('[electron-smoke] did-finish-load');
       setTimeout(() => app.quit(), 250);
     });

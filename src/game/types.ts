@@ -52,4 +52,6 @@ export interface TestBridgeContract {
   setSpeedMultiplier?: (multiplier: number) => void;
   togglePause?: () => void;
   spawnBall?: () => void;
+  /** Current layout and the largest |NDC| reached by the playfield, display, drop tube and button (< 1: in frame). */
+  getFraming?: () => { layout: 'landscape' | 'portrait'; maxNdc: number };
 }

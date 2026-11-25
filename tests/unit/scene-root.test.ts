@@ -22,6 +22,27 @@ describe('SceneRoot', () => {
     expect(() => root.render()).not.toThrow();
   });
 
+  it('frames the whole playfield on a tall window and switches layout on resize', () => {
+    const host = document.createElement('div');
+    let width = 1080;
+    let height = 1920;
+    Object.defineProperty(host, 'clientWidth', { get: () => width });
+    Object.defineProperty(host, 'clientHeight', { get: () => height });
+
+    const root = new SceneRoot(host, 5);
+    const tall = root.getFraming();
+    expect(tall.layout).toBe('portrait');
+    expect(host.dataset.layout).toBe('portrait');
+    expect(tall.maxNdc).toBeLessThan(1);
+    expect(tall.maxNdc).toBeGreaterThan(0.85); // fills the screen, not a speck
+
+    width = 1920;
+    height = 1080;
+    root.resize();
+    expect(root.layout).toBe('landscape');
+    expect(host.dataset.layout).toBe('landscape');
+  });
+
   it('emits a single clean-entry settlement event for a ball', () => {
     const host = document.createElement('div');
     Object.defineProperty(host, 'clientWidth', { value: 800 });
