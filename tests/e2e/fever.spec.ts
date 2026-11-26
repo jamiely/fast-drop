@@ -66,6 +66,17 @@ test('restart is fresh through Space and attract', async ({ page }) => {
     await page.evaluate(() => {
       const b = window.__FAST_DROP_TEST_BRIDGE__!;
       for (let n = 0; n < 15; n++) b.scriptJarHit!();
+      b.setTimeRemaining!(5);
+      b.stepFrames(1);
+    });
+    expect(
+      await page.evaluate(
+        () =>
+          window.__FAST_DROP_TEST_BRIDGE__!.getJuiceStats!()!.board!.countdown
+      )
+    ).toBe(true);
+    await page.evaluate(() => {
+      const b = window.__FAST_DROP_TEST_BRIDGE__!;
       b.setTimeRemaining!(0);
       b.stepFrames(1);
     });
@@ -92,7 +103,11 @@ test('restart is fresh through Space and attract', async ({ page }) => {
     });
     expect(fresh.stats?.particles).toBe(0);
     // The board's reels start again from zero, not from the last round's score.
-    expect(fresh.stats?.board).toMatchObject({ shown: 0, score: 0 });
+    expect(fresh.stats?.board).toMatchObject({
+      shown: 0,
+      score: 0,
+      countdown: false
+    });
     await expect(page.locator('.fever-hud')).toBeVisible();
     await expect(page.locator('[data-fever-multiplier]')).toHaveText('×1');
     await expect(page.locator('.fever-popup, .fever-finale')).toHaveCount(0);

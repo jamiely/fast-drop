@@ -2,7 +2,12 @@ import { MeshPhysicalMaterial, Vector3 } from 'three';
 import type { SceneRoot } from '../scene/SceneRoot';
 import { FeverBloom } from './bloom';
 import { FeverBoard } from './board';
-import { comboLook, flyProgress, POINTS_RISE_SECONDS } from './boardLogic';
+import {
+  comboLook,
+  countdownTick,
+  flyProgress,
+  POINTS_RISE_SECONDS
+} from './boardLogic';
 import { Trauma, TimeDistortion } from './core';
 import { RingShow } from './ledShow';
 import { Machinery } from './machinery';
@@ -164,6 +169,7 @@ export const createFeverSink = (
   const plateWorld = new Vector3();
   const corner = new Vector3();
   let lastCombo = 0;
+  let lastTime = Infinity;
   /** Overlay size, kept by a ResizeObserver: reading it per frame would force a layout after the style writes. */
   let viewWidth = root.clientWidth || 1050;
   let viewHeight = root.clientHeight || 1680;
@@ -370,7 +376,7 @@ export const createFeverSink = (
     skipFinale() {
       if (!shortFinale && canSkipFinale(finaleAge)) finaleAge = TALLY_SECONDS;
     },
-    update(realDt, ballsRemaining, score = 0) {
+    update(realDt, ballsRemaining, score = 0, timeRemaining = Infinity) {
       const started = performance.now();
       const wasFever = state.feverRemaining > 0;
       state = advance(state, realDt);
@@ -498,7 +504,11 @@ export const createFeverSink = (
       for (const p of popups)
         if (p.points && !p.dismissed) inFlight += p.points;
       board.setScore(score - inFlight);
+      board.setTime(ended ? Infinity : timeRemaining);
       board.update(realDt, state.heat);
+      const second = ended ? null : countdownTick(lastTime, timeRemaining);
+      if (second !== null) sound.countdown(second);
+      lastTime = timeRemaining;
       theme.update(realDt, state.heat, heatMusic(state.heat).bpm);
       if (bloom) bloom.strength = ended ? 0.25 : machine.bloom;
       punchAge += realDt;
@@ -595,6 +605,7 @@ export const createFeverSink = (
       machinery.reset();
       board.reset();
       lastCombo = -1;
+      lastTime = Infinity;
       badgeAge = Infinity;
       theme.reset();
       machine = { ...HEAT_MACHINERY.calm };
@@ -623,7 +634,8 @@ export const createFeverSink = (
       board: {
         shown: board.shown,
         score: board.score,
-        maxNdc: board.maxNdc(scene.camera)
+        maxNdc: board.maxNdc(scene.camera),
+        countdown: board.countdown
       }
     }),
     destroy() {

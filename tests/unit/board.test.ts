@@ -3,6 +3,8 @@ import {
   approachScore,
   boardBounce,
   comboLook,
+  countdownPulse,
+  countdownTick,
   flyProgress,
   MARQUEE_CHASE,
   odometer,
@@ -106,5 +108,31 @@ describe('Fever "+N" fly-in', () => {
     expect(half).toBeCloseTo(0.25);
     expect(flyProgress(POINTS_RISE_SECONDS + POINTS_FLY_SECONDS)).toBe(1);
     expect(flyProgress(5)).toBe(1);
+  });
+});
+
+describe('Fever board countdown', () => {
+  it('pulses only in the last 10 s, with a lub on each second and a softer dub', () => {
+    expect(countdownPulse(10.5)).toBe(0);
+    expect(countdownPulse(0)).toBe(0);
+    expect(countdownPulse(Number.NaN)).toBe(0);
+    expect(countdownPulse(10)).toBe(1);
+    expect(countdownPulse(7)).toBe(1);
+    const between = countdownPulse(6.9);
+    const dub = countdownPulse(6.84);
+    expect(between).toBeLessThan(dub);
+    expect(dub).toBeLessThan(1);
+    expect(countdownPulse(6.2)).toBeLessThan(0.05);
+  });
+
+  it('ticks once per whole second crossed, 10 down to 1, never on a rise', () => {
+    expect(countdownTick(10.02, 9.99)).toBe(10);
+    expect(countdownTick(9.99, 9.97)).toBeNull();
+    expect(countdownTick(1.01, 0.99)).toBe(1);
+    expect(countdownTick(0.5, 0.2)).toBeNull();
+    expect(countdownTick(11.02, 10.99)).toBeNull();
+    expect(countdownTick(Infinity, 30)).toBeNull();
+    expect(countdownTick(Infinity, 9.5)).toBe(10);
+    expect(countdownTick(5, 6)).toBeNull();
   });
 });

@@ -877,7 +877,8 @@ export class Game {
     this.juice.update(
       this.paused ? 0 : dt,
       this.state.ballsRemaining,
-      this.state.score
+      this.state.score,
+      this.state.timeRemaining
     );
     const simDt = this.paused
       ? 0

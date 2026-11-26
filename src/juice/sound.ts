@@ -21,7 +21,6 @@ export class FeverSound {
   private destroyed = false;
   private nextBeat = 0;
   private beat = 0;
-  private nextHeart = 0;
   private dropPitch = 0;
 
   public constructor() {
@@ -259,7 +258,6 @@ export class FeverSound {
         break;
       case 'time-warning':
         this.warning = true;
-        this.nextHeart = this.context.currentTime;
         break;
       case 'last-ball':
         for (let i = 0; i < 8; i += 1)
@@ -296,7 +294,6 @@ export class FeverSound {
     );
     if (this.ended || realDt <= 0) {
       this.nextBeat = now;
-      this.nextHeart = now;
       return;
     }
     const music = heatMusic(this.heat, this.warning);
@@ -332,11 +329,15 @@ export class FeverSound {
       this.beat += 1;
       this.nextBeat += 30 / music.bpm;
     }
-    if (this.warning && now >= this.nextHeart) {
-      this.tone(65, 0.16, 0.05, 'sine', 0, 42);
-      this.tone(80, 0.12, 0.04, 'sine', 0.16, 45);
-      this.nextHeart = now + 0.65;
-    }
+  }
+
+  /** One beat of the last 10 s, on each whole second the board pulses on: a clock tick and a lub-dub, sharper at 3…1. */
+  public countdown(second: number): void {
+    if (this.ended || this.context?.state !== 'running') return;
+    const final = second <= 3;
+    this.tone(final ? 2100 : 1500, 0.04, final ? 0.03 : 0.02, 'square', 0, 900);
+    this.tone(65, 0.16, 0.05, 'sine', 0, 42);
+    this.tone(80, 0.12, 0.04, 'sine', 0.16, 45);
   }
 
   private stopVoices(): void {
@@ -364,7 +365,6 @@ export class FeverSound {
     this.beat = 0;
     this.dropPitch = 0;
     this.nextBeat = this.context?.currentTime ?? 0;
-    this.nextHeart = 0;
   }
 
   public destroy(): void {

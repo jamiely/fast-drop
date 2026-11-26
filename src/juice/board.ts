@@ -19,6 +19,8 @@ import {
 import {
   approachScore,
   boardBounce,
+  COUNTDOWN_SECONDS,
+  countdownPulse,
   MARQUEE_CHASE,
   odometer,
   scoreDigits,
@@ -37,6 +39,11 @@ const GLOW_GAIN = 2.4;
 const PLATE_W = 1.36;
 const PLATE_H = 0.36;
 const PLATE_Y = HOUSING_HEIGHT / 2 - 0.05;
+// Classic's timer dial on its 1024 × 512 canvas (StatusDisplay.ts: centre 0.29 w, 0.3 h + 170; radius 146),
+// mapped onto the 2.45 × 1.18 screen.
+const DIAL_X = (0.29 - 0.5) * 2.45;
+const DIAL_Y = (0.5 - (512 * 0.3 + 170) / 512) * 1.18;
+const DIAL_SIZE = ((146 * 2) / 1024) * 2.45 * 1.3;
 const CANVAS_W = 680;
 const CANVAS_H = 180;
 const DIGIT_COLOR: Record<Heat, string> = {
@@ -60,6 +67,12 @@ export class FeverBoard {
   private readonly halos: InstancedMesh;
   private readonly spots: Array<[number, number]>;
   private readonly plate: Mesh;
+  /** The last 10 s: a red glow ring over the dial with the seconds left in its face. */
+  private readonly alarm: Mesh<PlaneGeometry, MeshBasicMaterial>;
+  private readonly alarmCanvas = document.createElement('canvas');
+  private readonly alarmTexture: CanvasTexture;
+  private alarmSecond = -1;
+  private time = Infinity;
   private readonly canvas = document.createElement('canvas');
   private readonly context: CanvasRenderingContext2D | null;
   private readonly texture: CanvasTexture;
@@ -135,7 +148,23 @@ export class FeverBoard {
       )
     );
     this.plate.position.set(0, PLATE_Y, FRONT_Z + 0.06);
-    this.root.add(this.halos, this.bulbs, this.plate);
+    this.alarmCanvas.width = this.alarmCanvas.height = 256;
+    this.alarmTexture = this.track(new CanvasTexture(this.alarmCanvas));
+    this.alarmTexture.colorSpace = SRGBColorSpace;
+    this.alarm = new Mesh(
+      this.track(new PlaneGeometry(DIAL_SIZE, DIAL_SIZE)),
+      this.track(
+        new MeshBasicMaterial({
+          map: this.alarmTexture,
+          transparent: true,
+          depthWrite: false,
+          toneMapped: false
+        })
+      )
+    );
+    this.alarm.position.set(DIAL_X, DIAL_Y, FRONT_Z + 0.015);
+    this.alarm.visible = false;
+    this.root.add(this.halos, this.bulbs, this.plate, this.alarm);
     this.paint('calm');
   }
 
@@ -164,6 +193,10 @@ export class FeverBoard {
 
   public get score(): number {
     return this.target;
+  }
+
+  public get countdown(): boolean {
+    return this.alarm.visible;
   }
 
   public get shown(): number {
@@ -206,6 +239,11 @@ export class FeverBoard {
     return max;
   }
 
+  /** Seconds left in the round; the dial pulses red through the last 10. */
+  public setTime(seconds: number): void {
+    this.time = seconds;
+  }
+
   public update(realDt: number, heat: Heat): void {
     this.root.visible = this.display.visible;
     this.applyBounce(realDt);
@@ -245,6 +283,50 @@ export class FeverBoard {
     const pop = spring(this.popAge, -0.14, 9, 26);
     this.plate.scale.set(2 - pop, pop, 1);
     this.paint(heat);
+    this.updateAlarm();
+  }
+
+  private updateAlarm(): void {
+    const live = this.time > 0 && this.time <= COUNTDOWN_SECONDS;
+    this.alarm.visible = live;
+    if (!live) return;
+    const second = Math.ceil(this.time);
+    if (second !== this.alarmSecond) this.paintAlarm(second);
+    const pulse = countdownPulse(this.time);
+    // A lub-dub: the ring swells and flares on each whole second, and never fades below readable.
+    this.alarm.scale.setScalar(1 + pulse * 0.12);
+    this.alarm.material.opacity = 0.8 + pulse * 0.2;
+  }
+
+  private paintAlarm(second: number): void {
+    this.alarmSecond = second;
+    const g = this.alarmCanvas.getContext('2d');
+    if (!g) return;
+    const c = 128;
+    g.clearRect(0, 0, 256, 256);
+    // Glow ring around the dial's track (the dial's outer edge sits at 1 / 1.3 of this plane's half-size).
+    const ring = g.createRadialGradient(c, c, 70, c, c, 128);
+    ring.addColorStop(0, 'rgba(255,47,94,0)');
+    ring.addColorStop(0.45, 'rgba(255,47,94,0.95)');
+    ring.addColorStop(0.62, 'rgba(255,47,94,0.6)');
+    ring.addColorStop(1, 'rgba(255,47,94,0)');
+    g.fillStyle = ring;
+    g.fillRect(0, 0, 256, 256);
+    // The seconds left, big and red in the dial's face, over a light disc so the needle stays behind it.
+    g.fillStyle = 'rgba(224,251,255,0.82)';
+    g.beginPath();
+    g.arc(c, c, 46, 0, Math.PI * 2);
+    g.fill();
+    g.font = 'italic 900 78px system-ui, Arial Black, sans-serif';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.lineJoin = 'round';
+    g.lineWidth = 8;
+    g.strokeStyle = '#ffffff';
+    g.strokeText(String(second), c - 2, c + 4);
+    g.fillStyle = '#e8173f';
+    g.fillText(String(second), c - 2, c + 4);
+    this.alarmTexture.needsUpdate = true;
   }
 
   public reset(): void {
@@ -253,6 +335,9 @@ export class FeverBoard {
     this.flash = 0;
     this.popAge = Infinity;
     this.plate.scale.set(1, 1, 1);
+    this.time = Infinity;
+    this.alarmSecond = -1;
+    this.alarm.visible = false;
     if (this.bouncing) this.display.scale.copy(this.baseScale);
     this.bouncing = false;
     this.bounceAge = Infinity;

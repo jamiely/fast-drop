@@ -105,3 +105,26 @@ export const flyProgress = (age: number): number => {
   const t = (age - POINTS_RISE_SECONDS) / POINTS_FLY_SECONDS;
   return t <= 0 ? 0 : t >= 1 ? 1 : t * t;
 };
+
+export const COUNTDOWN_SECONDS = 10;
+
+/** Heartbeat envelope of the last 10 s: lub on each whole second, a softer dub 0.16 s later; 0 outside. */
+export const countdownPulse = (timeRemaining: number): number => {
+  if (!(timeRemaining > 0) || timeRemaining > COUNTDOWN_SECONDS) return 0;
+  const since = Math.ceil(timeRemaining) - timeRemaining;
+  const lub = Math.exp(-since * 9);
+  const dub = since >= 0.16 ? 0.6 * Math.exp(-(since - 0.16) * 9) : 0;
+  return Math.min(1, lub + dub);
+};
+
+/** The whole second (10…1) a step from `previous` to `next` time left crossed, which beats and ticks; else null. */
+export const countdownTick = (
+  previous: number,
+  next: number
+): number | null => {
+  if (!(next < previous)) return null;
+  const second = Math.ceil(next);
+  return second >= 1 && second <= COUNTDOWN_SECONDS && previous > second
+    ? second
+    : null;
+};

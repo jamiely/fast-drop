@@ -23,13 +23,24 @@ export interface JuiceStats {
   /** Smoothed CPU time of `update`, in ms. */
   juiceMs: number;
   /** The score the board's reels show and the one they roll toward. */
-  board?: { shown: number; score: number; maxNdc: number };
+  board?: {
+    shown: number;
+    score: number;
+    maxNdc: number;
+    /** The last-10 s alarm is on the dial. */
+    countdown: boolean;
+  };
 }
 
 export interface JuiceSink {
   emit(event: JuiceEvent, weight: number, worldPos?: Vector3): void;
-  /** `ballsRemaining` drives the ball-counter tube; `score` the board's rolling score. */
-  update(realDt: number, ballsRemaining: number, score?: number): void;
+  /** `ballsRemaining` drives the ball-counter tube; `score` the board's rolling score; `timeRemaining` its countdown. */
+  update(
+    realDt: number,
+    ballsRemaining: number,
+    score?: number,
+    timeRemaining?: number
+  ): void;
   setQuality(tier: QualityTier): void;
   /** Fever-only demo banner and quieter audio. */
   setAttract?(active: boolean): void;
