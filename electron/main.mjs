@@ -9,10 +9,13 @@ const __dirname = path.dirname(__filename);
 const isDev = !!process.env.VITE_DEV_SERVER_URL;
 const isSmokeMode = process.env.FAST_DROP_ELECTRON_SMOKE === '1';
 const startFullscreen = process.argv.includes('--fullscreen');
+// Packaged Fever maps dist-fever to dist; only local runs need a different renderer directory.
+const webDirectory =
+  !app.isPackaged && process.argv.includes('--fever') ? 'dist-fever' : 'dist';
 
 const resolveAppIconPath = () => {
   const candidatePaths = [
-    path.join(__dirname, '..', 'dist', 'favicon.jpg'),
+    path.join(__dirname, '..', webDirectory, 'favicon.jpg'),
     path.join(__dirname, '..', 'public', 'favicon.jpg')
   ];
 
@@ -78,7 +81,7 @@ const createWindow = async () => {
     return;
   }
 
-  await win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
+  await win.loadFile(path.join(__dirname, '..', webDirectory, 'index.html'));
 };
 
 app.whenReady().then(async () => {

@@ -92,11 +92,16 @@ Storybook stories currently included:
 - `npm run build:electron:win` — package Windows desktop artifacts
 - `npm run build:electron:mac` — package macOS desktop artifacts (`dmg` + `zip`)
 - `npm run build:electron:linux` — package Linux desktop artifacts (`AppImage` + `tar.gz`)
+- `npm run electron:start:fever` — build and run the Fever desktop app locally
+- `npm run electron:smoke:fever` — build and smoke-test the Fever renderer in Electron
+- `npm run build:electron:win:fever` — package Fever Windows portable only (no NSIS)
+- `npm run build:electron:mac:fever` — package Fever macOS `dmg` + `zip`
+- `npm run build:electron:linux:fever` — package Fever Linux `AppImage` + `tar.gz`
 - `npm run release:electron:win` — run full quality gate, then package Windows artifacts
 
 ## Fast Drop Fever — juice core
 
-The first build-time edition slice follows [the approved design](docs/JUICY_EDITION.md). Classic remains the default; its build prunes the conditional Fever import (including Fever CSS). Three is emitted as a shared chunk so Fever's dynamic import cannot depend back on the main entry while its top-level startup await is pending. No Electron packaging/release behavior changes in this slice.
+The first build-time edition slice follows [the approved design](docs/JUICY_EDITION.md). Classic remains the default; its build prunes the conditional Fever import (including Fever CSS). Three is emitted as a shared chunk so Fever's dynamic import cannot depend back on the main entry while its top-level startup await is pending. Fever desktop packaging is isolated in `electron-builder.fever.json`: appId `com.fastdrop.fever`, package name `fast-drop-fever`, product name **Fast Drop Fever**, and its own userData profile. `build:electron:web:fever` uses `--mode fever --base ./ --outDir dist-fever`; packaging maps only that renderer to the app's `dist/`, without touching classic's build. Local `electron:start:fever` uses the same shared Electron entry with `--fever` to load `dist-fever/`.
 
 Fever adds bounded camera trauma, simulation-only hit-stop/slow-mo (at least 0.25×, at most two **real seconds under distortion** per round), jar/full-screen flashes, one additive 1,500-quad instanced pool (at most 300 particles per burst), and world-anchored spring popups. All effect animation uses real time rather than slowed simulation time. Explicit debug pause freezes effects too.
 
@@ -155,14 +160,17 @@ Electron desktop workflow behavior:
 - only runs when app/source files change (for example `src/**`, `electron/**`, build/test config, and package manifests), so markdown-only/doc-only changes do not trigger desktop packaging,
 - runs a build matrix on `windows-latest`, `macos-latest`, and `ubuntu-latest`,
 - runs `npm run check` and `npm run build` on each platform,
-- runs `npm run electron:smoke` on Windows and macOS,
+- runs `npm run electron:smoke` and `npm run electron:smoke:fever` on Windows and macOS,
 - builds platform artifacts via:
   - `build:electron:win` (`nsis` + `portable`)
   - `build:electron:mac` (`dmg` + `zip`)
   - `build:electron:linux` (`AppImage` + `tar.gz`)
-- uploads platform artifacts with 14-day retention on every run,
+- builds Fever in the same three jobs with `build:electron:{win,mac,linux}:fever`, writing to `dist_electron_fever/` separately from classic's `dist_electron/`,
+- uploads platform artifacts with 14-day retention on every run; Fever uploads/publishes only `*Fever*` executables/archives, never `latest*.yml`,
 - updates a rolling prerelease tagged `latest` on pushes to `main` with Windows + macOS + Linux assets,
-- uploads diagnostics (`dist_electron/`, `test-results/`, `playwright-report/`) on failures.
+- uploads diagnostics (`dist_electron/`, `dist_electron_fever/`, `test-results/`, `playwright-report/`) on failures.
+
+Fever artifacts are named `Fast.Drop.Fever.<version>.exe` on Windows and `Fast.Drop.Fever.<version>-<arch>.{dmg,zip,AppImage,tar.gz}` elsewhere. Both editions share the rolling `latest` release, but Fever disables update metadata generation (`publish: null`). Classic's package names, builder configuration and `latest*.yml` publish paths are unchanged. The unit test `tests/unit/release-assets.test.ts` (included in `npm run test` / `npm run check`) verifies the cabinet's classic updater regex matches `Fast.Drop.0.1.0.exe` but rejects Fever, while the Fever regex matches its portable executable.
 
 ## Current status
 

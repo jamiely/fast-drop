@@ -16,6 +16,8 @@ on:
       - 'package-lock.json'
       - 'tsconfig*.json'
       - 'vite.config.ts'
+      - '.env.fever'
+      - 'electron-builder.fever.json'
       - '.github/workflows/release-electron.yml'
   push:
     branches: ['main']
@@ -29,6 +31,8 @@ on:
       - 'package-lock.json'
       - 'tsconfig*.json'
       - 'vite.config.ts'
+      - '.env.fever'
+      - 'electron-builder.fever.json'
       - '.github/workflows/release-electron.yml'
 
 jobs:
@@ -90,6 +94,26 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      - name: Fever desktop smoke check
+        if: matrix.runSmoke
+        run: npm run electron:smoke:fever
+
+      - name: Package Fever desktop app
+        run: npm run ${{ matrix.buildScript }}:fever
+
+      - name: Upload Fever workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifactName }}-fever
+          path: |
+            dist_electron_fever/*Fever*.exe
+            dist_electron_fever/*Fever*.dmg
+            dist_electron_fever/*Fever*.zip
+            dist_electron_fever/*Fever*.AppImage
+            dist_electron_fever/*Fever*.tar.gz
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Upload diagnostics on failure
         if: failure()
         uses: actions/upload-artifact@v4
@@ -97,6 +121,7 @@ jobs:
           name: release-electron-diagnostics-${{ matrix.platform }}
           path: |
             dist_electron
+            dist_electron_fever
             test-results
             playwright-report
           if-no-files-found: warn
@@ -126,6 +151,13 @@ jobs:
           name: electron-linux-artifacts
           path: release-assets/linux
 
+      - name: Download Fever artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: electron-*-artifacts-fever
+          path: release-assets/fever
+          merge-multiple: true
+
       - name: Publish rolling latest prerelease
         uses: softprops/action-gh-release@v2
         with:
@@ -145,4 +177,9 @@ jobs:
             release-assets/linux/*.AppImage
             release-assets/linux/*.tar.gz
             release-assets/linux/latest-linux.yml
+            release-assets/fever/*Fever*.exe
+            release-assets/fever/*Fever*.dmg
+            release-assets/fever/*Fever*.zip
+            release-assets/fever/*Fever*.AppImage
+            release-assets/fever/*Fever*.tar.gz
           overwrite_files: true

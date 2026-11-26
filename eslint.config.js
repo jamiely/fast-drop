@@ -8,6 +8,8 @@ export default [
     ignores: [
       'dist',
       'dist-fever',
+      'dist_electron',
+      'dist_electron_fever',
       'coverage',
       'playwright-report',
       'test-results',
