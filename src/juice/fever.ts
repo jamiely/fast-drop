@@ -9,6 +9,7 @@ import {
   HEAT_MACHINERY,
   LedDirector,
   blendMachinery,
+  dropRecoil,
   jarSquash,
   maxPunchDegrees,
   punchEnvelope
@@ -16,6 +17,8 @@ import {
 import { advance, hit, initialJuiceState, miss } from './state';
 import { ParticlePool } from './particles';
 import { FeverSound } from './sound';
+import { heatMusic } from './soundLogic';
+import { DiscoTheme } from './theme';
 import { JUICE_TABLE } from './table';
 import type { JuiceEvent, JuiceSink } from './types';
 import './style.css';
@@ -94,12 +97,17 @@ export const createFeverSink = (
   const outerRingRadius = stage.ledOverlay?.geometry.parameters.radius ?? 3.1;
   const machinery = new Machinery({ ...stage, outerRingRadius }, ballsTotal);
   scene.scene.add(machinery.root);
+  const theme = new DiscoTheme(scene.scene, scene.camera, scene.jars);
   const bloom = scene.renderer
     ? new FeverBloom(scene.renderer, scene.scene, scene.camera)
     : null;
   if (bloom) scene.renderOverride = () => bloom.render();
   let machine = { ...HEAT_MACHINERY.calm };
   let punchAge = Infinity;
+  let dropAge = Infinity;
+  const buttonBase = stage.dropButton.scale.clone();
+  /** World units the camera dips on a drop; the trauma shake peaks near 0.035, so this stays inside the fit. */
+  const DROP_KICK = 0.028;
   // −3° would push the portrait fit's edge points to |NDC| ≈ 1.003; punch as far as keeps them at 0.985, leaving room for the shake.
   const punchDegrees = Math.max(
     FOV_PUNCH_DEGREES,
@@ -173,6 +181,18 @@ export const createFeverSink = (
     });
   };
 
+  const nearestJar = (position: Vector3): number => {
+    let nearest = 0;
+    for (let i = 1; i < scene.jars.length; i += 1) {
+      if (
+        scene.jars[i].position.distanceToSquared(position) <
+        scene.jars[nearest].position.distanceToSquared(position)
+      )
+        nearest = i;
+    }
+    return nearest;
+  };
+
   const emit = (
     event: JuiceEvent,
     weight: number,
@@ -201,17 +221,33 @@ export const createFeverSink = (
     particles.burst(position, tuning.particles, tuning.color);
     director.trigger(event, w);
     if (w >= 4) punchAge = 0;
-    if (event === 'jar-hit' && worldPos) {
-      let nearest = 0;
-      for (let i = 1; i < scene.jars.length; i += 1) {
-        if (
-          scene.jars[i].position.distanceToSquared(worldPos) <
-          scene.jars[nearest].position.distanceToSquared(worldPos)
-        )
-          nearest = i;
+    if (event === 'drop') {
+      dropAge = 0;
+      // Puff from the tube mouth: a ring of slow, short-lived sparks instead of the default upward fountain.
+      const tube = stage.dropTube.position;
+      const mouthY = tube.y - 0.5;
+      for (let i = 0; i < 22; i += 1) {
+        const a = (i / 22) * Math.PI * 2 + Math.random() * 0.3;
+        const speed = 1.4 + Math.random() * 0.9;
+        particles.spawn(
+          tube.x + Math.cos(a) * 0.12,
+          mouthY,
+          tube.z + Math.sin(a) * 0.12,
+          Math.cos(a) * speed,
+          -0.4 - Math.random() * 0.5,
+          Math.sin(a) * speed,
+          i % 2 ? '#ffffff' : tuning.color,
+          { decay: 2.6, gravity: 0.4, drag: 0.01, size: 2.6 }
+        );
       }
+    }
+    if (event === 'rim-bounce' && worldPos)
+      theme.mascot(nearestJar(worldPos), 'near-miss');
+    if (event === 'jar-hit' && worldPos) {
+      const nearest = nearestJar(worldPos);
       jarFlash[nearest] = 2.5;
       jarAge[nearest] = 0;
+      theme.mascot(nearest, 'hit');
       const jar = scene.jars[nearest].position;
       ringShow?.burstAt(Math.atan2(jar.z, jar.x));
     }
@@ -255,7 +291,14 @@ export const createFeverSink = (
       scale = time.update(realDt);
       sound.update(state, scale, realDt);
       const offset = trauma.update(realDt);
-      scene.setCameraOffset(offset.x, offset.y);
+      dropAge += realDt;
+      const recoil = dropRecoil(dropAge);
+      scene.setCameraOffset(offset.x, offset.y - recoil.kick * DROP_KICK);
+      stage.dropButton.scale.set(
+        buttonBase.x * recoil.xz,
+        buttonBase.y * recoil.y,
+        buttonBase.z * recoil.xz
+      );
       particles.update(realDt, scene.camera);
       light = Math.max(0, light - realDt * 1.8);
       flash.style.opacity = String(light * 0.5);
@@ -293,6 +336,7 @@ export const createFeverSink = (
       machine = blendMachinery(machine, state.heat, realDt);
       ringShow?.update(realDt, director.update(realDt, state.heat));
       machinery.update(realDt, state.heat, machine, ballsRemaining);
+      theme.update(realDt, state.heat, heatMusic(state.heat).bpm);
       if (bloom) bloom.strength = machine.bloom;
       punchAge += realDt;
       scene.setFovPunch(punchDegrees * punchEnvelope(punchAge));
@@ -350,8 +394,11 @@ export const createFeverSink = (
       particles.reset();
       director.reset();
       machinery.reset();
+      theme.reset();
       machine = { ...HEAT_MACHINERY.calm };
       punchAge = Infinity;
+      dropAge = Infinity;
+      stage.dropButton.scale.copy(buttonBase);
       scene.setFovPunch(0);
       scene.setCameraOffset(0, 0);
     },
@@ -363,6 +410,7 @@ export const createFeverSink = (
       // Low tier: no bloom, static machinery. Pixel ratio and LEDs follow Game's own tier settings.
       if (bloom) bloom.enabled = tier !== 'low';
       machinery.setAnimated(tier !== 'low');
+      theme.setAnimated(tier !== 'low');
     },
     getStats: () => ({
       bloom: bloom?.enabled ?? false,
@@ -373,6 +421,7 @@ export const createFeverSink = (
       sound.destroy();
       particles.destroy();
       machinery.dispose();
+      theme.dispose();
       ringShow?.dispose();
       bloom?.dispose();
       scene.renderOverride = undefined;
@@ -381,6 +430,7 @@ export const createFeverSink = (
       jarMaterials.forEach((material, i) => {
         material.emissiveIntensity = baseEmissive[i];
       });
+      stage.dropButton.scale.copy(buttonBase);
       scene.setFovPunch(0);
       scene.setCameraOffset(0, 0);
     }

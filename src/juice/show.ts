@@ -217,6 +217,21 @@ export const jarSquash = (age: number): { xz: number; y: number } => {
   return { xz: 1 / Math.sqrt(y), y };
 };
 
+export const DROP_RECOIL_SECONDS = 0.32;
+
+/**
+ * Drop recoil at `age` seconds after a press: the button squashes flat and rebounds past rest (y, xz keep its
+ * volume), and the camera dips down by `kick` (0–1 of the kick distance) and springs back.
+ */
+export const dropRecoil = (
+  age: number
+): { y: number; xz: number; kick: number } => {
+  if (age < 0 || age >= DROP_RECOIL_SECONDS) return { y: 1, xz: 1, kick: 0 };
+  const y = 1 - 0.26 * Math.exp(-age * 14) * Math.cos(age * 30);
+  const kick = age < 0.025 ? age / 0.025 : Math.exp(-(age - 0.025) * 18);
+  return { y, xz: 1 / Math.sqrt(y), kick };
+};
+
 /** `count` evenly spaced points (x, y) around a rounded rectangle centred on the origin, clockwise from top-left. */
 export const roundedRectPoints = (
   width: number,

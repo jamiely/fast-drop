@@ -779,6 +779,7 @@ export class SceneRoot {
     mound: Object3D;
     statusDisplay: Group;
     dropTube: Group;
+    dropButton: Group;
     enclosure: Group;
     /** Unpunched FOV and the NDC margin the portrait fit leaves: punches must stay inside it. */
     baseFov: number;
@@ -792,6 +793,7 @@ export class SceneRoot {
       mound: this.moundMesh,
       statusDisplay: this.statusDisplay.group,
       dropTube: this.dropTube.group,
+      dropButton: this.dropButton.group,
       enclosure: this.enclosure
     };
   }

@@ -17,7 +17,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         // Fever loads during main's top-level await: its Three imports must not point back to main.
-        manualChunks: { three: ['three'] }
+        manualChunks: { three: ['three'], jar: ['./src/entities/Jar.ts'] }
       }
     }
   },
@@ -39,6 +39,7 @@ export default defineConfig({
         'src/juice/bloom.ts',
         'src/juice/ledShow.ts',
         'src/juice/machinery.ts',
+        'src/juice/theme.ts',
         'src/juice/sound.ts',
         'src/testhooks/**',
         '**/*.d.ts',

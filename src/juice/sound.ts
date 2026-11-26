@@ -155,6 +155,26 @@ export class FeverSound {
     this.voice(source, duration, volume, context.currentTime + delay, color);
   }
 
+  /** Band-passed noise whose centre slides from `from` to `to`: air rushing down the tube. */
+  private whoosh(
+    duration: number,
+    volume: number,
+    from: number,
+    to: number,
+    delay = 0
+  ): void {
+    const context = this.context!;
+    const at = context.currentTime + delay;
+    const source = context.createBufferSource();
+    source.buffer = this.noiseBuffer;
+    const color = context.createBiquadFilter();
+    color.type = 'bandpass';
+    color.Q.value = 1.6;
+    color.frequency.setValueAtTime(from, at);
+    color.frequency.exponentialRampToValueAtTime(to, at + duration);
+    this.voice(source, duration, volume, at, color);
+  }
+
   public emit(event: JuiceEvent, state: JuiceState): void {
     this.heat = state.heat;
     if (!this.context || this.context.state !== 'running') {
@@ -175,23 +195,18 @@ export class FeverSound {
         this.noise(0.23, 0.018, 2200);
         this.tone(220, 0.2, 0.018, 'triangle', 0, 80);
         break;
-      case 'drop':
+      case 'drop': {
+        // Four layers: a meaty thunk, a mechanical clack, air down the tube, and the pitch that climbs per ball in flight.
         this.dropPitch += 1;
-        this.tone(
-          100 * 2 ** (Math.min(12, this.dropPitch) / 12),
-          0.14,
-          0.05,
-          'triangle',
-          0,
-          48
-        );
-        this.tone(
-          350 * 2 ** (Math.min(12, this.dropPitch) / 12),
-          0.09,
-          0.022,
-          'sine'
-        );
+        const rise = 2 ** (Math.min(12, this.dropPitch) / 12);
+        this.tone(150, 0.2, 0.055, 'sine', 0, 42);
+        this.tone(100 * rise, 0.14, 0.04, 'triangle', 0, 48);
+        this.noise(0.035, 0.03, 3800);
+        this.tone(1900, 0.03, 0.016, 'square', 0.012, 1200);
+        this.whoosh(0.3, 0.03, 2600, 380, 0.02);
+        this.tone(350 * rise, 0.09, 0.02, 'sine', 0.01);
         break;
+      }
       case 'rim-bounce':
         this.tone(1760, 0.28, 0.035);
         this.tone(2491, 0.16, 0.018);
