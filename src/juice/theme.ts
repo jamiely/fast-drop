@@ -628,6 +628,8 @@ export class DiscoTheme {
       this.faces
     ])
       this.scene.remove(object);
+    this.specks.dispose();
+    this.faces.dispose();
     this.disposables.forEach((item) => item.dispose());
   }
 

@@ -28,6 +28,7 @@ export class FeverBloom {
   public calls = 0;
   private readonly composer: EffectComposer;
   private readonly pass: UnrealBloomPass;
+  private readonly output = new OutputPass();
   private readonly size = new Vector2();
   private pixelRatio = 0;
 
@@ -50,7 +51,7 @@ export class FeverBloom {
     );
     this.composer.addPass(new RenderPass(scene, camera));
     this.composer.addPass(this.pass);
-    this.composer.addPass(new OutputPass());
+    this.composer.addPass(this.output);
     // Several renders per frame: count them all, reset once per frame below.
     renderer.info.autoReset = false;
     this.syncSize();
@@ -74,6 +75,7 @@ export class FeverBloom {
   public dispose(): void {
     this.renderer.info.autoReset = true;
     this.pass.dispose();
+    this.output.dispose();
     this.composer.dispose();
   }
 

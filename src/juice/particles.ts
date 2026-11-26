@@ -158,5 +158,6 @@ export class ParticlePool {
     this.mesh.removeFromParent();
     this.mesh.geometry.dispose();
     this.mesh.material.dispose();
+    this.mesh.dispose();
   }
 }

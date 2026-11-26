@@ -59,7 +59,9 @@ export class Machinery {
   /** Follow the drop tube and the display without joining their groups, which the portrait fit measures. */
   private readonly tubeMount = new Group();
   private readonly displayMount = new Group();
-  private readonly disposables: Array<BufferGeometry | Material> = [];
+  private readonly disposables: Array<
+    BufferGeometry | Material | InstancedMesh
+  > = [];
   private readonly scratch = new Object3D();
   private readonly color = new Color();
   private readonly glow: MeshBasicMaterial;
@@ -397,7 +399,9 @@ export class Machinery {
     this.disposables.forEach((item) => item.dispose());
   }
 
-  private track<T extends BufferGeometry | Material>(item: T): T {
+  private track<T extends BufferGeometry | Material | InstancedMesh>(
+    item: T
+  ): T {
     this.disposables.push(item);
     return item;
   }
@@ -407,7 +411,9 @@ export class Machinery {
     material: Material,
     count: number
   ): InstancedMesh {
-    const mesh = new InstancedMesh(this.track(geometry), material, count);
+    const mesh = this.track(
+      new InstancedMesh(this.track(geometry), material, count)
+    );
     mesh.instanceMatrix.setUsage(DynamicDrawUsage);
     // Instances span the scene; the geometry's own bounds would cull them wrongly.
     mesh.frustumCulled = false;
