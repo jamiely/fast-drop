@@ -8,6 +8,18 @@ test('scripted jar hits build combo into FEVER without losing portrait framing',
   page.on('console', (message) => {
     if (message.type() === 'error') errors.push(message.text());
   });
+  // Observe the real Fever context without adding a production debug surface.
+  await page.addInitScript(() => {
+    const contexts: AudioContext[] = [];
+    Object.assign(window, { feverAudioContexts: contexts });
+    window.AudioContext = new Proxy(window.AudioContext, {
+      construct(target, args) {
+        const context = Reflect.construct(target, args) as AudioContext;
+        contexts.push(context);
+        return context;
+      }
+    });
+  });
   await page.goto('/');
   await expect(page.locator('#app > canvas')).toBeVisible();
   await expect
@@ -17,6 +29,16 @@ test('scripted jar hits build combo into FEVER without losing portrait framing',
       )
     )
     .toBe(true);
+
+  // A non-drop key proves Fever itself unlocks, independently of classic's drop cue.
+  await page.keyboard.press('KeyA');
+  const audioStates = () =>
+    page.evaluate(() =>
+      (
+        window as typeof window & { feverAudioContexts: AudioContext[] }
+      ).feverAudioContexts.map((context) => context.state)
+    );
+  await expect.poll(audioStates).toEqual(['running']);
 
   const result = await page.evaluate(() => {
     const bridge = window.__FAST_DROP_TEST_BRIDGE__!;
@@ -120,4 +142,13 @@ test('scripted jar hits build combo into FEVER without losing portrait framing',
   await expect(page.locator('[data-fever-combo]')).toHaveText('16 COMBO');
   await expect(page.getByRole('meter', { name: 'Fever' })).toBeVisible();
   expect(errors).toEqual([]);
+  console.log(
+    'Fever audio proof:',
+    JSON.stringify({
+      combo: result.state!.combo,
+      heat: result.state!.heat,
+      audioContexts: await audioStates(),
+      consoleErrors: errors
+    })
+  );
 });

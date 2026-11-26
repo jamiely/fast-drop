@@ -102,6 +102,8 @@ Fever adds bounded camera trauma, simulation-only hit-stop/slow-mo (at least 0.2
 
 Consecutive hits earn ×2 at five, ×3 at ten; a miss clears combo and meter. Fifteen hits (or a full meter) start six real seconds of FEVER with ×3 scoring and 1.25× orbit speed. Active Fever survives a miss but never extends on hits. The meter resets at entry, stays empty while Fever is active, and can fill again afterwards; heat cools to calm on expiry until the next hit, without erasing consecutive combo or its earned multiplier. Scoring changes only in Fever; classic still awards exactly ten per jar ball.
 
+Fever sound is entirely procedural in `src/juice/sound.ts`, loaded only with the Fever import. The first key or pointer press unlocks its AudioContext (no autoplay before a gesture). Pentatonic jar chimes climb with combo; misses fizzle, and bonus/milestone/Fever/end-of-round stingers punctuate the pulse/percussion/bass loop. Heat raises tempo and adds layers; FEVER switches the pattern, the eight-second warning adds a heartbeat, and simulation distortion sweeps the master low-pass. Scheduled and playing sources share a hard 24-voice cap, conservative envelopes and a compressed master bus. Reset cancels all voices; destruction closes the context. The classic AudioSystem and its existing cues are unchanged.
+
 Tune event channels in `src/juice/table.ts`. Following the existing test bridge convention, Fever adds `scriptJarHit(jarIndex?, isBonusJar?)`, `getJuiceState()` and `getGameState()`. Scripted hits use the same settlement/scoring/effects path as actual jar entries; they do not simulate a dropped ball. These additional hooks are absent from classic.
 
 ## Desktop window, fullscreen and vertical monitors
@@ -138,7 +140,7 @@ To reduce flakiness in CI, Playwright also runs with `1` worker and `1` retry wh
   - `npm run coverage` (enforces global 90% minimum for statements/branches/functions/lines)
   - `npm run test:e2e`
 - `.gitattributes` enforces LF line endings across platforms to prevent Windows CRLF drift from failing `npm run format:check` in CI.
-- Fever rendering (`src/juice/fever.ts`, `src/juice/particles.ts`) and its type-only sink contract are also excluded. The pure combo/heat/Fever machine, trauma/time core, tuning table and classic no-op remain covered by the 90% gate.
+- Fever rendering (`src/juice/fever.ts`, `src/juice/particles.ts`), the procedural Web Audio graph (`src/juice/sound.ts`) and its type-only sink contract are also excluded. The pure combo/heat/Fever machine, trauma/time core, tuning table, classic no-op and musical scale/heat/voice-limit logic (`src/juice/soundLogic.ts`) remain covered by the 90% gate. A minimal AudioContext test covers unlock, the scheduled voice cap and cleanup; the Fever e2e observes the real context running after the first key press.
 - Playwright serves classic on port 4173 and Fever on 4174. Existing smoke/portrait tests run only against classic; `fever.spec.ts` runs the Fever production build at 1050×1680. The classic server startup also checks bundle isolation.
 - Coverage excludes runtime-heavy orchestration/render/audio UI files (`Game.ts`, `SceneRoot.ts`, `scene/lighting.ts`, `ui/debugMenu.ts`, `systems/AudioSystem.ts`, `systems/OrbitSystem.ts`, `ui/hud.ts`, `entities/StatusDisplay.ts`, `entities/ArcadeShell.ts`, `stories/**`) and pure type-only modules from threshold accounting so the 90% gate targets deterministic unit-testable logic.
 

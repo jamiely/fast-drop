@@ -39,6 +39,7 @@ export default defineConfig({
         'src/juice/bloom.ts',
         'src/juice/ledShow.ts',
         'src/juice/machinery.ts',
+        'src/juice/sound.ts',
         'src/testhooks/**',
         '**/*.d.ts',
         'src/game/types.ts',
