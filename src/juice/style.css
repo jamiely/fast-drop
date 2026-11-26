@@ -131,10 +131,46 @@
 }
 
 .fever-popup--hero {
-  font-size: clamp(35px, 12vw, 140px);
+  font-size: clamp(28px, 10vmin, 120px);
   letter-spacing: -0.06em;
 }
 
+.fever-finale {
+  position: absolute;
+  top: 30%;
+  left: 5%;
+  width: 90%;
+  text-align: center;
+  color: #ffe78a;
+  text-shadow:
+    0 5px 0 #75235c,
+    0 0 32px #ff85de;
+  background: radial-gradient(ellipse, #230f46fa 30%, #230f4600 75%);
+}
+.fever-finale small {
+  display: block;
+  font-weight: 850;
+  font-size: clamp(14px, 2.6vmin, 32px);
+  letter-spacing: 0.15em;
+}
+.fever-rank {
+  display: block;
+  font-size: clamp(32px, 8vmin, 110px);
+  font-weight: 950;
+  font-style: italic;
+  line-height: 1.3;
+}
+.fever-finale[data-wide='false'] .fever-rank {
+  font-size: clamp(70px, 18vmin, 200px);
+  line-height: 1;
+}
+.fever-tally {
+  display: block;
+  font-size: clamp(30px, 9vmin, 110px);
+  line-height: 1.5;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
 .fever-attract {
   position: absolute;
   left: 50%;

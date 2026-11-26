@@ -17,6 +17,7 @@ export type QualityTier = 'balanced' | 'low';
 
 export interface JuiceStats {
   bloom: boolean;
+  particles?: number;
   /** Draw calls of the last rendered frame, post passes included. */
   calls: number;
   /** Smoothed CPU time of `update`, in ms. */
@@ -33,6 +34,8 @@ export interface JuiceSink {
   getStats(): JuiceStats | null;
   timeScale(): number;
   reset(): void;
+  finishRound?(score: number, hits: number): void;
+  skipFinale?(): void;
   getState(): JuiceState | null;
   destroy(): void;
 }

@@ -1,3 +1,4 @@
+import { ODE_TO_JOY } from './finale';
 import type { Heat, JuiceState } from './state';
 import type { JuiceEvent } from './types';
 import { comboFrequency, heatMusic, VoiceLimit } from './soundLogic';
@@ -175,6 +176,32 @@ export class FeverSound {
     this.voice(source, duration, volume, at, color);
   }
 
+  public tick(): void {
+    if (this.context?.state === 'running')
+      this.tone(1400, 0.025, 0.008, 'triangle');
+  }
+
+  private celebration: {
+    at: number;
+    end: number;
+    note: number;
+    beat: number;
+  } | null = null;
+
+  public finale(short = false): void {
+    if (this.context?.state !== 'running') return;
+    this.celebration = {
+      at: this.context.currentTime,
+      end: short ? 4 : ODE_TO_JOY.length,
+      note: 0,
+      beat: 0
+    };
+    this.stopVoices();
+    for (let n = 0; n < 12; n += 1)
+      this.noise(0.07, 0.008 + n * 0.001, 1800, n * 0.055);
+    this.noise(1.2, 0.05, 4500, 0.7);
+  }
+
   public emit(event: JuiceEvent, state: JuiceState): void {
     this.heat = state.heat;
     if (!this.context || this.context.state !== 'running') {
@@ -239,13 +266,8 @@ export class FeverSound {
           this.noise(0.06, 0.012 + i * 0.004, 1200, i * 0.07);
         break;
       case 'round-end':
-        this.stopVoices();
         this.ended = true;
         this.warning = false;
-        for (let i = 0; i < 8; i += 1)
-          this.tone(700 + i * 100, 0.06, 0.03, 'square', i * 0.09);
-        this.noise(0.8, 0.05, 4500, 0.8);
-        this.tone(1046.5, 0.7, 0.03, 'triangle', 0.8);
         break;
     }
   }
@@ -255,6 +277,18 @@ export class FeverSound {
     const context = this.context;
     if (!context || context.state !== 'running') return;
     const now = context.currentTime;
+    const c = this.celebration;
+    if (c && c.note < c.end && now >= c.at + c.beat * 0.26) {
+      const [midi, length] = ODE_TO_JOY[c.note];
+      const frequency = 440 * 2 ** ((midi - 69) / 12);
+      for (const detune of [0.996, 1.004])
+        this.tone(frequency * detune, length * 0.26, 0.012, 'sawtooth');
+      if (c.note % 4 === 0)
+        for (const f of [130.81, 164.81, 196])
+          this.tone(f, 0.7, 0.012, 'triangle');
+      c.note += 1;
+      c.beat += length;
+    }
     this.filter!.frequency.setTargetAtTime(
       timeScale < 0.99 ? 800 : 18000,
       now,
@@ -321,6 +355,7 @@ export class FeverSound {
   }
 
   public reset(): void {
+    this.celebration = null;
     this.stopVoices();
     this.queued = [];
     this.heat = 'calm';

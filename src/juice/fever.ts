@@ -18,7 +18,8 @@ import { advance, hit, initialJuiceState, miss } from './state';
 import { ParticlePool } from './particles';
 import { FeverSound } from './sound';
 import { heatMusic } from './soundLogic';
-import { DiscoTheme } from './theme';
+import { DiscoTheme, screenPoint } from './theme';
+import { canSkipFinale, roundRank, tallyScore, TALLY_SECONDS } from './finale';
 import { JUICE_TABLE } from './table';
 import type { JuiceEvent, JuiceSink } from './types';
 import './style.css';
@@ -56,9 +57,8 @@ export const createFeverSink = (
     </header>
     <div class="fever-flash"></div>
     <div class="fever-attract" hidden>
-      <span>DEMO · FIND YOUR RHYTHM</span>
+      <span>DEMO</span>
       <b>PRESS DROP</b>
-      <small>ONE BUTTON. BUILD THE FEVER.</small>
     </div>`;
   host.append(root);
   const stamp = root.querySelector<HTMLElement>('[data-fever-combo]')!;
@@ -121,6 +121,31 @@ export const createFeverSink = (
   let light = 0;
   let fireworksTimer = 0;
   let ended = false;
+  let finale: HTMLElement | null = null;
+  let finaleAge = Infinity;
+  let finaleScore = 0;
+  let finaleWave = -1;
+  let lastTally = -1;
+  let shortFinale = false;
+  const celebrate = (title: string, score: number, short = false): void => {
+    finale?.remove();
+    finale = document.createElement('section');
+    finale.className = 'fever-finale';
+    finale.innerHTML = `<small>${short ? 'NICE MOVES!' : 'ROUND COMPLETE'}</small><b class="fever-rank"></b><strong class="fever-tally"></strong><small>${short ? '' : 'PRESS DROP'}</small>`;
+    finale.querySelector('b')!.textContent = title;
+    root.append(finale);
+    finale.dataset.wide = String(title.length > 1);
+    popups.splice(0).forEach((p) => p.element.remove());
+    finaleScore = score;
+    finaleAge = 0;
+    finaleWave = -1;
+    lastTally = -1;
+    shortFinale = short;
+    theme.all('cheer');
+    trauma.add(5, 0.025);
+    punchAge = 0;
+    sound.finale(short);
+  };
   const fallback = new Vector3(0, 1.1, 0);
   const projected = new Vector3();
 
@@ -258,12 +283,12 @@ export const createFeverSink = (
       if (state.multiplier > 1) tag = `×${state.multiplier}`;
     }
     if (event === 'combo-milestone') text = `${state.combo} COMBO!`;
-    if (text && (event !== 'miss' || worldPos)) {
+    if (text && event !== 'round-end' && (event !== 'miss' || worldPos)) {
       popup(
         text,
         position,
         tuning.color,
-        event === 'fever-start' || event === 'round-end',
+        event === 'fever-start',
         tag,
         event === 'combo-milestone'
       );
@@ -285,9 +310,89 @@ export const createFeverSink = (
 
   return {
     emit,
+    finishRound(score, hits) {
+      celebrate(roundRank(score, hits, ballsTotal), score);
+    },
+    skipFinale() {
+      if (!shortFinale && canSkipFinale(finaleAge)) finaleAge = TALLY_SECONDS;
+    },
     update(realDt, ballsRemaining) {
       const started = performance.now();
+      const wasFever = state.feverRemaining > 0;
       state = advance(state, realDt);
+      if (wasFever && state.feverRemaining <= 0 && !ended)
+        celebrate('FEVER COMPLETE', 0, true);
+      if (finale) {
+        finaleAge += realDt;
+        const score = tallyScore(finaleScore, finaleAge);
+        finale.querySelector('strong')!.textContent = shortFinale
+          ? ''
+          : score.toLocaleString();
+        if (
+          score !== lastTally &&
+          Math.floor(finaleAge * 12) !== Math.floor((finaleAge - realDt) * 12)
+        )
+          sound.tick();
+        lastTally = score;
+        const wave = Math.floor(finaleAge / 0.6);
+        if (wave !== finaleWave && finaleAge < (shortFinale ? 1.2 : 4.2)) {
+          finaleWave = wave;
+          for (let rocket = 0; rocket < (shortFinale ? 2 : 5); rocket += 1) {
+            const origin = screenPoint(
+              scene.camera,
+              -0.8 + rocket * 0.4,
+              -0.85,
+              8,
+              new Vector3()
+            );
+            const color = ['#ff85de', '#ffe78a', '#72efff'][rocket % 3];
+            for (let n = 0; n < 45; n += 1) {
+              const angle = Math.random() * Math.PI * 2;
+              particles.spawn(
+                origin.x,
+                origin.y,
+                origin.z,
+                Math.cos(angle) * 2.5,
+                4 + Math.random() * 5,
+                Math.sin(angle) * 1.5,
+                color,
+                { decay: 0.7, gravity: 3, size: 3 }
+              );
+            }
+          }
+          for (let rocket = 0; rocket < 3; rocket += 1) {
+            const burst = screenPoint(
+              scene.camera,
+              -0.65 + rocket * 0.65,
+              0.25 + (wave % 2) * 0.3,
+              7,
+              new Vector3()
+            );
+            particles.burst(
+              burst,
+              shortFinale ? 35 : 90,
+              ['#ff85de', '#ffe78a', '#72efff'][rocket]
+            );
+          }
+          const top = screenPoint(scene.camera, 0, 0.8, 7, new Vector3());
+          for (let n = 0; n < (shortFinale ? 50 : 150); n += 1)
+            particles.spawn(
+              top.x + (Math.random() - 0.5) * 7,
+              top.y,
+              top.z,
+              (Math.random() - 0.5) * 2,
+              -Math.random() * 2,
+              0,
+              ['#ff85de', '#ffe78a', '#72efff'][n % 3],
+              { decay: 0.55, gravity: 1, size: 2 }
+            );
+        }
+        if (shortFinale && finaleAge >= 1.5) {
+          finale.remove();
+          finale = null;
+          theme.all('calm');
+        }
+      }
       scale = time.update(realDt);
       sound.update(state, scale, realDt);
       const offset = trauma.update(realDt);
@@ -351,7 +456,7 @@ export const createFeverSink = (
           continue;
         }
         projected.copy(p.position).project(scene.camera);
-        p.element.style.left = `${p.screen ? 50 : (projected.x * 0.5 + 0.5) * 100}%`;
+        p.element.style.left = `${p.screen || p.milestone ? 50 : Math.max(24, Math.min(76, (projected.x * 0.5 + 0.5) * 100))}%`;
         p.element.style.top = `${p.screen ? 40 : (-projected.y * 0.5 + 0.5) * 100}%`;
         const spring = 1 - Math.exp(-p.age * 12) * Math.cos(p.age * 20);
         p.element.style.transform = `translate(-50%, calc(-100% - ${p.age * 75 + p.lift}px)) scale(${spring}) rotate(-5deg)`;
@@ -377,6 +482,9 @@ export const createFeverSink = (
     getState: () => ({ ...state }),
     reset() {
       sound.reset();
+      finale?.remove();
+      finale = null;
+      finaleAge = Infinity;
       state = initialJuiceState();
       trauma = new Trauma();
       time = new TimeDistortion();
@@ -415,7 +523,8 @@ export const createFeverSink = (
     getStats: () => ({
       bloom: bloom?.enabled ?? false,
       calls: bloom?.calls ?? 0,
-      juiceMs
+      juiceMs,
+      particles: particles.live
     }),
     destroy() {
       sound.destroy();

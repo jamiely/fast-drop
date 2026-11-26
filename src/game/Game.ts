@@ -636,6 +636,7 @@ export class Game {
       return;
     }
     if (!this.canRestartRoundFromGameOver()) {
+      if (EDITION === 'fever') this.juice.skipFinale?.();
       return;
     }
 
@@ -655,6 +656,8 @@ export class Game {
       this.attract?.endRound();
       this.juice.setAttract?.(false);
     }
+    if (EDITION === 'fever')
+      this.juice.finishRound?.(this.state.score, this.state.hits);
     this.juice.emit('round-end', this.state.score >= 500 ? 5 : 3);
   }
 

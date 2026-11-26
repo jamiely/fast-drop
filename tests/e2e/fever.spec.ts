@@ -1,5 +1,95 @@
 import { expect, test } from '@playwright/test';
 
+for (const viewport of [
+  { width: 720, height: 1280 },
+  { width: 720, height: 1680 }
+]) {
+  test(`big text fits ${viewport.width}x${viewport.height}`, async ({
+    page
+  }) => {
+    await page.setViewportSize(viewport);
+    await page.goto('/');
+    await expect
+      .poll(() =>
+        page.evaluate(() => !!window.__FAST_DROP_TEST_BRIDGE__?.getJuiceState)
+      )
+      .toBe(true);
+    await page.evaluate(() => {
+      const b = window.__FAST_DROP_TEST_BRIDGE__!;
+      for (let n = 0; n < 15; n++) b.scriptJarHit!();
+      b.stepFrames(12);
+    });
+    const fit = async (selector: string) => {
+      const boxes = await page.locator(selector).evaluateAll((els) =>
+        els.map((el) => {
+          const r = el.getBoundingClientRect();
+          return { x: r.x, y: r.y, width: r.width, height: r.height };
+        })
+      );
+      expect(boxes.length).toBeGreaterThan(0);
+      for (const box of boxes) {
+        expect(box.x).toBeGreaterThanOrEqual(0);
+        expect(box.y).toBeGreaterThanOrEqual(0);
+        expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
+        expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
+      }
+    };
+    await fit('.fever-popup, .fever-edition, .fever-stamp, .fever-meter-label');
+    await page.evaluate(() => {
+      const b = window.__FAST_DROP_TEST_BRIDGE__!;
+      b.setTimeRemaining!(0);
+      b.stepFrames(1);
+    });
+    await expect(page.locator('.fever-finale')).toBeVisible();
+    await fit('.fever-rank, .fever-tally, .fever-finale small');
+  });
+}
+
+test('restart is fresh through Space and attract', async ({ page }) => {
+  await page.goto('/');
+  await expect
+    .poll(() =>
+      page.evaluate(() => !!window.__FAST_DROP_TEST_BRIDGE__?.getJuiceState)
+    )
+    .toBe(true);
+  for (const attract of [false, true]) {
+    await page.evaluate(() => {
+      const b = window.__FAST_DROP_TEST_BRIDGE__!;
+      for (let n = 0; n < 15; n++) b.scriptJarHit!();
+      b.setTimeRemaining!(0);
+      b.stepFrames(1);
+    });
+    if (attract)
+      await page.evaluate(() =>
+        window.__FAST_DROP_TEST_BRIDGE__!.startAttract!()
+      );
+    else await page.waitForTimeout(3100);
+    await page.keyboard.press('Space');
+    const fresh = await page.evaluate(() => {
+      const b = window.__FAST_DROP_TEST_BRIDGE__!;
+      return {
+        game: b.getGameState!(),
+        juice: b.getJuiceState!(),
+        stats: b.getJuiceStats!()
+      };
+    });
+    expect(fresh.game).toMatchObject({ score: 0, ballsRemaining: 50 });
+    expect(fresh.juice).toMatchObject({
+      combo: 0,
+      meter: 0,
+      heat: 'calm',
+      multiplier: 1
+    });
+    expect(fresh.stats?.particles).toBe(0);
+    await expect(page.locator('[data-fever-multiplier]')).toHaveText('×1');
+    await expect(page.locator('.fever-popup, .fever-finale')).toHaveCount(0);
+    await expect(page.locator('[data-fever-combo]')).toHaveAttribute(
+      'data-visible',
+      'false'
+    );
+  }
+});
+
 test('attract plays itself, then the first Space starts a full real round without dropping', async ({
   page
 }) => {
