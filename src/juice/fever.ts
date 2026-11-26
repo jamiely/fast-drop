@@ -141,6 +141,10 @@ export const createFeverSink = (
     finaleWave = -1;
     lastTally = -1;
     shortFinale = short;
+    if (!short) {
+      stage.statusDisplay.visible = false;
+      particles.reset();
+    }
     theme.all('cheer');
     trauma.add(5, 0.025);
     punchAge = 0;
@@ -243,7 +247,8 @@ export const createFeverSink = (
     time.request(tuning.scale, tuning.seconds);
     light = Math.max(light, tuning.light);
     flash.style.background = tuning.color;
-    particles.burst(position, tuning.particles, tuning.color);
+    if (event !== 'round-end')
+      particles.burst(position, tuning.particles, tuning.color);
     director.trigger(event, w);
     if (w >= 4) punchAge = 0;
     if (event === 'drop') {
@@ -334,10 +339,10 @@ export const createFeverSink = (
         )
           sound.tick();
         lastTally = score;
-        const wave = Math.floor(finaleAge / 0.6);
-        if (wave !== finaleWave && finaleAge < (shortFinale ? 1.2 : 4.2)) {
+        const wave = Math.floor(finaleAge / 0.85);
+        if (wave !== finaleWave && finaleAge < (shortFinale ? 0.9 : 3.3)) {
           finaleWave = wave;
-          for (let rocket = 0; rocket < (shortFinale ? 2 : 5); rocket += 1) {
+          for (let rocket = 0; rocket < (shortFinale ? 1 : 3); rocket += 1) {
             const origin = screenPoint(
               scene.camera,
               -0.8 + rocket * 0.4,
@@ -346,7 +351,7 @@ export const createFeverSink = (
               new Vector3()
             );
             const color = ['#ff85de', '#ffe78a', '#72efff'][rocket % 3];
-            for (let n = 0; n < 45; n += 1) {
+            for (let n = 0; n < 14; n += 1) {
               const angle = Math.random() * Math.PI * 2;
               particles.spawn(
                 origin.x,
@@ -356,7 +361,7 @@ export const createFeverSink = (
                 4 + Math.random() * 5,
                 Math.sin(angle) * 1.5,
                 color,
-                { decay: 0.7, gravity: 3, size: 3 }
+                { decay: 1.4, gravity: 3, size: 1.1 }
               );
             }
           }
@@ -370,12 +375,12 @@ export const createFeverSink = (
             );
             particles.burst(
               burst,
-              shortFinale ? 35 : 90,
+              shortFinale ? 12 : 24,
               ['#ff85de', '#ffe78a', '#72efff'][rocket]
             );
           }
           const top = screenPoint(scene.camera, 0, 0.8, 7, new Vector3());
-          for (let n = 0; n < (shortFinale ? 50 : 150); n += 1)
+          for (let n = 0; n < (shortFinale ? 16 : 42); n += 1)
             particles.spawn(
               top.x + (Math.random() - 0.5) * 7,
               top.y,
@@ -384,7 +389,7 @@ export const createFeverSink = (
               -Math.random() * 2,
               0,
               ['#ff85de', '#ffe78a', '#72efff'][n % 3],
-              { decay: 0.55, gravity: 1, size: 2 }
+              { decay: 1.2, gravity: 1, size: 0.8 }
             );
         }
         if (shortFinale && finaleAge >= 1.5) {
@@ -442,7 +447,7 @@ export const createFeverSink = (
       ringShow?.update(realDt, director.update(realDt, state.heat));
       machinery.update(realDt, state.heat, machine, ballsRemaining);
       theme.update(realDt, state.heat, heatMusic(state.heat).bpm);
-      if (bloom) bloom.strength = machine.bloom;
+      if (bloom) bloom.strength = ended ? 0.25 : machine.bloom;
       punchAge += realDt;
       scene.setFovPunch(punchDegrees * punchEnvelope(punchAge));
       for (let i = popups.length - 1; i >= 0; i -= 1) {
@@ -485,6 +490,7 @@ export const createFeverSink = (
       finale?.remove();
       finale = null;
       finaleAge = Infinity;
+      stage.statusDisplay.visible = true;
       state = initialJuiceState();
       trauma = new Trauma();
       time = new TimeDistortion();
@@ -527,6 +533,7 @@ export const createFeverSink = (
       particles: particles.live
     }),
     destroy() {
+      stage.statusDisplay.visible = true;
       sound.destroy();
       particles.destroy();
       machinery.dispose();

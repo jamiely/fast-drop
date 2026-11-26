@@ -6,8 +6,8 @@ const timeoutScale = isGitHubCI ? 2 : 1;
 
 export default defineConfig({
   testDir: './tests/e2e',
-  fullyParallel: !isCI,
-  workers: isCI ? 1 : undefined,
+  fullyParallel: false,
+  workers: 1,
   retries: isCI ? 1 : 0,
   timeout: 15_000 * timeoutScale,
   expect: {
@@ -22,15 +22,14 @@ export default defineConfig({
   },
   webServer: [
     {
-      command:
-        'npm run test:classic-bundle && npm run preview -- --host 127.0.0.1 --port 4173 --strictPort',
+      command: 'npm run preview -- --host 127.0.0.1 --port 4173 --strictPort',
       url: 'http://127.0.0.1:4173',
       reuseExistingServer: !isCI,
       timeout: 45_000 * timeoutScale
     },
     {
       command:
-        'npm run build:fever && npm run preview -- --outDir dist-fever --host 127.0.0.1 --port 4174 --strictPort',
+        'npm run preview -- --outDir dist-fever --host 127.0.0.1 --port 4174 --strictPort',
       url: 'http://127.0.0.1:4174',
       reuseExistingServer: !isCI,
       timeout: 45_000 * timeoutScale

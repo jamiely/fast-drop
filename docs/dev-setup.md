@@ -39,7 +39,8 @@ npm run prepare
 
 ## E2E + coverage notes
 
-- E2E tests build and preview the app automatically through Playwright config.
+- `npm run test:e2e` (and `test:e2e:ui`) builds classic, checks bundle isolation, then builds Fever sequentially before Playwright starts its two preview servers. Use these npm scripts rather than invoking Playwright directly against missing/stale builds. This avoids concurrent TypeScript/Vite builds competing during the server-startup timeout.
+- E2E tests run one at a time locally and in CI; timeout limits are unchanged.
 - Timeout policy is intentionally short by default:
   - Playwright test timeout: `15s`
   - Playwright expect timeout: `3s`
@@ -48,7 +49,7 @@ npm run prepare
   - Playwright web server startup timeout: `45s`
   - Vitest `testTimeout`/`hookTimeout`: `10s`
 - In GitHub Actions (`GITHUB_ACTIONS=true`), these test timeouts are scaled to `2x` automatically.
-- In CI, Playwright runs with `1` worker and `1` retry for stability.
+- Playwright always runs with `1` worker; CI additionally enables `1` retry for stability.
 - Coverage output is written to `coverage/`.
 - Coverage thresholds are enforced in `vite.config.ts`.
 - Threshold accounting intentionally excludes runtime-heavy render/orchestration/audio UI files (`src/game/Game.ts`, `src/scene/SceneRoot.ts`, `src/ui/debugMenu.ts`, `src/systems/AudioSystem.ts`, `src/systems/OrbitSystem.ts`, `src/ui/hud.ts`) and type-only modules, so the global 90% gate applies to deterministic unit-testable code paths.

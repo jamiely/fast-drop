@@ -45,7 +45,7 @@ export class FeverBloom {
     this.pass = new UnrealBloomPass(
       this.size.clone(),
       0.4,
-      0.55,
+      0.15,
       BLOOM_THRESHOLD
     );
     this.composer.addPass(new RenderPass(scene, camera));
@@ -92,5 +92,7 @@ export class FeverBloom {
     this.pixelRatio = ratio;
     this.composer.setPixelRatio(ratio);
     this.composer.setSize(this.size.x, this.size.y);
+    // Only bloom runs at quarter resolution; keep scene geometry and the HUD crisp.
+    this.pass.setSize(this.size.x * ratio * 0.5, this.size.y * ratio * 0.5);
   }
 }

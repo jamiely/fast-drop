@@ -7,6 +7,11 @@
   --fever-color: #72efff;
 }
 
+/* The finale owns the end state; no stale multiplier or duplicate heading. */
+.fever-overlay[data-ended='true'] .fever-hud {
+  visibility: hidden;
+}
+
 .fever-overlay[data-heat='warm'] {
   --fever-color: #ffe78a;
 }

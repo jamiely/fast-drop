@@ -41,6 +41,10 @@ for (const viewport of [
       b.stepFrames(1);
     });
     await expect(page.locator('.fever-finale')).toBeVisible();
+    await expect(page.locator('.fever-hud')).toBeHidden();
+    await expect(page.locator('.fever-finale small').first()).toHaveText(
+      'ROUND COMPLETE'
+    );
     await fit('.fever-rank, .fever-tally, .fever-finale small');
   });
 }
@@ -81,6 +85,7 @@ test('restart is fresh through Space and attract', async ({ page }) => {
       multiplier: 1
     });
     expect(fresh.stats?.particles).toBe(0);
+    await expect(page.locator('.fever-hud')).toBeVisible();
     await expect(page.locator('[data-fever-multiplier]')).toHaveText('×1');
     await expect(page.locator('.fever-popup, .fever-finale')).toHaveCount(0);
     await expect(page.locator('[data-fever-combo]')).toHaveAttribute(

@@ -1,3 +1,4 @@
+import { EDITION } from '../edition';
 import {
   Box3,
   Color,
@@ -575,6 +576,8 @@ export class SceneRoot {
 
     this.statusDisplayRoundEnded = roundEnded;
 
+    // Fever's finale replaces this animated canvas; don't repaint/upload an invisible display.
+    if (EDITION === 'fever' && !this.statusDisplay.group.visible) return;
     this.statusDisplay.updateData({
       timeRemaining,
       timeTotal,

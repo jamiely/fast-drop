@@ -133,7 +133,7 @@ Local defaults:
 
 GitHub Actions automatically uses a `2x` multiplier for these timeouts.
 
-To reduce flakiness in CI, Playwright also runs with `1` worker and `1` retry when `CI=true`.
+Playwright runs tests one at a time (`1` worker) locally and in CI; CI adds `1` retry. The npm e2e scripts build classic and Fever sequentially before starting preview servers, avoiding competing builds without raising timeouts.
 
 ## Git hooks (Husky)
 
@@ -148,7 +148,7 @@ To reduce flakiness in CI, Playwright also runs with `1` worker and `1` retry wh
   - `npm run test:e2e`
 - `.gitattributes` enforces LF line endings across platforms to prevent Windows CRLF drift from failing `npm run format:check` in CI.
 - Fever rendering (`src/juice/fever.ts`, `src/juice/particles.ts`), the procedural Web Audio graph (`src/juice/sound.ts`) and its type-only sink contract are also excluded. The pure combo/heat/Fever machine, trauma/time core, tuning table, classic no-op and musical scale/heat/voice-limit logic (`src/juice/soundLogic.ts`) remain covered by the 90% gate. A minimal AudioContext test covers unlock, the scheduled voice cap and cleanup; the Fever e2e observes the real context running after the first key press.
-- Playwright serves classic on port 4173 and Fever on 4174. Existing smoke/portrait tests run only against classic; `fever.spec.ts` runs the Fever production build at 1050×1680. The classic server startup also checks bundle isolation.
+- Playwright serves classic on port 4173 and Fever on 4174. Existing smoke/portrait tests run only against classic; `fever.spec.ts` runs the Fever production build at 1050×1680. The sequential prebuild also checks classic bundle isolation.
 - Coverage excludes runtime-heavy orchestration/render/audio UI files (`Game.ts`, `SceneRoot.ts`, `scene/lighting.ts`, `ui/debugMenu.ts`, `systems/AudioSystem.ts`, `systems/OrbitSystem.ts`, `ui/hud.ts`, `entities/StatusDisplay.ts`, `entities/ArcadeShell.ts`, `stories/**`) and pure type-only modules from threshold accounting so the 90% gate targets deterministic unit-testable logic.
 
 ## CI/CD
