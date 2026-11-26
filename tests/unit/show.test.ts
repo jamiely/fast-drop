@@ -85,7 +85,7 @@ describe('LED light show', () => {
 });
 
 describe('Machinery by heat', () => {
-  it('escalates every channel from calm to FEVER, with the marquee off until hot', () => {
+  it('escalates every channel from calm to FEVER', () => {
     const tiers = (['calm', 'warm', 'hot', 'fever'] as const).map(
       (heat) => HEAT_MACHINERY[heat]
     );
@@ -95,9 +95,6 @@ describe('Machinery by heat', () => {
       >)
         expect(tiers[i][key]).toBeGreaterThanOrEqual(tiers[i - 1][key]);
     }
-    expect(HEAT_MACHINERY.calm.marquee).toBe(0);
-    expect(HEAT_MACHINERY.warm.marquee).toBe(0);
-    expect(HEAT_MACHINERY.hot.marquee).toBeGreaterThan(0);
     expect(HEAT_MACHINERY.fever.bloom).toBeLessThanOrEqual(1);
   });
 

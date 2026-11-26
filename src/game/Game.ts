@@ -874,7 +874,11 @@ export class Game {
   private step(dt: number, renderFrame = true): void {
     if (EDITION === 'fever' && this.attract?.update(dt))
       this.startAttract(true);
-    this.juice.update(this.paused ? 0 : dt, this.state.ballsRemaining);
+    this.juice.update(
+      this.paused ? 0 : dt,
+      this.state.ballsRemaining,
+      this.state.score
+    );
     const simDt = this.paused
       ? 0
       : dt * this.speedMultiplier * this.juice.timeScale();

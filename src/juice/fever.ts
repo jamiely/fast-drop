@@ -1,6 +1,7 @@
 import { MeshPhysicalMaterial, Vector3 } from 'three';
 import type { SceneRoot } from '../scene/SceneRoot';
 import { FeverBloom } from './bloom';
+import { FeverBoard } from './board';
 import { Trauma, TimeDistortion } from './core';
 import { RingShow } from './ledShow';
 import { Machinery } from './machinery';
@@ -97,6 +98,8 @@ export const createFeverSink = (
   const outerRingRadius = stage.ledOverlay?.geometry.parameters.radius ?? 3.1;
   const machinery = new Machinery({ ...stage, outerRingRadius }, ballsTotal);
   scene.scene.add(machinery.root);
+  const board = new FeverBoard(stage.statusDisplay);
+  scene.scene.add(board.root);
   const theme = new DiscoTheme(scene.scene, scene.camera, scene.jars);
   const bloom = scene.renderer
     ? new FeverBloom(scene.renderer, scene.scene, scene.camera)
@@ -276,6 +279,7 @@ export const createFeverSink = (
     if (event === 'jar-hit' && worldPos) {
       const nearest = nearestJar(worldPos);
       jarFlash[nearest] = 2.5;
+      board.hit(w);
       jarAge[nearest] = 0;
       theme.mascot(nearest, 'hit');
       const jar = scene.jars[nearest].position;
@@ -321,7 +325,7 @@ export const createFeverSink = (
     skipFinale() {
       if (!shortFinale && canSkipFinale(finaleAge)) finaleAge = TALLY_SECONDS;
     },
-    update(realDt, ballsRemaining) {
+    update(realDt, ballsRemaining, score = 0) {
       const started = performance.now();
       const wasFever = state.feverRemaining > 0;
       state = advance(state, realDt);
@@ -446,6 +450,8 @@ export const createFeverSink = (
       machine = blendMachinery(machine, state.heat, realDt);
       ringShow?.update(realDt, director.update(realDt, state.heat));
       machinery.update(realDt, state.heat, machine, ballsRemaining);
+      board.setScore(score);
+      board.update(realDt, state.heat);
       theme.update(realDt, state.heat, heatMusic(state.heat).bpm);
       if (bloom) bloom.strength = ended ? 0.25 : machine.bloom;
       punchAge += realDt;
@@ -508,6 +514,7 @@ export const createFeverSink = (
       particles.reset();
       director.reset();
       machinery.reset();
+      board.reset();
       theme.reset();
       machine = { ...HEAT_MACHINERY.calm };
       punchAge = Infinity;
@@ -524,19 +531,26 @@ export const createFeverSink = (
       // Low tier: no bloom, static machinery. Pixel ratio and LEDs follow Game's own tier settings.
       if (bloom) bloom.enabled = tier !== 'low';
       machinery.setAnimated(tier !== 'low');
+      board.setAnimated(tier !== 'low');
       theme.setAnimated(tier !== 'low');
     },
     getStats: () => ({
       bloom: bloom?.enabled ?? false,
       calls: bloom?.calls ?? 0,
       juiceMs,
-      particles: particles.live
+      particles: particles.live,
+      board: {
+        shown: board.shown,
+        score: board.score,
+        maxNdc: board.maxNdc(scene.camera)
+      }
     }),
     destroy() {
       stage.statusDisplay.visible = true;
       sound.destroy();
       particles.destroy();
       machinery.dispose();
+      board.dispose();
       theme.dispose();
       ringShow?.dispose();
       bloom?.dispose();

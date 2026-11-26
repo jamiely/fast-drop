@@ -119,8 +119,6 @@ export interface HeatMachinery {
   stroke: number;
   /** Beacon turns per second. */
   beacon: number;
-  /** Marquee around the status display: 0 off, 1 full. */
-  marquee: number;
 }
 
 export const HEAT_MACHINERY: Record<Heat, HeatMachinery> = {
@@ -129,32 +127,28 @@ export const HEAT_MACHINERY: Record<Heat, HeatMachinery> = {
     spin: 0.15,
     pump: 0.5,
     stroke: 0.04,
-    beacon: 0.25,
-    marquee: 0
+    beacon: 0.25
   },
   warm: {
     bloom: 0.5,
     spin: 0.5,
     pump: 1.1,
     stroke: 0.08,
-    beacon: 0.6,
-    marquee: 0
+    beacon: 0.6
   },
   hot: {
     bloom: 0.7,
     spin: 1.1,
     pump: 1.8,
     stroke: 0.13,
-    beacon: 1.1,
-    marquee: 0.7
+    beacon: 1.1
   },
   fever: {
     bloom: 0.95,
     spin: 2.4,
     pump: 3,
     stroke: 0.18,
-    beacon: 2,
-    marquee: 1
+    beacon: 2
   }
 };
 

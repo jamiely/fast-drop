@@ -35,6 +35,12 @@ for (const viewport of [
       }
     };
     await fit('.fever-popup, .fever-edition, .fever-stamp, .fever-meter-label');
+    // The board's score plate and marquee are 3D, so they are checked in NDC.
+    const board = await page.evaluate(
+      () => window.__FAST_DROP_TEST_BRIDGE__!.getJuiceStats!()!.board!
+    );
+    expect(board.score).toBeGreaterThan(0);
+    expect(board.maxNdc).toBeLessThan(1);
     await page.evaluate(() => {
       const b = window.__FAST_DROP_TEST_BRIDGE__!;
       b.setTimeRemaining!(0);
@@ -85,6 +91,8 @@ test('restart is fresh through Space and attract', async ({ page }) => {
       multiplier: 1
     });
     expect(fresh.stats?.particles).toBe(0);
+    // The board's reels start again from zero, not from the last round's score.
+    expect(fresh.stats?.board).toMatchObject({ shown: 0, score: 0 });
     await expect(page.locator('.fever-hud')).toBeVisible();
     await expect(page.locator('[data-fever-multiplier]')).toHaveText('×1');
     await expect(page.locator('.fever-popup, .fever-finale')).toHaveCount(0);
@@ -248,6 +256,9 @@ test('scripted jar hits build combo into FEVER without losing portrait framing',
       maxNdc = Math.max(maxNdc, bridge.getFraming!().maxNdc);
     }
     const feverStats = bridge.getJuiceStats!();
+    // The reels have rolled all the way to the score, bonus hit included.
+    bridge.stepFrames(30);
+    const board = bridge.getJuiceStats!()!.board;
     bridge.setQualityTier!('low');
     bridge.stepFrames(1);
     const lowStats = bridge.getJuiceStats!();
@@ -262,6 +273,8 @@ test('scripted jar hits build combo into FEVER without losing portrait framing',
       points: tag?.firstChild?.textContent,
       tag: tag?.querySelector('.fever-popup__tag')?.textContent,
       feverStats,
+      board,
+      score: bridge.getGameState!().score,
       lowStats,
       balancedStats: bridge.getJuiceStats!(),
       layout: bridge.getFraming!().layout
@@ -276,6 +289,12 @@ test('scripted jar hits build combo into FEVER without losing portrait framing',
   });
   expect(result.state!.feverRemaining).toBeGreaterThan(0);
   expect(result.game.score).toBe(320);
+  expect(result.board).toMatchObject({
+    shown: result.score,
+    score: result.score
+  });
+  expect(result.board!.maxNdc).toBeLessThan(1);
+  expect(result.score).toBe(350);
   expect(result.game.hits).toBe(15);
   expect(result.milestoneSeparated).toBe(true);
   // Fast hits keep at most four score callouts, and the newest milestone replaced the older ones.
