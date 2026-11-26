@@ -65,7 +65,8 @@ Hit-stop and slow-mo never stack beyond 0.25× and are capped at 2 s per round, 
 ### Escalation
 
 - **Combo** counts consecutive jar hits, and a miss resets it. Its multiplier is ×1 at 0–4 hits, ×2 at 5–9 and
-  ×3 at 10+. The combo shows as a rotating stamp above the status display.
+  ×3 at 10+. The combo and multiplier show as a sticker on the status display's corner that grows, shakes and
+  recolours per tier, and turns to glitter foil in FEVER; the top HUD keeps only the Fever meter.
 - **Heat tiers** follow the combo and the time left, and each tier adds a layer:
   - **Calm:** cyan LEDs and a slow chase.
   - **Warm (×5):** faster chases, sparks off the jar rims, and a percussion layer.
@@ -85,7 +86,10 @@ Hit-stop and slow-mo never stack beyond 0.25× and are capped at 2 s per round, 
   to pass the portrait `getFraming` check, so punches stay within the safety margin it already leaves.
 - **Jar celebrations:** a jar that gets a hit squashes and stretches, its lid LEDs chase, and its balls hop.
 - **Light shows:** the existing `outerRingLed` gains named patterns: chase, sparkle, wipe, strobe, rainbow and
-  heartbeat. The status display gets a marquee mode.
+  heartbeat. The status display becomes the score board (`src/juice/board.ts`): a chasing bulb marquee that
+  speeds up with heat, rolling score reels that "+N" callouts fly into, a squash on every hit, a red heartbeat
+  over the dial in the last 10 s with a matching tick, balls tumbling out of the counter, and cracks, steam and
+  sparks at hot and FEVER.
 - **Extra moving parts** are purely visual, so physics and fairness don't change:
   - spinning pinwheels on the dome;
   - a rotating beacon on the drop tube;
