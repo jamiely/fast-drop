@@ -113,7 +113,11 @@ export class SceneRoot {
   public readonly jars: Mesh[];
   public onRimBounce?: (position: Vector3) => void;
   public onMiss?: (nearMissPosition?: Vector3) => void;
+  /** Replaces the plain render (Fever's bloom composer). */
+  public renderOverride?: () => void;
   private readonly cameraOffset = new Vector3();
+  private fovPunch = 0;
+  private readonly baseFov: number;
   private readonly petalGroup: Group;
   private readonly petals: Mesh[];
   private readonly bridgeGroup: Group;
@@ -201,6 +205,7 @@ export class SceneRoot {
 
     const aspect = host.clientWidth / host.clientHeight;
     this.camera = createCamera(aspect);
+    this.baseFov = this.camera.fov;
     this.applyViewportCameraFill();
 
     this.renderPixelRatioCap = Math.max(
@@ -759,7 +764,43 @@ export class SceneRoot {
     this.camera.updateMatrixWorld();
   }
 
+  /** Narrows (negative) the FOV on top of the fitted camera, like the shake offset; the fit always uses the base. */
+  public setFovPunch(degrees: number): void {
+    if (degrees === this.fovPunch) return;
+    this.fovPunch = degrees;
+    this.camera.fov = this.baseFov + degrees;
+    this.camera.updateProjectionMatrix();
+  }
+
+  /** Fever hangs its light show and machinery off these; classic never calls it. */
+  public getStage(): {
+    ledOverlay: Mesh<TorusGeometry, ShaderMaterial> | null;
+    domeReflection: ShaderMaterial | null;
+    mound: Object3D;
+    statusDisplay: Group;
+    dropTube: Group;
+    enclosure: Group;
+    /** Unpunched FOV and the NDC margin the portrait fit leaves: punches must stay inside it. */
+    baseFov: number;
+    fitMargin: number;
+  } {
+    return {
+      baseFov: this.baseFov,
+      fitMargin: PORTRAIT_CAMERA.margin,
+      ledOverlay: this.outerRingLedOverlayMesh,
+      domeReflection: this.centerDomeReflectionMaterial,
+      mound: this.moundMesh,
+      statusDisplay: this.statusDisplay.group,
+      dropTube: this.dropTube.group,
+      enclosure: this.enclosure
+    };
+  }
+
   public render(): void {
+    if (this.renderOverride) {
+      this.renderOverride();
+      return;
+    }
     this.renderer?.render(this.scene, this.camera);
   }
 
@@ -789,6 +830,11 @@ export class SceneRoot {
    */
   private applyLayoutCamera(): void {
     this.cameraOffset.set(0, 0, 0);
+    if (this.fovPunch !== 0) {
+      this.fovPunch = 0;
+      this.camera.fov = this.baseFov;
+      this.camera.updateProjectionMatrix();
+    }
     if (this.viewLayout === 'landscape') {
       applyCameraTuning(this.camera, this.cameraTuning);
       return;

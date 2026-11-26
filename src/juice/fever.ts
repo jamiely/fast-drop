@@ -1,6 +1,18 @@
 import { MeshPhysicalMaterial, Vector3 } from 'three';
 import type { SceneRoot } from '../scene/SceneRoot';
+import { FeverBloom } from './bloom';
 import { Trauma, TimeDistortion } from './core';
+import { RingShow } from './ledShow';
+import { Machinery } from './machinery';
+import {
+  FOV_PUNCH_DEGREES,
+  HEAT_MACHINERY,
+  LedDirector,
+  blendMachinery,
+  jarSquash,
+  maxPunchDegrees,
+  punchEnvelope
+} from './show';
 import { advance, hit, initialJuiceState, miss } from './state';
 import { ParticlePool } from './particles';
 import { JUICE_TABLE } from './table';
@@ -17,7 +29,8 @@ interface Popup {
 
 export const createFeverSink = (
   host: HTMLElement,
-  scene: SceneRoot
+  scene: SceneRoot,
+  ballsTotal: number
 ): JuiceSink => {
   const root = document.createElement('div');
   root.className = 'fever-overlay';
@@ -48,6 +61,35 @@ export const createFeverSink = (
     (material) => material.emissiveIntensity
   );
   const jarFlash = jarMaterials.map(() => 0);
+  const jarAge = jarMaterials.map(() => Infinity);
+  // Jars rest on their base at half their height; the squash keeps the base on the petal.
+  const jarBase = scene.jars.map((jar) => ({
+    scale: jar.scale.clone(),
+    y: jar.position.y
+  }));
+  const restoreJars = (): void =>
+    scene.jars.forEach((jar, i) => {
+      jar.scale.copy(jarBase[i].scale);
+      jar.position.y = jarBase[i].y;
+    });
+  const stage = scene.getStage();
+  const ringShow = stage.ledOverlay ? new RingShow(stage.ledOverlay) : null;
+  const director = new LedDirector();
+  const outerRingRadius = stage.ledOverlay?.geometry.parameters.radius ?? 3.1;
+  const machinery = new Machinery({ ...stage, outerRingRadius }, ballsTotal);
+  scene.scene.add(machinery.root);
+  const bloom = scene.renderer
+    ? new FeverBloom(scene.renderer, scene.scene, scene.camera)
+    : null;
+  if (bloom) scene.renderOverride = () => bloom.render();
+  let machine = { ...HEAT_MACHINERY.calm };
+  let punchAge = Infinity;
+  // −3° would push the portrait fit's edge points to |NDC| ≈ 1.003; punch as far as keeps them at 0.985, leaving room for the shake.
+  const punchDegrees = Math.max(
+    FOV_PUNCH_DEGREES,
+    maxPunchDegrees(stage.baseFov, stage.fitMargin, 0.985)
+  );
+  let juiceMs = 0;
   let state = initialJuiceState();
   let trauma = new Trauma();
   let time = new TimeDistortion();
@@ -62,7 +104,8 @@ export const createFeverSink = (
     text: string,
     position: Vector3,
     color: string,
-    screen: boolean
+    screen: boolean,
+    tag = ''
   ): void => {
     // Bounded DOM, even under a scripted burst of hits.
     if (popups.length >= 24) popups.shift()!.element.remove();
@@ -70,6 +113,14 @@ export const createFeverSink = (
     element.className = `fever-popup${screen ? ' fever-popup--hero' : ''}`;
     element.textContent = text;
     element.style.color = color;
+    if (tag) {
+      // The multiplier that produced these points, as a badge: "+30" is what was awarded, not 30 × 3.
+      const badge = document.createElement('small');
+      badge.className = 'fever-popup__tag';
+      badge.textContent = tag;
+      badge.style.background = color;
+      element.append(badge);
+    }
     root.append(element);
     const lane = popups.filter(
       (p) =>
@@ -109,6 +160,8 @@ export const createFeverSink = (
     light = Math.max(light, tuning.light);
     flash.style.background = tuning.color;
     particles.burst(position, tuning.particles, tuning.color);
+    director.trigger(event, w);
+    if (w >= 4) punchAge = 0;
     if (event === 'jar-hit' && worldPos) {
       let nearest = 0;
       for (let i = 1; i < scene.jars.length; i += 1) {
@@ -119,10 +172,15 @@ export const createFeverSink = (
           nearest = i;
       }
       jarFlash[nearest] = 2.5;
+      jarAge[nearest] = 0;
+      const jar = scene.jars[nearest].position;
+      ringShow?.burstAt(Math.atan2(jar.z, jar.x));
     }
     let text = tuning.text;
+    let tag = '';
     if (event === 'jar-hit') {
-      text = `+${10 * state.multiplier}${state.multiplier > 1 ? ` ×${state.multiplier}` : ''}`;
+      text = `+${10 * state.multiplier}`;
+      if (state.multiplier > 1) tag = `×${state.multiplier}`;
     }
     if (event === 'combo-milestone') text = `${state.combo} COMBO!`;
     if (text && (event !== 'miss' || worldPos)) {
@@ -130,7 +188,8 @@ export const createFeverSink = (
         text,
         position,
         tuning.color,
-        event === 'fever-start' || event === 'round-end'
+        event === 'fever-start' || event === 'round-end',
+        tag
       );
     }
     if (event === 'jar-hit' && state.combo % 5 === 0)
@@ -150,7 +209,8 @@ export const createFeverSink = (
 
   return {
     emit,
-    update(realDt) {
+    update(realDt, ballsRemaining) {
+      const started = performance.now();
       state = advance(state, realDt);
       scale = time.update(realDt);
       const offset = trauma.update(realDt);
@@ -175,7 +235,26 @@ export const createFeverSink = (
       for (let i = 0; i < jarFlash.length; i += 1) {
         jarFlash[i] = Math.max(0, jarFlash[i] - realDt * 6);
         jarMaterials[i].emissiveIntensity = baseEmissive[i] + jarFlash[i];
+        // Squash and stretch about the jar's base: SceneRoot keeps the jar centred at half its height.
+        jarAge[i] += realDt;
+        const squash = jarSquash(jarAge[i]);
+        const jar = scene.jars[i];
+        const base = jarBase[i];
+        if (squash.y !== 1 || jar.scale.y !== base.scale.y) {
+          jar.scale.set(
+            base.scale.x * squash.xz,
+            base.scale.y * squash.y,
+            base.scale.z * squash.xz
+          );
+          jar.position.y = base.y * squash.y;
+        }
       }
+      machine = blendMachinery(machine, state.heat, realDt);
+      ringShow?.update(realDt, director.update(realDt, state.heat));
+      machinery.update(realDt, state.heat, machine, ballsRemaining);
+      if (bloom) bloom.strength = machine.bloom;
+      punchAge += realDt;
+      scene.setFovPunch(punchDegrees * punchEnvelope(punchAge));
       for (let i = popups.length - 1; i >= 0; i -= 1) {
         const p = popups[i];
         p.age += realDt;
@@ -203,6 +282,7 @@ export const createFeverSink = (
           );
         }
       }
+      juiceMs = juiceMs * 0.95 + (performance.now() - started) * 0.05;
     },
     timeScale: () => scale,
     getState: () => ({ ...state }),
@@ -215,19 +295,42 @@ export const createFeverSink = (
       ended = false;
       fireworksTimer = 0;
       jarFlash.fill(0);
+      jarAge.fill(Infinity);
+      restoreJars();
       jarMaterials.forEach((material, i) => {
         material.emissiveIntensity = baseEmissive[i];
       });
       popups.splice(0).forEach((p) => p.element.remove());
       particles.reset();
+      director.reset();
+      machinery.reset();
+      machine = { ...HEAT_MACHINERY.calm };
+      punchAge = Infinity;
+      scene.setFovPunch(0);
       scene.setCameraOffset(0, 0);
     },
+    setQuality(tier) {
+      // Low tier: no bloom, static machinery. Pixel ratio and LEDs follow Game's own tier settings.
+      if (bloom) bloom.enabled = tier !== 'low';
+      machinery.setAnimated(tier !== 'low');
+    },
+    getStats: () => ({
+      bloom: bloom?.enabled ?? false,
+      calls: bloom?.calls ?? 0,
+      juiceMs
+    }),
     destroy() {
       particles.destroy();
+      machinery.dispose();
+      ringShow?.dispose();
+      bloom?.dispose();
+      scene.renderOverride = undefined;
       root.remove();
+      restoreJars();
       jarMaterials.forEach((material, i) => {
         material.emissiveIntensity = baseEmissive[i];
       });
+      scene.setFovPunch(0);
       scene.setCameraOffset(0, 0);
     }
   };

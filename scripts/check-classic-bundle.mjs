@@ -18,7 +18,11 @@ for (const file of files) {
     !/fever-overlay|data-fever-combo/.test(source),
     `Fever UI leaked into classic: ${file}`
   );
+  assert(
+    !/luminosityThreshold|UnrealBloomPass/.test(source),
+    `Bloom composer leaked into classic: ${file}`
+  );
 }
 console.log(
-  `PASS: classic bundle has no juice marker or Fever UI (${files.length} assets checked)`
+  `PASS: classic bundle has no juice marker, Fever UI or bloom composer (${files.length} assets checked)`
 );

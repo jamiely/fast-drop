@@ -115,6 +115,21 @@
   will-change: transform, opacity;
 }
 
+.fever-popup__tag {
+  display: inline-block;
+  margin-left: 0.22em;
+  padding: 0.16em 0.36em 0.12em;
+  border-radius: 0.3em;
+  vertical-align: 0.95em;
+  font-size: 0.38em;
+  font-style: normal;
+  letter-spacing: 0.02em;
+  color: #1a0b33;
+  -webkit-text-stroke: 0;
+  text-shadow: none;
+  box-shadow: 0 3px 0 #321542;
+}
+
 .fever-popup--hero {
   font-size: clamp(35px, 12vw, 140px);
   letter-spacing: -0.06em;

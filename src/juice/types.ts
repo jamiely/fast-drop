@@ -13,9 +13,22 @@ export type JuiceEvent =
   | 'last-ball'
   | 'round-end';
 
+export type QualityTier = 'balanced' | 'low';
+
+export interface JuiceStats {
+  bloom: boolean;
+  /** Draw calls of the last rendered frame, post passes included. */
+  calls: number;
+  /** Smoothed CPU time of `update`, in ms. */
+  juiceMs: number;
+}
+
 export interface JuiceSink {
   emit(event: JuiceEvent, weight: number, worldPos?: Vector3): void;
-  update(realDt: number): void;
+  /** `ballsRemaining` drives the ball-counter tube. */
+  update(realDt: number, ballsRemaining: number): void;
+  setQuality(tier: QualityTier): void;
+  getStats(): JuiceStats | null;
   timeScale(): number;
   reset(): void;
   getState(): JuiceState | null;

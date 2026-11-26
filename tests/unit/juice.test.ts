@@ -152,9 +152,11 @@ it('keeps every event in the single bounded tuning table', () => {
 it('binds a fully inert classic sink by default', () => {
   expect(EDITION).toBe('classic');
   silentJuice.emit('jar-hit', 5);
-  silentJuice.update(1);
+  silentJuice.update(1, 50);
+  silentJuice.setQuality('low');
   silentJuice.reset();
   silentJuice.destroy();
   expect(silentJuice.timeScale()).toBe(1);
   expect(silentJuice.getState()).toBeNull();
+  expect(silentJuice.getStats()).toBeNull();
 });

@@ -150,7 +150,12 @@ export class Game {
 
     if (EDITION === 'fever') {
       const { createFeverSink } = await import('../juice/fever');
-      this.juice = createFeverSink(this.host, this.sceneRoot);
+      this.juice = createFeverSink(
+        this.host,
+        this.sceneRoot,
+        this.runtimeConfig.ballsTotal
+      );
+      this.juice.setQuality(this.performanceQualityTier);
       this.sceneRoot.onRimBounce = (position) =>
         this.juice.emit('rim-bounce', 2, position);
       this.sceneRoot.onMiss = (position) =>
@@ -253,6 +258,9 @@ export class Game {
       ...(EDITION === 'fever'
         ? {
             getJuiceState: () => this.juice.getState(),
+            getJuiceStats: () => this.juice.getStats(),
+            setQualityTier: (tier: PerformanceQualityTier) =>
+              this.applyPerformanceQualityTier(tier),
             getGameState: () => ({ ...this.state }),
             scriptJarHit: (jarIndex = 0, isBonusJar = false) => {
               if (!this.sceneRoot.jars[jarIndex]) return;
@@ -294,6 +302,7 @@ export class Game {
 
   private applyPerformanceQualityTier(tier: PerformanceQualityTier): void {
     this.performanceQualityTier = tier;
+    this.juice.setQuality(tier);
 
     if (tier === 'low') {
       this.sceneRoot.setRenderPixelRatioCap(1);
@@ -804,7 +813,7 @@ export class Game {
   }
 
   private step(dt: number, renderFrame = true): void {
-    this.juice.update(this.paused ? 0 : dt);
+    this.juice.update(this.paused ? 0 : dt, this.state.ballsRemaining);
     const simDt = this.paused
       ? 0
       : dt * this.speedMultiplier * this.juice.timeScale();
