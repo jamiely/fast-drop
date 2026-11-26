@@ -106,7 +106,8 @@ test('restart is fresh through Space and attract', async ({ page }) => {
     expect(fresh.stats?.board).toMatchObject({
       shown: 0,
       score: 0,
-      countdown: false
+      countdown: false,
+      cracks: 0
     });
     await expect(page.locator('.fever-hud')).toBeVisible();
     await expect(page.locator('[data-fever-multiplier]')).toHaveText('×1');
@@ -311,6 +312,8 @@ test('scripted jar hits build combo into FEVER without losing portrait framing',
     score: result.score
   });
   expect(result.board!.maxNdc).toBeLessThan(1);
+  // FEVER cracks the board through.
+  expect(result.board!.cracks).toBe(2);
   expect(result.score).toBe(350);
   expect(result.flying).toBe(320);
   expect(result.game.hits).toBe(15);

@@ -29,6 +29,8 @@ export interface JuiceStats {
     maxNdc: number;
     /** The last-10 s alarm is on the dial. */
     countdown: boolean;
+    /** 0 intact, 1 cracked (hot), 2 cracked through (FEVER). */
+    cracks: number;
   };
 }
 

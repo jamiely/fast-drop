@@ -149,6 +149,35 @@ export const tumbleScale = (age: number): number =>
     : Math.min(1, age / 0.06) *
       Math.min(1, ((TUMBLE_SECONDS - age) / TUMBLE_SECONDS) * 3);
 
+export interface BoardDamage {
+  /** 0 intact, 1 corner cracks (hot), 2 cracked through (FEVER). */
+  cracks: 0 | 1 | 2;
+  /** Steam puffs and sparks per second. */
+  steam: number;
+  sparks: number;
+}
+
+const DAMAGE: Record<Heat, BoardDamage> = {
+  calm: { cracks: 0, steam: 0, sparks: 0 },
+  warm: { cracks: 0, steam: 0, sparks: 0 },
+  hot: { cracks: 1, steam: 6, sparks: 10 },
+  fever: { cracks: 2, steam: 14, sparks: 26 }
+};
+
+/** The board's damage by heat: intact until hot, cracked and steaming at hot, cracked through and sparking in FEVER. */
+export const boardDamage = (heat: Heat): BoardDamage => DAMAGE[heat];
+
+/** How many of a `rate`-per-second effect to emit this frame, carrying the fraction in `carry` (returns the new carry). */
+export const emitCount = (
+  rate: number,
+  dt: number,
+  carry: number
+): { count: number; carry: number } => {
+  const total = carry + Math.max(0, rate) * Math.max(0, dt);
+  const count = Math.floor(total);
+  return { count, carry: total - count };
+};
+
 export const COUNTDOWN_SECONDS = 10;
 
 /** Heartbeat envelope of the last 10 s: lub on each whole second, a softer dub 0.16 s later; 0 outside. */

@@ -3,7 +3,9 @@ import type { SceneRoot } from '../scene/SceneRoot';
 import { FeverBloom } from './bloom';
 import { FeverBoard } from './board';
 import {
+  boardDamage,
   comboLook,
+  emitCount,
   countdownTick,
   flyProgress,
   POINTS_RISE_SECONDS
@@ -170,6 +172,8 @@ export const createFeverSink = (
   const corner = new Vector3();
   let lastCombo = 0;
   let lastTime = Infinity;
+  let sparkCarry = 0;
+  const damageAt = new Vector3();
   /** Overlay size, kept by a ResizeObserver: reading it per frame would force a layout after the style writes. */
   let viewWidth = root.clientWidth || 1050;
   let viewHeight = root.clientHeight || 1680;
@@ -510,6 +514,23 @@ export const createFeverSink = (
       const second = ended ? null : countdownTick(lastTime, timeRemaining);
       if (second !== null) sound.countdown(second);
       lastTime = timeRemaining;
+      // Hot and FEVER: sparks spit from the board's cracks (the board puffs its own steam).
+      const damage = boardDamage(ended ? 'calm' : state.heat);
+      const sparks = emitCount(damage.sparks, realDt, sparkCarry);
+      sparkCarry = sparks.carry;
+      for (let n = 0; n < sparks.count; n += 1) {
+        if (!board.damagePoint(damageAt)) break;
+        particles.spawn(
+          damageAt.x,
+          damageAt.y,
+          damageAt.z,
+          (Math.random() - 0.5) * 2.4,
+          Math.random() * 1.8,
+          0.4 + Math.random() * 0.8,
+          state.heat === 'fever' ? '#ffe78a' : '#ffb547',
+          { decay: 2.2, gravity: 5, size: 0.9 }
+        );
+      }
       theme.update(realDt, state.heat, heatMusic(state.heat).bpm);
       if (bloom) bloom.strength = ended ? 0.25 : machine.bloom;
       punchAge += realDt;
@@ -636,7 +657,8 @@ export const createFeverSink = (
         shown: board.shown,
         score: board.score,
         maxNdc: board.maxNdc(scene.camera),
-        countdown: board.countdown
+        countdown: board.countdown,
+        cracks: board.cracked
       }
     }),
     destroy() {

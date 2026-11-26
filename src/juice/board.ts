@@ -20,6 +20,8 @@ import {
 import {
   approachScore,
   boardBounce,
+  boardDamage,
+  emitCount,
   COUNTDOWN_SECONDS,
   countdownPulse,
   MARQUEE_CHASE,
@@ -53,6 +55,60 @@ const HOLE_X = (0.75 - 0.5) * 2.45;
 const HOLE_Y = (0.5 - (512 * 0.3 + 170 + 124) / 512) * 1.18;
 const LIP_Y = -HOUSING_HEIGHT / 2 + 0.02;
 const TUMBLERS = 12;
+const PUFFS = 16;
+const PUFF_SECONDS = 1.1;
+const CRACK_W = 1024;
+const CRACK_H = Math.round((CRACK_W * HOUSING_HEIGHT) / HOUSING_WIDTH);
+
+/** Seeded, so the board always breaks the same way. */
+const seeded = (seed: number) => () => {
+  seed = (seed * 16807) % 2147483647;
+  return (seed - 1) / 2147483646;
+};
+
+/**
+ * Crack polylines in board units, from the housing's corners and bottom edge. Level 1 has two corners; level 2
+ * all four and the bottom bezel. They start in the bezel and stay short, off the dial, the counter and labels.
+ */
+const crackPaths = (level: 1 | 2): Array<Array<[number, number]>> => {
+  const random = seeded(level === 1 ? 7 : 19);
+  const hw = HOUSING_WIDTH / 2;
+  const hh = HOUSING_HEIGHT / 2;
+  // Hot cracks the two corners the combo sticker leaves free; FEVER adds the rest and the bottom bezel.
+  const origins: Array<[number, number, number]> = [
+    [hw - 0.04, hh - 0.06, -2.5],
+    [-hw + 0.04, -hh + 0.06, 0.6]
+  ];
+  if (level === 2)
+    origins.push(
+      [hw - 0.04, -hh + 0.06, 2.5],
+      [-hw + 0.04, hh - 0.06, -0.6],
+      [-0.15, -hh + 0.02, 1.4]
+    );
+  const paths: Array<Array<[number, number]>> = [];
+  for (const [x0, y0, heading] of origins) {
+    for (let branch = 0; branch < (level === 1 ? 2 : 3); branch += 1) {
+      const path: Array<[number, number]> = [[x0, y0]];
+      let [x, y] = [x0, y0];
+      let angle = heading + (branch - 1) * 0.5;
+      for (let s = 0; s < 6; s += 1) {
+        angle += (random() - 0.5) * 0.9;
+        const length = 0.04 + random() * 0.05;
+        x = Math.max(
+          -hw + 0.02,
+          Math.min(hw - 0.02, x + Math.cos(angle) * length)
+        );
+        y = Math.max(
+          -hh + 0.02,
+          Math.min(hh - 0.02, y + Math.sin(angle) * length)
+        );
+        path.push([x, y]);
+      }
+      paths.push(path);
+    }
+  }
+  return paths;
+};
 const CANVAS_W = 680;
 const CANVAS_H = 180;
 const DIGIT_COLOR: Record<Heat, string> = {
@@ -84,6 +140,22 @@ export class FeverBoard {
   private readonly tumblers: InstancedMesh;
   private readonly tumbling: TumbleBall[] = [];
   private balls = -1;
+  /** Hot and FEVER: glowing cracks over the housing; their points are where sparks and steam come from. */
+  private readonly cracks: Mesh<PlaneGeometry, MeshBasicMaterial>;
+  private readonly crackCanvas = document.createElement('canvas');
+  private readonly crackTexture: CanvasTexture;
+  private crackLevel: 0 | 1 | 2 = 0;
+  private crackPoints: Array<[number, number]> = [];
+  private crackFlicker = 0;
+  /** Steam puffs: soft grey sprites that billow up out of the cracks and fade. */
+  private readonly steam: InstancedMesh;
+  private readonly puffs: Array<{
+    x: number;
+    y: number;
+    drift: number;
+    age: number;
+  }> = [];
+  private steamCarry = 0;
   private time = Infinity;
   private readonly canvas = document.createElement('canvas');
   private readonly context: CanvasRenderingContext2D | null;
@@ -138,6 +210,31 @@ export class FeverBoard {
         toneMapped: false
       })
     );
+    const puff = document.createElement('canvas');
+    puff.width = puff.height = 64;
+    const p = puff.getContext('2d');
+    if (p) {
+      const gradient = p.createRadialGradient(32, 32, 0, 32, 32, 32);
+      gradient.addColorStop(0, 'rgba(255,255,255,0.7)');
+      gradient.addColorStop(0.55, 'rgba(255,255,255,0.3)');
+      gradient.addColorStop(1, 'rgba(255,255,255,0)');
+      p.fillStyle = gradient;
+      p.fillRect(0, 0, 64, 64);
+    }
+    this.steam = this.instanced(
+      new PlaneGeometry(0.3, 0.3),
+      new MeshBasicMaterial({
+        map: this.track(new CanvasTexture(puff)),
+        transparent: true,
+        depthWrite: false,
+        toneMapped: false
+      }),
+      PUFFS
+    );
+    for (let i = 0; i < PUFFS; i += 1) {
+      this.steam.setColorAt(i, this.color.set('#e8e4ff'));
+      this.place(this.steam, i, 0, 0, 0, 0);
+    }
     this.spots.forEach(([x, y], i) => {
       const scale = y > -99 ? 1 : 0;
       this.place(this.bulbs, i, x, y, FRONT_Z + 0.03, scale);
@@ -190,12 +287,31 @@ export class FeverBoard {
       this.tumblers.setColorAt(i, this.color.set('#ffffff'));
       this.place(this.tumblers, i, 0, 0, 0, 0);
     }
+    this.crackCanvas.width = CRACK_W;
+    this.crackCanvas.height = CRACK_H;
+    this.crackTexture = this.track(new CanvasTexture(this.crackCanvas));
+    this.crackTexture.colorSpace = SRGBColorSpace;
+    this.cracks = new Mesh(
+      this.track(new PlaneGeometry(HOUSING_WIDTH, HOUSING_HEIGHT)),
+      this.track(
+        new MeshBasicMaterial({
+          map: this.crackTexture,
+          transparent: true,
+          depthWrite: false,
+          toneMapped: false
+        })
+      )
+    );
+    this.cracks.position.z = FRONT_Z + 0.012;
+    this.cracks.visible = false;
     this.root.add(
       this.halos,
       this.bulbs,
+      this.cracks,
       this.plate,
       this.alarm,
-      this.tumblers
+      this.tumblers,
+      this.steam
     );
     this.paint('calm');
   }
@@ -225,6 +341,18 @@ export class FeverBoard {
 
   public get score(): number {
     return this.target;
+  }
+
+  public get cracked(): 0 | 1 | 2 {
+    return this.cracks.visible ? this.crackLevel : 0;
+  }
+
+  /** A random point on the cracks, in world space, or null while the board is intact. */
+  public damagePoint(out: Vector3): Vector3 | null {
+    if (!this.cracks.visible || !this.root.visible) return null;
+    const [x, y] =
+      this.crackPoints[Math.floor(Math.random() * this.crackPoints.length)];
+    return out.set(x, y, FRONT_Z + 0.04).applyMatrix4(this.root.matrixWorld);
   }
 
   public get countdown(): boolean {
@@ -338,6 +466,99 @@ export class FeverBoard {
     this.paint(heat);
     this.updateAlarm();
     this.updateTumblers(realDt);
+    this.updateCracks(realDt, heat);
+    this.updateSteam(realDt, heat);
+  }
+
+  private updateSteam(realDt: number, heat: Heat): void {
+    const vent = emitCount(
+      this.cracks.visible ? boardDamage(heat).steam : 0,
+      realDt,
+      this.steamCarry
+    );
+    this.steamCarry = vent.carry;
+    for (let n = 0; n < vent.count && this.crackPoints.length; n += 1) {
+      const [x, y] =
+        this.crackPoints[Math.floor(Math.random() * this.crackPoints.length)];
+      if (this.puffs.length >= PUFFS) this.puffs.shift();
+      this.puffs.push({ x, y, drift: (Math.random() - 0.5) * 0.25, age: 0 });
+    }
+    for (let i = this.puffs.length - 1; i >= 0; i -= 1) {
+      this.puffs[i].age += realDt;
+      if (this.puffs[i].age >= PUFF_SECONDS || !this.cracks.visible)
+        this.puffs.splice(i, 1);
+    }
+    for (let i = 0; i < PUFFS; i += 1) {
+      const puff = this.puffs[i];
+      if (!puff) {
+        this.place(this.steam, i, 0, 0, 0, 0);
+        continue;
+      }
+      // Rises, swells and drifts; fades in fast and out slowly (the colour carries the fade: no per-instance alpha).
+      const t = puff.age / PUFF_SECONDS;
+      const fade = Math.min(1, t * 8) * (1 - t);
+      this.steam.setColorAt(i, this.color.set('#e8e4ff').multiplyScalar(fade));
+      this.place(
+        this.steam,
+        i,
+        puff.x + puff.drift * t,
+        puff.y + t * 0.35,
+        FRONT_Z + 0.05,
+        0.5 + t * 1.4
+      );
+    }
+    this.steam.instanceMatrix.needsUpdate = true;
+    this.steam.instanceColor!.needsUpdate = true;
+  }
+
+  private updateCracks(realDt: number, heat: Heat): void {
+    const level = boardDamage(heat).cracks;
+    if (level !== this.crackLevel) {
+      this.crackLevel = level;
+      if (level) this.paintCracks(level);
+    }
+    this.cracks.visible = level > 0;
+    if (!level) return;
+    // The glow inside the cracks flickers like something hot behind the board.
+    this.crackFlicker += realDt * (level === 2 ? 22 : 12);
+    const glow =
+      1.6 +
+      0.6 * Math.sin(this.crackFlicker) * Math.sin(this.crackFlicker * 0.37);
+    if (heat === 'fever') this.color.setHSL(this.hue, 1, 0.65);
+    else this.color.set(HEAT_COLOR[heat]);
+    this.cracks.material.color.copy(this.color).multiplyScalar(glow);
+  }
+
+  private paintCracks(level: 1 | 2): void {
+    const g = this.crackCanvas.getContext('2d');
+    if (!g) return;
+    const paths = crackPaths(level);
+    this.crackPoints = paths.flat();
+    const px = (x: number, y: number): [number, number] => [
+      (x / HOUSING_WIDTH + 0.5) * CRACK_W,
+      (0.5 - y / HOUSING_HEIGHT) * CRACK_H
+    ];
+    g.clearRect(0, 0, CRACK_W, CRACK_H);
+    g.lineCap = 'round';
+    g.lineJoin = 'round';
+    // A dark fracture with a bright core; the material colour tints the core and the bloom picks it up.
+    for (const [width, style] of [
+      [12, 'rgba(12,4,30,0.85)'],
+      [4.5, 'rgba(255,255,255,0.95)']
+    ] as const) {
+      g.lineWidth = width;
+      g.strokeStyle = style;
+      for (const path of paths) {
+        g.beginPath();
+        path.forEach(([x, y], i) => {
+          const [cx, cy] = px(x, y);
+          if (i === 0) g.moveTo(cx, cy);
+          else g.lineTo(cx, cy);
+        });
+        g.stroke();
+      }
+    }
+    this.crackTexture.needsUpdate = true;
   }
 
   private updateTumblers(realDt: number): void {
@@ -418,6 +639,12 @@ export class FeverBoard {
     this.alarm.visible = false;
     this.tumbling.length = 0;
     this.balls = -1;
+    this.crackLevel = 0;
+    this.cracks.visible = false;
+    this.puffs.length = 0;
+    this.steamCarry = 0;
+    for (let i = 0; i < PUFFS; i += 1) this.place(this.steam, i, 0, 0, 0, 0);
+    this.steam.instanceMatrix.needsUpdate = true;
     for (let i = 0; i < TUMBLERS; i += 1)
       this.place(this.tumblers, i, 0, 0, 0, 0);
     this.tumblers.instanceMatrix.needsUpdate = true;

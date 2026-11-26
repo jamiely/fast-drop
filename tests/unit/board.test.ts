@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
   approachScore,
   boardBounce,
+  boardDamage,
   comboLook,
   countdownPulse,
   countdownTick,
+  emitCount,
   flyProgress,
   MARQUEE_CHASE,
   odometer,
@@ -170,5 +172,34 @@ describe('Fever board tumbling balls', () => {
     expect(tumbleScale(0.3)).toBe(1);
     expect(tumbleScale(TUMBLE_SECONDS * 0.9)).toBeCloseTo(0.3);
     expect(tumbleScale(TUMBLE_SECONDS)).toBe(0);
+  });
+});
+
+describe('Fever board damage', () => {
+  it('stays intact until hot, cracks at hot and cracks through in FEVER', () => {
+    expect(boardDamage('calm')).toEqual({ cracks: 0, steam: 0, sparks: 0 });
+    expect(boardDamage('warm')).toEqual({ cracks: 0, steam: 0, sparks: 0 });
+    expect(boardDamage('hot').cracks).toBe(1);
+    expect(boardDamage('fever').cracks).toBe(2);
+    expect(boardDamage('fever').steam).toBeGreaterThan(
+      boardDamage('hot').steam
+    );
+    expect(boardDamage('fever').sparks).toBeGreaterThan(
+      boardDamage('hot').sparks
+    );
+  });
+
+  it('emits at a steady rate whatever the frame time, carrying the fraction', () => {
+    let carry = 0;
+    let total = 0;
+    for (let i = 0; i < 60; i += 1) {
+      const next = emitCount(10, 1 / 60, carry);
+      total += next.count;
+      carry = next.carry;
+    }
+    expect(total).toBe(9);
+    expect(emitCount(10, 1 / 60, carry).count).toBe(1);
+    expect(emitCount(0, 1, 0.5)).toEqual({ count: 0, carry: 0.5 });
+    expect(emitCount(5, -1, 0)).toEqual({ count: 0, carry: 0 });
   });
 });
