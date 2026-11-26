@@ -65,3 +65,43 @@ export const MARQUEE_CHASE: Record<
   hot: { speed: 18, period: 2, dim: 0.2 },
   fever: { speed: 28, period: 2, dim: 0.35 }
 };
+
+export interface ComboLook {
+  visible: boolean;
+  /** Badge scale: grows with the combo. */
+  scale: number;
+  /** Shake amplitude, in px at 1050 wide. */
+  shake: number;
+  color: string;
+}
+
+const COMBO_COLOR: Record<Heat, string> = {
+  calm: '#72efff',
+  warm: '#ffe78a',
+  hot: '#ff85de',
+  fever: '#ffffff'
+};
+const COMBO_SHAKE: Record<Heat, number> = {
+  calm: 0,
+  warm: 1.5,
+  hot: 3,
+  fever: 4.5
+};
+
+/** The board's combo badge: hidden at 0, grows to 1.4× by a 20 combo, shakes and changes colour per tier. */
+export const comboLook = (combo: number, heat: Heat): ComboLook => ({
+  visible: combo > 0,
+  scale: 1 + Math.min(Math.max(0, combo), 20) * 0.02,
+  shake: COMBO_SHAKE[heat],
+  color: COMBO_COLOR[heat]
+});
+
+/** Seconds a "+N" rises from its jar, then flies into the score plate. */
+export const POINTS_RISE_SECONDS = 0.42;
+export const POINTS_FLY_SECONDS = 0.32;
+
+/** Progress of the fly from the jar to the plate: 0 while rising, eased in (it accelerates into the board), 1 on arrival. */
+export const flyProgress = (age: number): number => {
+  const t = (age - POINTS_RISE_SECONDS) / POINTS_FLY_SECONDS;
+  return t <= 0 ? 0 : t >= 1 ? 1 : t * t;
+};

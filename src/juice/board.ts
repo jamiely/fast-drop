@@ -170,6 +170,20 @@ export class FeverBoard {
     return this.rolled;
   }
 
+  /** World anchors: the score plate's centre and the housing's top-left corner. */
+  public anchor(where: 'plate' | 'corner', out: Vector3): Vector3 {
+    this.root.updateMatrixWorld();
+    if (where === 'plate') out.set(0, PLATE_Y, FRONT_Z + 0.08);
+    else out.set(-HOUSING_WIDTH / 2 + 0.1, HOUSING_HEIGHT / 2 - 0.1, FRONT_Z);
+    return out.applyMatrix4(this.root.matrixWorld);
+  }
+
+  /** A "+N" landed in the plate: the reels kick again. */
+  public land(): void {
+    this.flash = 1;
+    this.popAge = 0;
+  }
+
   /** Largest |NDC| of the plate's corners and the bulbs: the board's own pieces must stay on screen. */
   public maxNdc(camera: Camera): number {
     this.root.updateMatrixWorld();

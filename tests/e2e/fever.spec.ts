@@ -34,7 +34,7 @@ for (const viewport of [
         expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
       }
     };
-    await fit('.fever-popup, .fever-edition, .fever-stamp, .fever-meter-label');
+    await fit('.fever-popup, .fever-edition, .fever-badge, .fever-meter-label');
     // The board's score plate and marquee are 3D, so they are checked in NDC.
     const board = await page.evaluate(
       () => window.__FAST_DROP_TEST_BRIDGE__!.getJuiceStats!()!.board!
@@ -96,7 +96,7 @@ test('restart is fresh through Space and attract', async ({ page }) => {
     await expect(page.locator('.fever-hud')).toBeVisible();
     await expect(page.locator('[data-fever-multiplier]')).toHaveText('×1');
     await expect(page.locator('.fever-popup, .fever-finale')).toHaveCount(0);
-    await expect(page.locator('[data-fever-combo]')).toHaveAttribute(
+    await expect(page.locator('.fever-badge')).toHaveAttribute(
       'data-visible',
       'false'
     );
@@ -256,8 +256,9 @@ test('scripted jar hits build combo into FEVER without losing portrait framing',
       maxNdc = Math.max(maxNdc, bridge.getFraming!().maxNdc);
     }
     const feverStats = bridge.getJuiceStats!();
-    // The reels have rolled all the way to the score, bonus hit included.
-    bridge.stepFrames(30);
+    // The bonus hit's "+30" is still flying to the board; the reels wait for it, then roll to the score.
+    const flying = bridge.getJuiceStats!()!.board!.score;
+    bridge.stepFrames(60);
     const board = bridge.getJuiceStats!()!.board;
     bridge.setQualityTier!('low');
     bridge.stepFrames(1);
@@ -274,6 +275,7 @@ test('scripted jar hits build combo into FEVER without losing portrait framing',
       tag: tag?.querySelector('.fever-popup__tag')?.textContent,
       feverStats,
       board,
+      flying,
       score: bridge.getGameState!().score,
       lowStats,
       balancedStats: bridge.getJuiceStats!(),
@@ -295,6 +297,7 @@ test('scripted jar hits build combo into FEVER without losing portrait framing',
   });
   expect(result.board!.maxNdc).toBeLessThan(1);
   expect(result.score).toBe(350);
+  expect(result.flying).toBe(320);
   expect(result.game.hits).toBe(15);
   expect(result.milestoneSeparated).toBe(true);
   // Fast hits keep at most four score callouts, and the newest milestone replaced the older ones.
@@ -322,7 +325,11 @@ test('scripted jar hits build combo into FEVER without losing portrait framing',
     'fever'
   );
   // 15 scripted hits, plus the bonus hit that exercised the FOV punch.
-  await expect(page.locator('[data-fever-combo]')).toHaveText('16 COMBO');
+  await expect(page.locator('[data-fever-combo]')).toHaveText('16');
+  await expect(page.locator('.fever-badge')).toHaveAttribute(
+    'data-visible',
+    'true'
+  );
   await expect(page.getByRole('meter', { name: 'Fever' })).toBeVisible();
   expect(errors).toEqual([]);
   console.log(
