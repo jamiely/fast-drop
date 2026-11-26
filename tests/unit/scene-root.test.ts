@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { Box3, Vector3 } from 'three';
+import { Mesh, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { BALL_RADIUS } from '../../src/entities/Ball';
 import { JAR_HEIGHT, JAR_RADIUS } from '../../src/entities/Jar';
@@ -36,6 +36,9 @@ describe('SceneRoot', () => {
     expect(host.dataset.layout).toBe('portrait');
     expect(tall.maxNdc).toBeLessThan(1);
     expect(tall.maxNdc).toBeGreaterThan(0.85); // fills the screen, not a speck
+    // Near eye level like landscape, not looking down on the ring from above.
+    const view = root.camera.getWorldDirection(new Vector3());
+    expect(Math.asin(-view.y) * (180 / Math.PI)).toBeLessThan(15);
 
     width = 1920;
     height = 1080;
@@ -54,22 +57,26 @@ describe('SceneRoot', () => {
     const groups = root.scene.children.filter(
       (child) => child.type === 'Group'
     );
+    // Projects every visible vertex: bounding-box corners would count the empty air outside the round enclosure.
     const maxNdc = (): number => {
+      root.scene.updateMatrixWorld(true);
       root.camera.updateMatrixWorld();
       let max = 0;
+      const vertex = new Vector3();
       for (const group of groups) {
-        const box = new Box3().setFromObject(group);
-        if (box.isEmpty()) {
-          continue;
-        }
-        for (const x of [box.min.x, box.max.x]) {
-          for (const y of [box.min.y, box.max.y]) {
-            for (const z of [box.min.z, box.max.z]) {
-              const ndc = new Vector3(x, y, z).project(root.camera);
-              max = Math.max(max, Math.abs(ndc.x), Math.abs(ndc.y));
-            }
+        group.traverseVisible((object) => {
+          if (!(object instanceof Mesh)) {
+            return;
           }
-        }
+          const position = (object as Mesh).geometry.getAttribute('position');
+          for (let index = 0; index < position.count; index += 1) {
+            vertex
+              .fromBufferAttribute(position, index)
+              .applyMatrix4(object.matrixWorld)
+              .project(root.camera);
+            max = Math.max(max, Math.abs(vertex.x), Math.abs(vertex.y));
+          }
+        });
       }
       return max;
     };

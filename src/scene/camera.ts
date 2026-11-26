@@ -7,10 +7,10 @@ export type ViewLayout = 'landscape' | 'portrait';
 export const layoutForAspect = (aspect: number): ViewLayout =>
   aspect < 1 ? 'portrait' : 'landscape';
 
-/** Portrait view: higher and steeper than landscape, so the ring reads as a circle that fills a tall screen. */
+/** Portrait view: near eye level like landscape, backed off so the display stacked above the ring fits a tall screen. */
 export const PORTRAIT_CAMERA = {
   target: new Vector3(0, 1.1, 0.75),
-  direction: new Vector3(0, 0.78, 1).normalize(),
+  direction: new Vector3(0, 0.2, 1).normalize(),
   /** Largest |NDC| any fitted point may reach: leaves a small border. */
   margin: 0.94,
   /** The status display rises above the ring and grows, so it fills the top band. */
@@ -42,8 +42,9 @@ export const applyCameraTuning = (
 };
 
 /**
- * Places the camera on `direction` from `target` at the closest distance where every point projects inside
- * ±`margin` in normalized device coordinates. Uses the camera's current FOV, aspect and zoom.
+ * Places the camera on `direction` from a point level with `target` at the closest distance where every point
+ * projects inside ±`margin` in normalized device coordinates, raising or lowering the aim so the points sit
+ * centred vertically. Uses the camera's current FOV, aspect and zoom.
  */
 export const fitCameraToPoints = (
   camera: PerspectiveCamera,
@@ -52,9 +53,10 @@ export const fitCameraToPoints = (
   points: readonly Vector3[],
   margin: number
 ): void => {
+  const aim = target.clone();
   const place = (distance: number): void => {
-    camera.position.copy(direction).multiplyScalar(distance).add(target);
-    camera.lookAt(target);
+    camera.position.copy(direction).multiplyScalar(distance).add(aim);
+    camera.lookAt(aim);
     camera.updateMatrixWorld();
   };
   const fits = (): boolean =>
@@ -65,17 +67,35 @@ export const fitCameraToPoints = (
       );
     });
 
-  camera.updateProjectionMatrix();
-  let near = 0.5;
-  let far = 60;
-  for (let step = 0; step < 32; step += 1) {
-    const mid = (near + far) / 2;
-    place(mid);
-    if (fits()) {
-      far = mid;
-    } else {
-      near = mid;
+  const fitDistance = (): number => {
+    let near = 0.5;
+    let far = 60;
+    for (let step = 0; step < 32; step += 1) {
+      const mid = (near + far) / 2;
+      place(mid);
+      if (fits()) {
+        far = mid;
+      } else {
+        near = mid;
+      }
     }
+    place(far);
+    return far;
+  };
+
+  camera.updateProjectionMatrix();
+  for (let pass = 0; pass < 4; pass += 1) {
+    const distance = fitDistance();
+    let minY = Infinity;
+    let maxY = -Infinity;
+    for (const point of points) {
+      const y = point.clone().project(camera).y;
+      minY = Math.min(minY, y);
+      maxY = Math.max(maxY, y);
+    }
+    const halfHeight =
+      (distance * Math.tan(((camera.fov / 2) * Math.PI) / 180)) / camera.zoom;
+    aim.y += ((minY + maxY) / 2) * halfHeight;
   }
-  place(far);
+  fitDistance();
 };

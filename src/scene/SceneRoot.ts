@@ -771,7 +771,7 @@ export class SceneRoot {
 
   /**
    * Landscape uses the tuned camera. Portrait (a window taller than wide, e.g. a rotated cabinet monitor) looks
-   * down more steeply and backs off until the whole enclosure, display, drop tube and button fit the screen.
+   * at it from near eye level and backs off until the whole enclosure, display, drop tube and button fit the screen.
    */
   private applyLayoutCamera(): void {
     if (this.viewLayout === 'landscape') {
