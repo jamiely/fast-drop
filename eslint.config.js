@@ -7,6 +7,7 @@ export default [
   {
     ignores: [
       'dist',
+      'dist-fever',
       'coverage',
       'playwright-report',
       'test-results',

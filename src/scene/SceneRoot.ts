@@ -64,6 +64,7 @@ interface ActiveBallVisual {
   ageSeconds: number;
   settledFrames: number;
   isSettled: boolean;
+  rimPosition?: Vector3;
   settledOffsetX: number;
   settledOffsetY: number;
   settledOffsetZ: number;
@@ -110,6 +111,9 @@ export class SceneRoot {
   public readonly camera;
   public readonly jarGroup: Group;
   public readonly jars: Mesh[];
+  public onRimBounce?: (position: Vector3) => void;
+  public onMiss?: (nearMissPosition?: Vector3) => void;
+  private readonly cameraOffset = new Vector3();
   private readonly petalGroup: Group;
   private readonly petals: Mesh[];
   private readonly bridgeGroup: Group;
@@ -664,6 +668,7 @@ export class SceneRoot {
       if (settled) {
         if (activeBall.enteredJarIndex === null) {
           this.missedBallCountSinceLastUpdate += 1;
+          this.onMiss?.(activeBall.rimPosition);
           this.ballGroup.remove(activeBall.mesh);
           this.activeBalls.splice(index, 1);
           continue;
@@ -683,6 +688,7 @@ export class SceneRoot {
           activeBall.mesh.position.y <= MISSED_BALL_CLEANUP_Y)
       ) {
         this.missedBallCountSinceLastUpdate += 1;
+        this.onMiss?.(activeBall.rimPosition);
         this.ballGroup.remove(activeBall.mesh);
         this.activeBalls.splice(index, 1);
       }
@@ -745,6 +751,14 @@ export class SceneRoot {
     );
   }
 
+  /** Additive translation only: never changes the fitted portrait aim, distance or FOV. */
+  public setCameraOffset(x: number, y: number): void {
+    this.camera.position.sub(this.cameraOffset);
+    this.cameraOffset.set(x, y, 0);
+    this.camera.position.add(this.cameraOffset);
+    this.camera.updateMatrixWorld();
+  }
+
   public render(): void {
     this.renderer?.render(this.scene, this.camera);
   }
@@ -774,6 +788,7 @@ export class SceneRoot {
    * at it from near eye level and backs off until the whole enclosure, display, drop tube and button fit the screen.
    */
   private applyLayoutCamera(): void {
+    this.cameraOffset.set(0, 0, 0);
     if (this.viewLayout === 'landscape') {
       applyCameraTuning(this.camera, this.cameraTuning);
       return;
@@ -1348,6 +1363,10 @@ export class SceneRoot {
       activeBall.mesh.position.z += nz * correction;
 
       this.registerBounce(Math.abs(activeBall.velocityY));
+      if (this.onRimBounce) {
+        activeBall.rimPosition = activeBall.mesh.position.clone();
+        this.onRimBounce(activeBall.rimPosition);
+      }
       activeBall.velocityY = Math.max(
         Math.abs(activeBall.velocityY) * this.rimBounce,
         0.9

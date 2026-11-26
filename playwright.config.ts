@@ -20,16 +20,36 @@ export default defineConfig({
     actionTimeout: 5_000 * timeoutScale,
     navigationTimeout: 10_000 * timeoutScale
   },
-  webServer: {
-    command: 'npm run build && npm run preview -- --host 127.0.0.1 --port 4173',
-    url: 'http://127.0.0.1:4173',
-    reuseExistingServer: !isCI,
-    timeout: 45_000 * timeoutScale
-  },
+  webServer: [
+    {
+      command:
+        'npm run test:classic-bundle && npm run preview -- --host 127.0.0.1 --port 4173 --strictPort',
+      url: 'http://127.0.0.1:4173',
+      reuseExistingServer: !isCI,
+      timeout: 45_000 * timeoutScale
+    },
+    {
+      command:
+        'npm run build:fever && npm run preview -- --outDir dist-fever --host 127.0.0.1 --port 4174 --strictPort',
+      url: 'http://127.0.0.1:4174',
+      reuseExistingServer: !isCI,
+      timeout: 45_000 * timeoutScale
+    }
+  ],
   projects: [
     {
       name: 'chromium',
+      testIgnore: '**/fever.spec.ts',
       use: { ...devices['Desktop Chrome'] }
+    },
+    {
+      name: 'fever',
+      testMatch: '**/fever.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: 'http://127.0.0.1:4174',
+        viewport: { width: 1050, height: 1680 }
+      }
     }
   ]
 });

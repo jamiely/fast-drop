@@ -13,6 +13,14 @@ const testTimeoutMs = isGitHubCI ? 20_000 : 10_000;
 
 export default defineConfig({
   base: pagesBase,
+  build: {
+    rollupOptions: {
+      output: {
+        // Fever loads during main's top-level await: its Three imports must not point back to main.
+        manualChunks: { three: ['three'] }
+      }
+    }
+  },
   test: {
     environment: 'node',
     globals: true,
@@ -25,6 +33,9 @@ export default defineConfig({
       include: ['src/**/*.ts'],
       exclude: [
         'src/main.ts',
+        'src/juice/types.ts',
+        'src/juice/fever.ts',
+        'src/juice/particles.ts',
         'src/testhooks/**',
         '**/*.d.ts',
         'src/game/types.ts',

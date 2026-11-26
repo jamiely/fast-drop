@@ -5,9 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:fever": "vite --mode fever",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "build": "tsc -b && vite build",
+    "build:fever": "tsc -b && vite build --mode fever --outDir dist-fever",
+    "test:classic-bundle": "npm run build && node scripts/check-classic-bundle.mjs",
     "build:electron:web": "tsc -b && vite build --base ./",
     "preview": "vite preview",
     "typecheck": "tsc -b --pretty",

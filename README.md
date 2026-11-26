@@ -69,7 +69,10 @@ Storybook stories currently included:
 
 ## Scripts
 
-- `npm run dev` — start dev server
+- `npm run dev` — start classic dev server
+- `npm run dev:fever` — start Fast Drop Fever (`--mode fever`, `.env.fever`, no platform-specific shell env syntax)
+- `npm run build:fever` — typecheck + Fever web build into `dist-fever/` (separate from classic `dist/`)
+- `npm run test:classic-bundle` — build classic and assert that no juice marker or Fever UI is bundled
 - `npm run storybook` — run StorybookJS locally on port 6006
 - `npm run build-storybook` — build static StorybookJS output
 - `npm run build` — typecheck + production web build (root-relative assets)
@@ -90,6 +93,16 @@ Storybook stories currently included:
 - `npm run build:electron:mac` — package macOS desktop artifacts (`dmg` + `zip`)
 - `npm run build:electron:linux` — package Linux desktop artifacts (`AppImage` + `tar.gz`)
 - `npm run release:electron:win` — run full quality gate, then package Windows artifacts
+
+## Fast Drop Fever — juice core
+
+The first build-time edition slice follows [the approved design](docs/JUICY_EDITION.md). Classic remains the default; its build prunes the conditional Fever import (including Fever CSS). Three is emitted as a shared chunk so Fever's dynamic import cannot depend back on the main entry while its top-level startup await is pending. No Electron packaging/release behavior changes in this slice.
+
+Fever adds bounded camera trauma, simulation-only hit-stop/slow-mo (at least 0.25×, at most two **real seconds under distortion** per round), jar/full-screen flashes, one additive 1,500-quad instanced pool (at most 300 particles per burst), and world-anchored spring popups. All effect animation uses real time rather than slowed simulation time. Explicit debug pause freezes effects too.
+
+Consecutive hits earn ×2 at five, ×3 at ten; a miss clears combo and meter. Fifteen hits (or a full meter) start six real seconds of FEVER with ×3 scoring and 1.25× orbit speed. Active Fever survives a miss but never extends on hits. The meter resets at entry, stays empty while Fever is active, and can fill again afterwards; heat cools to calm on expiry until the next hit, without erasing consecutive combo or its earned multiplier. Scoring changes only in Fever; classic still awards exactly ten per jar ball.
+
+Tune event channels in `src/juice/table.ts`. Following the existing test bridge convention, Fever adds `scriptJarHit(jarIndex?, isBonusJar?)`, `getJuiceState()` and `getGameState()`. Scripted hits use the same settlement/scoring/effects path as actual jar entries; they do not simulate a dropped ball. These additional hooks are absent from classic.
 
 ## Desktop window, fullscreen and vertical monitors
 
@@ -125,6 +138,8 @@ To reduce flakiness in CI, Playwright also runs with `1` worker and `1` retry wh
   - `npm run coverage` (enforces global 90% minimum for statements/branches/functions/lines)
   - `npm run test:e2e`
 - `.gitattributes` enforces LF line endings across platforms to prevent Windows CRLF drift from failing `npm run format:check` in CI.
+- Fever rendering (`src/juice/fever.ts`, `src/juice/particles.ts`) and its type-only sink contract are also excluded. The pure combo/heat/Fever machine, trauma/time core, tuning table and classic no-op remain covered by the 90% gate.
+- Playwright serves classic on port 4173 and Fever on 4174. Existing smoke/portrait tests run only against classic; `fever.spec.ts` runs the Fever production build at 1050×1680. The classic server startup also checks bundle isolation.
 - Coverage excludes runtime-heavy orchestration/render/audio UI files (`Game.ts`, `SceneRoot.ts`, `scene/lighting.ts`, `ui/debugMenu.ts`, `systems/AudioSystem.ts`, `systems/OrbitSystem.ts`, `ui/hud.ts`, `entities/StatusDisplay.ts`, `entities/ArcadeShell.ts`, `stories/**`) and pure type-only modules from threshold accounting so the 90% gate targets deterministic unit-testable logic.
 
 ## CI/CD
@@ -182,6 +197,14 @@ Implemented in this pass:
 - added Storybook "Light Rig Lab" story for interactive light-source experimentation.
 
 ## Representative screenshots
+
+### Fast Drop Fever — juice core (1050×1680)
+
+Scripted settlements through the real scoring/effects path; see [capture notes](docs/history/2026-11-25-210421-fever-juice-core/README.md).
+
+| Jar hit                                                                                             | Combo ×2                                                                                                | FEVER                                                                                      |
+| --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| ![Jar hit with confetti and +10 popup](docs/history/2026-11-25-210421-fever-juice-core/jar-hit.png) | ![Five-hit combo stamp and multiplier](docs/history/2026-11-25-210421-fever-juice-core/combo-stamp.png) | ![Fifteen-hit FEVER activation](docs/history/2026-11-25-210421-fever-juice-core/fever.png) |
 
 ### Neon gameplay (desktop)
 

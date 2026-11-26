@@ -1,0 +1,139 @@
+.fever-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 5;
+  --fever-color: #72efff;
+}
+
+.fever-overlay[data-heat='warm'] {
+  --fever-color: #ffe78a;
+}
+
+.fever-overlay[data-heat='hot'],
+.fever-overlay[data-heat='fever'] {
+  --fever-color: #ff85de;
+}
+
+.fever-hud {
+  position: absolute;
+  top: max(3.5%, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(62vw, 620px);
+  color: var(--fever-color);
+  text-align: center;
+  filter: drop-shadow(0 3px 12px #0a052b);
+}
+
+.fever-edition {
+  font-size: clamp(14px, 2.3vw, 25px);
+  font-weight: 800;
+  letter-spacing: 0.22em;
+}
+
+.fever-edition b {
+  color: #ff85de;
+}
+
+.fever-stamp {
+  margin: 12px 0 6px;
+  font-size: clamp(28px, 6.4vw, 72px);
+  font-weight: 950;
+  font-style: italic;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+  text-shadow: 0 4px 0 #45175e;
+  transform: rotate(-4deg);
+  transition:
+    transform 220ms cubic-bezier(0.2, 1.6, 0.4, 1),
+    opacity 180ms;
+}
+
+.fever-stamp[data-visible='false'] {
+  opacity: 0;
+  transform: translateY(26px) rotate(12deg) scale(0.7);
+}
+
+.fever-meter-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: clamp(12px, 1.8vw, 21px);
+  font-weight: 850;
+  letter-spacing: 0.12em;
+}
+
+.fever-meter-label b {
+  font-size: 1.6em;
+}
+
+.fever-meter {
+  height: clamp(8px, 1.1vw, 14px);
+  padding: 2px;
+  border: 1px solid #b8b2e66b;
+  border-radius: 20px;
+  background: #160e34d9;
+}
+
+.fever-meter i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  transform-origin: left;
+  background: linear-gradient(90deg, #72efff, #ff85de, #ffe78a);
+  box-shadow: 0 0 14px var(--fever-color);
+}
+
+.fever-overlay[data-heat='fever'] .fever-stamp {
+  color: #ffe78a;
+  text-shadow:
+    0 4px 0 #b82989,
+    0 0 28px #ff85de88;
+}
+
+.fever-flash {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  mix-blend-mode: screen;
+}
+
+.fever-popup {
+  position: absolute;
+  white-space: nowrap;
+  font-size: clamp(25px, 5vw, 60px);
+  line-height: 1;
+  font-weight: 950;
+  font-style: italic;
+  -webkit-text-stroke: 1px #27143f;
+  text-shadow:
+    0 4px 0 #321542,
+    0 0 18px #b53de980;
+  will-change: transform, opacity;
+}
+
+.fever-popup--hero {
+  font-size: clamp(35px, 12vw, 140px);
+  letter-spacing: -0.06em;
+}
+
+@media (min-aspect-ratio: 1/1) {
+  .fever-hud {
+    left: 2.5%;
+    top: 5%;
+    transform: none;
+    width: min(25vw, 340px);
+  }
+
+  .fever-stamp {
+    font-size: clamp(28px, 4vw, 54px);
+  }
+
+  .fever-edition,
+  .fever-meter-label {
+    font-size: clamp(12px, 1.2vw, 18px);
+  }
+}

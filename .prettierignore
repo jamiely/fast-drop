@@ -1,4 +1,5 @@
 dist
+dist-fever
 coverage
 playwright-report
 test-results

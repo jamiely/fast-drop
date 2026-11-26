@@ -1,3 +1,6 @@
+import { Vector3 } from 'three';
+import { EDITION, silentJuice } from '../edition';
+import type { JuiceSink } from '../juice/types';
 import {
   createRuntimeConfig,
   gameConfig,
@@ -80,8 +83,10 @@ export class Game {
   private smoothedFrameMs = 16.67;
   private lowFpsDurationSeconds = 0;
   private highFpsDurationSeconds = 0;
+  private juice: JuiceSink = silentJuice;
+  private readonly pendingMissPositions: Array<Vector3 | undefined> = [];
 
-  public constructor(host: HTMLElement) {
+  public constructor(private readonly host: HTMLElement) {
     this.state = createInitialState();
 
     const rendererConfig = this.getRendererConfig();
@@ -142,6 +147,15 @@ export class Game {
 
   public async init(): Promise<void> {
     this.physicsWorld = await PhysicsWorld.create();
+
+    if (EDITION === 'fever') {
+      const { createFeverSink } = await import('../juice/fever');
+      this.juice = createFeverSink(this.host, this.sceneRoot);
+      this.sceneRoot.onRimBounce = (position) =>
+        this.juice.emit('rim-bounce', 2, position);
+      this.sceneRoot.onMiss = (position) =>
+        this.pendingMissPositions.push(position?.clone());
+    }
 
     this.sceneRoot.applyCameraTuning(this.runtimeConfig.camera);
 
@@ -207,6 +221,7 @@ export class Game {
 
   public destroy(): void {
     cancelAnimationFrame(this.rafId);
+    this.juice.destroy();
   }
 
   private createTestBridge(): TestBridgeContract {
@@ -234,7 +249,24 @@ export class Game {
         this.paused = this.orbitSystem.togglePause();
       },
       spawnBall: () => this.spawnBall(),
-      getFraming: () => this.sceneRoot.getFraming()
+      getFraming: () => this.sceneRoot.getFraming(),
+      ...(EDITION === 'fever'
+        ? {
+            getJuiceState: () => this.juice.getState(),
+            getGameState: () => ({ ...this.state }),
+            scriptJarHit: (jarIndex = 0, isBonusJar = false) => {
+              if (!this.sceneRoot.jars[jarIndex]) return;
+              this.processSceneSettlements([
+                {
+                  jarIndex,
+                  isBonusJar,
+                  ballId: null,
+                  centerOffsetNormalized: 0
+                }
+              ]);
+            }
+          }
+        : {})
     };
   }
 
@@ -532,6 +564,8 @@ export class Game {
     this.smoothedFrameMs = 16.67;
     this.orbitSystem.setPaused(false);
     this.sceneRoot.resetRound();
+    this.juice.reset();
+    this.pendingMissPositions.length = 0;
     if (
       this.autoMobileQualityEnabled &&
       this.performanceQualityTier !== 'balanced'
@@ -567,6 +601,7 @@ export class Game {
     this.state = next;
     this.roundEndedAtMs = performance.now();
     this.audioSystem.play('game-over');
+    this.juice.emit('round-end', this.state.score >= 500 ? 5 : 3);
   }
 
   private forceGameOver(): void {
@@ -617,6 +652,16 @@ export class Game {
 
     this.audioSystem.play('drop');
     this.spawnBall();
+    if (EDITION === 'fever') {
+      const position = new Vector3(
+        this.runtimeConfig.tuning.dropPointX,
+        this.runtimeConfig.tuning.dropHeight,
+        this.runtimeConfig.tuning.dropPointZ
+      );
+      this.juice.emit('drop', 1, position);
+      if (this.state.ballsRemaining === 0)
+        this.juice.emit('last-ball', 3, position);
+    }
 
     if (
       this.state.ballsRemaining <= 0 &&
@@ -697,8 +742,17 @@ export class Game {
     }
 
     for (const settlement of settlements) {
+      if (EDITION === 'fever') {
+        const position =
+          this.sceneRoot.jars[settlement.jarIndex].position.clone();
+        position.y += 0.5;
+        const combo = this.juice.getState()!.combo;
+        this.juice.emit('jar-hit', Math.min(4, 2 + combo / 5), position);
+        if (settlement.isBonusJar) this.juice.emit('bonus-jar', 4, position);
+      }
       const scoringResult = this.scoringSystem.onBallSettled(
-        this.toBallSettledEvent(settlement)
+        this.toBallSettledEvent(settlement),
+        this.juice.getState()?.multiplier ?? 1
       );
 
       this.state = applyBallSettledState(
@@ -716,10 +770,13 @@ export class Game {
     const missedCount = this.sceneRoot.consumeMissedBallCount();
     if (missedCount > 0) {
       this.state = applyMissState(this.state, missedCount);
+      for (let i = 0; i < missedCount; i += 1)
+        this.juice.emit('miss', 1, this.pendingMissPositions.shift());
     }
 
     if (this.state.timeRemaining <= 8 && !this.hasPlayedWarning) {
       this.audioSystem.play('time-warning');
+      this.juice.emit('time-warning', 2);
       this.hasPlayedWarning = true;
     }
 
@@ -747,11 +804,15 @@ export class Game {
   }
 
   private step(dt: number, renderFrame = true): void {
-    const simDt = this.paused ? 0 : dt * this.speedMultiplier;
+    this.juice.update(this.paused ? 0 : dt);
+    const simDt = this.paused
+      ? 0
+      : dt * this.speedMultiplier * this.juice.timeScale();
     const settlements: SceneBallSettlement[] = [];
 
     if (!this.paused) {
-      let remainingOrbitDt = dt;
+      let remainingOrbitDt =
+        dt * this.juice.timeScale() * (this.juice.getState()?.orbitScale ?? 1);
       while (remainingOrbitDt > 0) {
         const orbitStepDt = Math.min(
           MAX_SIMULATION_SUBSTEP_SECONDS,

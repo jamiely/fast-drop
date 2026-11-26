@@ -1,3 +1,5 @@
+import type { JuiceState } from '../juice/state';
+
 export type RoundPhase = 'idle' | 'countdown' | 'playing' | 'ended';
 
 export interface GameState {
@@ -54,4 +56,8 @@ export interface TestBridgeContract {
   spawnBall?: () => void;
   /** Current layout and the largest |NDC| reached by the playfield, display, drop tube and button (< 1: in frame). */
   getFraming?: () => { layout: 'landscape' | 'portrait'; maxNdc: number };
+  /** Fever-only. Uses the real settlement/scoring path, following the existing test bridge convention. */
+  scriptJarHit?: (jarIndex?: number, isBonusJar?: boolean) => void;
+  getJuiceState?: () => JuiceState | null;
+  getGameState?: () => GameState;
 }
