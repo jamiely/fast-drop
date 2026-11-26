@@ -2,6 +2,8 @@ export interface InputSystemOptions {
   onDrop: () => void;
   onPlayAgain?: () => void;
   isRoundEnded?: () => boolean;
+  /** Fever uses pointerup as the single mouse action, including demo-to-round transitions. */
+  preferPointerEvents?: boolean;
 }
 
 const isInteractiveTarget = (target: EventTarget | null): boolean => {
@@ -147,6 +149,8 @@ export class InputSystem {
     document.addEventListener(
       'mousedown',
       (event) => {
+        if (options.preferPointerEvents && typeof PointerEvent !== 'undefined')
+          return;
         if (event.button !== 0) {
           return;
         }

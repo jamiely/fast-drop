@@ -8,6 +8,8 @@ type Source = OscillatorNode | AudioBufferSourceNode;
 export class FeverSound {
   private context: AudioContext | null = null;
   private filter: BiquadFilterNode | null = null;
+  private master: GainNode | null = null;
+  private attract = false;
   private noiseBuffer: AudioBuffer | null = null;
   private readonly limit = new VoiceLimit();
   private readonly voices = new Map<symbol, () => void>();
@@ -68,8 +70,9 @@ export class FeverSound {
     compressor.attack.value = 0.002;
     compressor.release.value = 0.15;
     const master = context.createGain();
+    this.master = master;
     // 24 × 0.055 × 0.55 = 0.726 peak budget, with compression for extra headroom.
-    master.gain.value = 0.55;
+    master.gain.value = 0.55 * (this.attract ? 0.4 : 1);
     this.filter.connect(compressor);
     compressor.connect(master);
     master.connect(context.destination);
@@ -289,6 +292,17 @@ export class FeverSound {
 
   private stopVoices(): void {
     for (const stop of this.voices.values()) stop();
+  }
+
+  public setAttract(active: boolean): void {
+    this.attract = active;
+    if (this.master && this.context) {
+      this.master.gain.setTargetAtTime(
+        0.55 * (active ? 0.4 : 1),
+        this.context.currentTime,
+        0.05
+      );
+    }
   }
 
   public reset(): void {

@@ -51,7 +51,12 @@ export const createFeverSink = (
       <div class="fever-meter-label"><span data-fever-label>BUILD THE FEVER</span><b data-fever-multiplier>×1</b></div>
       <div class="fever-meter" role="meter" aria-label="Fever" aria-valuemin="0" aria-valuemax="15" aria-valuenow="0"><i></i></div>
     </header>
-    <div class="fever-flash"></div>`;
+    <div class="fever-flash"></div>
+    <div class="fever-attract" hidden>
+      <span>DEMO · FIND YOUR RHYTHM</span>
+      <b>PRESS DROP</b>
+      <small>ONE BUTTON. BUILD THE FEVER.</small>
+    </div>`;
   host.append(root);
   const stamp = root.querySelector<HTMLElement>('[data-fever-combo]')!;
   const label = root.querySelector<HTMLElement>('[data-fever-label]')!;
@@ -61,6 +66,7 @@ export const createFeverSink = (
   const meter = root.querySelector<HTMLElement>('.fever-meter')!;
   const fill = root.querySelector<HTMLElement>('.fever-meter i')!;
   const flash = root.querySelector<HTMLElement>('.fever-flash')!;
+  const attractBanner = root.querySelector<HTMLElement>('.fever-attract')!;
   const particles = new ParticlePool(scene.scene);
   const sound = new FeverSound();
   const popups: Popup[] = [];
@@ -348,6 +354,10 @@ export const createFeverSink = (
       punchAge = Infinity;
       scene.setFovPunch(0);
       scene.setCameraOffset(0, 0);
+    },
+    setAttract(active) {
+      attractBanner.hidden = !active;
+      sound.setAttract(active);
     },
     setQuality(tier) {
       // Low tier: no bloom, static machinery. Pixel ratio and LEDs follow Game's own tier settings.

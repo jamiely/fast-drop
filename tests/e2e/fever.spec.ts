@@ -1,5 +1,74 @@
 import { expect, test } from '@playwright/test';
 
+test('attract plays itself, then the first Space starts a full real round without dropping', async ({
+  page
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.goto('/');
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        Boolean(window.__FAST_DROP_TEST_BRIDGE__?.startAttract)
+      )
+    )
+    .toBe(true);
+  await page.evaluate(() => {
+    const bridge = window.__FAST_DROP_TEST_BRIDGE__!;
+    bridge.setTimeRemaining!(0);
+    bridge.stepFrames(1);
+    bridge.startAttract!();
+  });
+  await expect(page.locator('.fever-attract')).toBeVisible();
+  await expect(page.locator('.fever-attract b')).toHaveText('PRESS DROP');
+  const demo = await page.evaluate(() => {
+    const bridge = window.__FAST_DROP_TEST_BRIDGE__!;
+    bridge.stepFrames(180);
+    return {
+      attract: bridge.getAttractState!(),
+      game: bridge.getGameState!(),
+      framing: bridge.getFraming!()
+    };
+  });
+  expect(demo.attract.phase).toBe('attract');
+  expect(demo.game.ballsDropped).toBeGreaterThan(0);
+  expect(demo.framing).toMatchObject({ layout: 'portrait' });
+  expect(demo.framing.maxNdc).toBeLessThan(1);
+  await page.keyboard.press('Space');
+  const real = await page.evaluate(() => {
+    const bridge = window.__FAST_DROP_TEST_BRIDGE__!;
+    return {
+      attract: bridge.getAttractState!(),
+      game: bridge.getGameState!(),
+      framing: bridge.getFraming!()
+    };
+  });
+  expect(real.attract.phase).toBe('round');
+  expect(real.game).toMatchObject({
+    phase: 'playing',
+    ballsRemaining: 50,
+    ballsDropped: 0,
+    hits: 0,
+    misses: 0,
+    score: 0
+  });
+  expect(real.framing.maxNdc).toBeLessThan(1);
+  await expect(page.locator('.fever-attract')).toBeHidden();
+  // A full mouse gesture must not restart on mousedown and then drop on pointerup.
+  await page.evaluate(() => {
+    const bridge = window.__FAST_DROP_TEST_BRIDGE__!;
+    bridge.setTimeRemaining!(0);
+    bridge.stepFrames(1);
+    bridge.startAttract!();
+  });
+  await page.mouse.click(525, 1400);
+  expect(
+    await page.evaluate(() => window.__FAST_DROP_TEST_BRIDGE__!.getGameState!())
+  ).toMatchObject({ phase: 'playing', ballsRemaining: 50, ballsDropped: 0 });
+  await expect(page.locator('.fever-attract')).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
 test('scripted jar hits build combo into FEVER without losing portrait framing', async ({
   page
 }) => {

@@ -109,6 +109,8 @@ Consecutive hits earn ×2 at five, ×3 at ten; a miss clears combo and meter. Fi
 
 Fever sound is entirely procedural in `src/juice/sound.ts`, loaded only with the Fever import. The first key or pointer press unlocks its AudioContext (no autoplay before a gesture). Pentatonic jar chimes climb with combo; misses fizzle, and bonus/milestone/Fever/end-of-round stingers punctuate the pulse/percussion/bass loop. Heat raises tempo and adds layers; FEVER switches the pattern, the eight-second warning adds a heartbeat, and simulation distortion sweeps the master low-pass. Scheduled and playing sources share a hard 24-voice cap, conservative envelopes and a compressed master bus. Reset cancels all voices; destruction closes the context. The classic AudioSystem and its existing cues are unchanged.
 
+Fever's game-over screen starts an attract demo after 20 seconds without input. Orbit-predicted, imperfect autopilot drops show off the real machine under a pulsing **PRESS DROP** banner, with Fever audio at 40% volume (after a user gesture unlocks audio). Space or a tap/click immediately starts a real 50-ball round without dropping. A completed demo returns to game over and another 20-second idle wait; launch flow is unchanged. Fever-only `getAttractState()` and `startAttract()` test hooks expose the lifecycle and skip the wait from an ended round. See the [portrait captures and 60-second Chrome proof](docs/history/20261125-225300-fever-attract/README.md).
+
 Tune event channels in `src/juice/table.ts`. Following the existing test bridge convention, Fever adds `scriptJarHit(jarIndex?, isBonusJar?)`, `getJuiceState()` and `getGameState()`. Scripted hits use the same settlement/scoring/effects path as actual jar entries; they do not simulate a dropped ball. These additional hooks are absent from classic.
 
 ## Desktop window, fullscreen and vertical monitors
@@ -215,6 +217,12 @@ Scripted settlements through the real scoring/effects path; see [capture notes](
 | Jar hit                                                                                             | Combo ×2                                                                                                | FEVER                                                                                      |
 | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | ![Jar hit with confetti and +10 popup](docs/history/2026-11-25-210421-fever-juice-core/jar-hit.png) | ![Five-hit combo stamp and multiplier](docs/history/2026-11-25-210421-fever-juice-core/combo-stamp.png) | ![Fifteen-hit FEVER activation](docs/history/2026-11-25-210421-fever-juice-core/fever.png) |
+
+### Fast Drop Fever — attract mode (1050×1680)
+
+| Autopilot gameplay                                                                                 | Autopilot-earned FEVER                                                                       |
+| -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| ![Attract gameplay with PRESS DROP banner](docs/history/20261125-225300-fever-attract/attract.png) | ![Attract mode reaching FEVER](docs/history/20261125-225300-fever-attract/attract-fever.png) |
 
 ### Neon gameplay (desktop)
 

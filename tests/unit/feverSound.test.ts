@@ -97,6 +97,7 @@ it('unlocks on the first key and bounds/cleans scheduled sources with a minimal 
     sources.push(value);
     return value;
   };
+  const gains: Array<ReturnType<typeof param>> = [];
   const context = {
     state: 'suspended',
     currentTime: 0,
@@ -116,7 +117,11 @@ it('unlocks on the first key and bounds/cleans scheduled sources with a minimal 
       attack: param(),
       release: param()
     }),
-    createGain: () => ({ ...node(), gain: param() }),
+    createGain: () => {
+      const gain = param();
+      gains.push(gain);
+      return { ...node(), gain };
+    },
     createBuffer: () => ({ getChannelData: () => new Float32Array(128) }),
     createOscillator: source,
     createBufferSource: source
@@ -132,12 +137,22 @@ it('unlocks on the first key and bounds/cleans scheduled sources with a minimal 
     }
   );
   const sound = new FeverSound();
+  sound.setAttract(true); // Demo may start before audio is unlocked.
   const state = initialJuiceState();
   sound.emit('jar-hit', { ...state, combo: 1 });
   expect(context.resume).not.toHaveBeenCalled();
   target.dispatchEvent(new Event('keydown'));
   await Promise.resolve();
   expect(context.state).toBe('running');
+  expect(gains[0].value).toBeCloseTo(0.55 * 0.4);
+  sound.setAttract(false);
+  expect(gains[0].setTargetAtTime).toHaveBeenLastCalledWith(0.55, 0, 0.05);
+  sound.setAttract(true);
+  expect(gains[0].setTargetAtTime).toHaveBeenLastCalledWith(
+    0.55 * 0.4,
+    0,
+    0.05
+  );
   expect(sources.filter((s) => s.start.mock.calls.length)).toHaveLength(2);
   for (let i = 0; i < 30; i += 1)
     sound.emit('jar-hit', { ...state, combo: i + 1 });

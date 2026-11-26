@@ -1,4 +1,5 @@
 import type { JuiceState } from '../juice/state';
+import type { AttractState } from '../juice/attract';
 import type { JuiceStats, QualityTier } from '../juice/types';
 
 export type RoundPhase = 'idle' | 'countdown' | 'playing' | 'ended';
@@ -60,6 +61,9 @@ export interface TestBridgeContract {
   /** Fever-only. Uses the real settlement/scoring path, following the existing test bridge convention. */
   scriptJarHit?: (jarIndex?: number, isBonusJar?: boolean) => void;
   getJuiceState?: () => JuiceState | null;
+  /** Fever-only: skip the idle wait, only from an ended round. */
+  startAttract?: () => void;
+  getAttractState?: () => AttractState;
   /** Fever-only: bloom on/off, last frame's draw calls and the juice CPU time. */
   getJuiceStats?: () => JuiceStats | null;
   /** Fever-only: force the adaptive quality tier, as a slow GPU would. */

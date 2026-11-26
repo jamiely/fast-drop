@@ -28,6 +28,8 @@ export interface JuiceSink {
   /** `ballsRemaining` drives the ball-counter tube. */
   update(realDt: number, ballsRemaining: number): void;
   setQuality(tier: QualityTier): void;
+  /** Fever-only demo banner and quieter audio. */
+  setAttract?(active: boolean): void;
   getStats(): JuiceStats | null;
   timeScale(): number;
   reset(): void;

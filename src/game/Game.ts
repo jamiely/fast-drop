@@ -1,6 +1,9 @@
 import { Vector3 } from 'three';
 import { EDITION, silentJuice } from '../edition';
 import type { JuiceSink } from '../juice/types';
+import type { AttractMode } from '../juice/attract';
+import { BALL_RADIUS } from '../entities/Ball';
+import { JAR_HEIGHT } from '../entities/Jar';
 import {
   createRuntimeConfig,
   gameConfig,
@@ -84,6 +87,8 @@ export class Game {
   private lowFpsDurationSeconds = 0;
   private highFpsDurationSeconds = 0;
   private juice: JuiceSink = silentJuice;
+  private attract: AttractMode | null = null;
+  private readonly onAttractActivity = (): void => this.attract?.activity();
   private readonly pendingMissPositions: Array<Vector3 | undefined> = [];
 
   public constructor(private readonly host: HTMLElement) {
@@ -150,6 +155,13 @@ export class Game {
 
     if (EDITION === 'fever') {
       const { createFeverSink } = await import('../juice/fever');
+      const { AttractMode } = await import('../juice/attract');
+      this.attract = new AttractMode();
+      for (const event of ['keydown', 'pointerdown', 'touchstart']) {
+        window.addEventListener(event, this.onAttractActivity, {
+          capture: true
+        });
+      }
       this.juice = createFeverSink(
         this.host,
         this.sceneRoot,
@@ -170,8 +182,13 @@ export class Game {
 
     new InputSystem({
       onDrop: () => {
+        if (EDITION === 'fever' && this.attract?.input()) {
+          this.startRound();
+          return;
+        }
         this.dropBall();
       },
+      preferPointerEvents: EDITION === 'fever',
       onPlayAgain: () => {
         this.tryRestartRoundFromGameOver();
       },
@@ -227,6 +244,13 @@ export class Game {
   public destroy(): void {
     cancelAnimationFrame(this.rafId);
     this.juice.destroy();
+    if (EDITION === 'fever') {
+      for (const event of ['keydown', 'pointerdown', 'touchstart']) {
+        window.removeEventListener(event, this.onAttractActivity, {
+          capture: true
+        });
+      }
+    }
   }
 
   private createTestBridge(): TestBridgeContract {
@@ -258,6 +282,8 @@ export class Game {
       ...(EDITION === 'fever'
         ? {
             getJuiceState: () => this.juice.getState(),
+            getAttractState: () => this.attract!.getState(),
+            startAttract: () => this.startAttract(),
             getJuiceStats: () => this.juice.getStats(),
             setQualityTier: (tier: PerformanceQualityTier) =>
               this.applyPerformanceQualityTier(tier),
@@ -559,7 +585,11 @@ export class Game {
     this.sceneRoot.applyCameraTuning(this.runtimeConfig.camera);
   }
 
-  private startRound(): void {
+  private startRound(demo = false): void {
+    if (EDITION === 'fever') {
+      if (!demo) this.attract?.resetRound();
+      this.juice.setAttract?.(demo);
+    }
     this.state = startRoundState();
     this.nextBallId = 1;
     this.simulationTimeSeconds = 0;
@@ -593,7 +623,18 @@ export class Game {
     return performance.now() - this.roundEndedAtMs >= GAME_OVER_RESTART_LOCK_MS;
   }
 
+  private startAttract(alreadyStarted = false): void {
+    if (this.state.phase !== 'ended') return;
+    if (!alreadyStarted && !this.attract?.start()) return;
+    // Reuse the real reset/physics/scoring path; there is no score persistence in Game.
+    this.startRound(true);
+  }
+
   private tryRestartRoundFromGameOver(): void {
+    if (EDITION === 'fever' && this.attract?.input()) {
+      this.startRound();
+      return;
+    }
     if (!this.canRestartRoundFromGameOver()) {
       return;
     }
@@ -609,7 +650,11 @@ export class Game {
 
     this.state = next;
     this.roundEndedAtMs = performance.now();
-    this.audioSystem.play('game-over');
+    this.playAudio('game-over');
+    if (EDITION === 'fever') {
+      this.attract?.endRound();
+      this.juice.setAttract?.(false);
+    }
     this.juice.emit('round-end', this.state.score >= 500 ? 5 : 3);
   }
 
@@ -635,7 +680,11 @@ export class Game {
     this.ballsExhaustedAtSeconds = null;
     this.roundEndedAtMs = performance.now();
     this.sceneRoot.resetRound();
-    this.audioSystem.play('game-over');
+    this.playAudio('game-over');
+    if (EDITION === 'fever') {
+      this.attract?.endRound();
+      this.juice.setAttract?.(false);
+    }
     this.syncStatusDisplayFromState();
     this.uiSystem.render(this.state);
   }
@@ -659,7 +708,7 @@ export class Game {
     this.state = nextState;
     this.lastDropAtSeconds = this.simulationTimeSeconds;
 
-    this.audioSystem.play('drop');
+    this.playAudio('drop');
     this.spawnBall();
     if (EDITION === 'fever') {
       const position = new Vector3(
@@ -773,7 +822,7 @@ export class Game {
 
     const bounceCount = this.sceneRoot.consumeBounceCount();
     if (bounceCount > 0) {
-      this.audioSystem.play('ball-settled');
+      this.playAudio('ball-settled');
     }
 
     const missedCount = this.sceneRoot.consumeMissedBallCount();
@@ -784,7 +833,7 @@ export class Game {
     }
 
     if (this.state.timeRemaining <= 8 && !this.hasPlayedWarning) {
-      this.audioSystem.play('time-warning');
+      this.playAudio('time-warning');
       this.juice.emit('time-warning', 2);
       this.hasPlayedWarning = true;
     }
@@ -812,12 +861,49 @@ export class Game {
     }
   }
 
+  private playAudio(event: Parameters<AudioSystem['play']>[0]): void {
+    // Fever supplies all demo cues through its quieter master bus, not classic's bus.
+    if (EDITION === 'fever' && this.attract?.getState().phase === 'attract')
+      return;
+    this.audioSystem.play(event);
+  }
+
   private step(dt: number, renderFrame = true): void {
+    if (EDITION === 'fever' && this.attract?.update(dt))
+      this.startAttract(true);
     this.juice.update(this.paused ? 0 : dt, this.state.ballsRemaining);
     const simDt = this.paused
       ? 0
       : dt * this.speedMultiplier * this.juice.timeScale();
     const settlements: SceneBallSettlement[] = [];
+
+    if (
+      EDITION === 'fever' &&
+      !this.paused &&
+      this.attract?.shouldDrop(
+        this.sceneRoot.jars.map((jar) =>
+          Math.atan2(jar.position.z, jar.position.x)
+        ),
+        -this.runtimeConfig.tuning.ringAngularSpeed *
+          (this.juice.getState()?.orbitScale ?? 1),
+        Math.atan2(
+          this.runtimeConfig.tuning.dropPointZ,
+          this.runtimeConfig.tuning.dropPointX
+        ),
+        this.runtimeConfig.tuning.dropHeight,
+        JAR_HEIGHT * this.runtimeConfig.tuning.jarHeightScale +
+          BALL_RADIUS * this.runtimeConfig.tuning.ballSizeScale,
+        simDt
+      ) &&
+      canDropBall(this.state, {
+        simulationTimeSeconds: this.simulationTimeSeconds,
+        lastDropAtSeconds: this.lastDropAtSeconds,
+        dropCooldownMs: this.runtimeConfig.tuning.dropCooldownMs
+      })
+    ) {
+      this.dropBall();
+      this.attract.dropped();
+    }
 
     if (!this.paused) {
       let remainingOrbitDt =
