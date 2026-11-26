@@ -111,8 +111,43 @@ npm run electron:smoke
 
 This builds Electron-friendly renderer assets (`vite build --base ./`), validates required packaging inputs (`dist/index.html`, `electron/main.mjs`, `electron/preload.cjs`), and performs a real Electron boot/load check in smoke mode.
 
+### Fast Drop Fever (separate desktop app)
+
+```bash
+npm run dev:fever                 # Fever web dev server
+npm run build:fever               # web build in dist-fever/
+npm run electron:start:fever      # relative-assets build, then run locally
+npm run electron:smoke:fever      # same build + real Electron load check
+npm run build:electron:win:fever   # portable only; no NSIS
+npm run build:electron:mac:fever   # dmg + zip
+npm run build:electron:linux:fever # AppImage + tar.gz
+```
+
+Build each platform's packages on that OS. `build:electron:web:fever` runs
+`tsc -b && vite build --mode fever --base ./ --outDir dist-fever` so classic
+`dist/` is never overwritten by Fever. The Fever builder config maps `dist-fever/`
+to `dist/` inside the package, which the existing Electron loader opens. Local
+runs pass `--fever` to select `dist-fever/`; packaged apps do not need this flag.
+Fullscreen (`--fullscreen`) and F11 work in either edition.
+
+`electron-builder.fever.json` sets product name `Fast Drop Fever`, appId
+`com.fastdrop.fever`, package name `fast-drop-fever`, and output
+`dist_electron_fever/`. Its identity gives Fever a separate userData profile from
+classic. Artifacts include:
+
+- `Fast.Drop.Fever.<version>.exe`
+- `Fast.Drop.Fever.<version>-<arch>.dmg` and `.zip`
+- `Fast.Drop.Fever.<version>-<arch>.AppImage` and `.tar.gz`
+
+Fever uses `publish: null` (no `latest*.yml` generation), and the release workflow
+uploads only the Fever-named packages. Both editions ship beside each other on
+the rolling GitHub `latest` release, with classic's packages and update metadata
+paths unchanged. `tests/unit/release-assets.test.ts` checks identity/targets and
+that the cabinet's classic and Fever executable regexes cannot cross-match; it
+runs with `npm run test` and the coverage gate in `npm run check`.
+
 ## GitHub Actions
 
 - `.github/workflows/quality.yml`: typecheck/lint/format/coverage gate.
 - `.github/workflows/deploy-pages.yml`: Pages deployment from `main` after quality + e2e.
-- `.github/workflows/release-electron.yml`: desktop Electron packaging (Windows + macOS + Linux) on pull requests, pushes to `main`, and manual dispatch (Node.js 20 LTS runner), with source-file path filtering (markdown-only changes skip this workflow), rolling `latest` prerelease asset updates on `main`, artifact upload, and failure diagnostics retention.
+- `.github/workflows/release-electron.yml`: desktop Electron packaging (Windows + macOS + Linux) on pull requests, pushes to `main`, and manual dispatch (Node.js 20 LTS runner), with source-file path filtering (including `.env.fever` and `electron-builder.fever.json`; markdown-only changes skip this workflow), rolling `latest` prerelease asset updates for both editions on `main`, separate classic/Fever artifact uploads, and failure diagnostics retention. The existing three OS jobs build both editions; Windows and macOS smoke-test both.

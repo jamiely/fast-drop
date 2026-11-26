@@ -1,0 +1,31 @@
+{
+  "extends": null,
+  "appId": "com.fastdrop.fever",
+  "productName": "Fast Drop Fever",
+  "publish": null,
+  "artifactName": "Fast.Drop.Fever.${version}-${arch}.${ext}",
+  "directories": {
+    "buildResources": "electron/resources",
+    "output": "dist_electron_fever"
+  },
+  "files": [
+    { "from": "dist-fever", "to": "dist", "filter": ["**/*"] },
+    "electron/**/*",
+    "package.json"
+  ],
+  "extraMetadata": {
+    "name": "fast-drop-fever",
+    "main": "electron/main.mjs"
+  },
+  "win": {
+    "target": ["portable"],
+    "artifactName": "Fast.Drop.Fever.${version}.${ext}"
+  },
+  "mac": {
+    "icon": "electron/resources/icon.icns",
+    "target": ["dmg", "zip"]
+  },
+  "linux": {
+    "target": ["AppImage", "tar.gz"]
+  }
+}

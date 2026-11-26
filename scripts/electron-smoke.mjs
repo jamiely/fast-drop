@@ -4,7 +4,9 @@ import path from 'node:path';
 import electronPath from 'electron';
 
 const projectRoot = process.cwd();
-const distIndex = path.join(projectRoot, 'dist', 'index.html');
+const isFever = process.argv.includes('--fever');
+const webDirectory = isFever ? 'dist-fever' : 'dist';
+const distIndex = path.join(projectRoot, webDirectory, 'index.html');
 const mainFile = path.join(projectRoot, 'electron', 'main.mjs');
 const preloadFile = path.join(projectRoot, 'electron', 'preload.cjs');
 
@@ -19,7 +21,9 @@ if (!fs.existsSync(preloadFile)) {
 }
 
 if (!fs.existsSync(distIndex)) {
-  failures.push('Missing dist/index.html. Run `npm run build` first.');
+  failures.push(
+    `Missing ${webDirectory}/index.html. Run \`npm run build:electron:web${isFever ? ':fever' : ''}\` first.`
+  );
 }
 
 if (failures.length > 0) {
@@ -30,7 +34,7 @@ if (failures.length > 0) {
 }
 
 const timeoutMs = 20_000;
-const child = spawn(electronPath, [mainFile], {
+const child = spawn(electronPath, [mainFile, ...(isFever ? ['--fever'] : [])], {
   cwd: projectRoot,
   env: {
     ...process.env,
