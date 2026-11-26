@@ -1,0 +1,2 @@
+Fast Drop media captured from latest (458c2bda4f8ceb847e8b669f7b99f0dbc3c1f978) by scripts/launchbox-media.mjs
+Fast Drop Fever media captured from fever (496003af1fdfc52411f84221f0a66e68a98e5ba6) — unreleased Disco placeholder by scripts/launchbox-media.mjs
