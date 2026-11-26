@@ -36,6 +36,7 @@ export default defineConfig({
         'src/juice/types.ts',
         'src/juice/fever.ts',
         'src/juice/particles.ts',
+        'src/juice/sound.ts',
         'src/testhooks/**',
         '**/*.d.ts',
         'src/game/types.ts',

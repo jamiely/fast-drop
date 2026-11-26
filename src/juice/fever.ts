@@ -3,6 +3,7 @@ import type { SceneRoot } from '../scene/SceneRoot';
 import { Trauma, TimeDistortion } from './core';
 import { advance, hit, initialJuiceState, miss } from './state';
 import { ParticlePool } from './particles';
+import { FeverSound } from './sound';
 import { JUICE_TABLE } from './table';
 import type { JuiceEvent, JuiceSink } from './types';
 import './style.css';
@@ -40,6 +41,7 @@ export const createFeverSink = (
   const fill = root.querySelector<HTMLElement>('.fever-meter i')!;
   const flash = root.querySelector<HTMLElement>('.fever-flash')!;
   const particles = new ParticlePool(scene.scene);
+  const sound = new FeverSound();
   const popups: Popup[] = [];
   const jarMaterials = scene.jars.map(
     (jar) => jar.material as MeshPhysicalMaterial
@@ -99,6 +101,7 @@ export const createFeverSink = (
     } else if (event === 'miss') {
       state = miss(state);
     }
+    sound.emit(event, state);
     const tuning =
       JUICE_TABLE[
         event === 'jar-hit' && state.feverRemaining > 0 ? 'bonus-jar' : event
@@ -153,6 +156,7 @@ export const createFeverSink = (
     update(realDt) {
       state = advance(state, realDt);
       scale = time.update(realDt);
+      sound.update(state, scale, realDt);
       const offset = trauma.update(realDt);
       scene.setCameraOffset(offset.x, offset.y);
       particles.update(realDt, scene.camera);
@@ -207,6 +211,7 @@ export const createFeverSink = (
     timeScale: () => scale,
     getState: () => ({ ...state }),
     reset() {
+      sound.reset();
       state = initialJuiceState();
       trauma = new Trauma();
       time = new TimeDistortion();
@@ -223,6 +228,7 @@ export const createFeverSink = (
       scene.setCameraOffset(0, 0);
     },
     destroy() {
+      sound.destroy();
       particles.destroy();
       root.remove();
       jarMaterials.forEach((material, i) => {
