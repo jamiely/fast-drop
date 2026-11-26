@@ -24,8 +24,16 @@ interface Popup {
   position: Vector3;
   age: number;
   screen: boolean;
+  milestone: boolean;
   lift: number;
+  /** 1 while live; once pushed out it falls to 0 over POPUP_DISMISS_SECONDS and the popup is removed. */
+  fade: number;
+  dismissed: boolean;
 }
+
+/** At a fast hit rate, only the newest few world callouts stay; older ones fade out quickly. */
+const MAX_LIVE_CALLOUTS = 4;
+const POPUP_DISMISS_SECONDS = 0.15;
 
 export const createFeverSink = (
   host: HTMLElement,
@@ -105,10 +113,26 @@ export const createFeverSink = (
     position: Vector3,
     color: string,
     screen: boolean,
-    tag = ''
+    tag = '',
+    milestone = false
   ): void => {
     // Bounded DOM, even under a scripted burst of hits.
     if (popups.length >= 24) popups.shift()!.element.remove();
+    const dismiss = (p: Popup): void => {
+      p.dismissed = true;
+      p.element.dataset.dismissed = 'true';
+    };
+    if (milestone) {
+      // A newer milestone replaces the older one instead of stacking over it.
+      popups.filter((p) => p.milestone && !p.dismissed).forEach(dismiss);
+    } else if (!screen) {
+      const live = popups.filter(
+        (p) => !p.screen && !p.milestone && !p.dismissed
+      );
+      live
+        .slice(0, Math.max(0, live.length - (MAX_LIVE_CALLOUTS - 1)))
+        .forEach(dismiss);
+    }
     const element = document.createElement('div');
     element.className = `fever-popup${screen ? ' fever-popup--hero' : ''}`;
     element.textContent = text;
@@ -124,14 +148,20 @@ export const createFeverSink = (
     root.append(element);
     const lane = popups.filter(
       (p) =>
-        !p.screen && p.age < 0.7 && p.position.distanceToSquared(position) < 0.1
+        !p.screen &&
+        !p.dismissed &&
+        p.age < 0.7 &&
+        p.position.distanceToSquared(position) < 0.1
     ).length;
     popups.push({
       element,
       position: position.clone(),
       age: 0,
       screen,
-      lift: screen ? 0 : (lane % 3) * 112
+      milestone,
+      lift: screen ? 0 : (lane % 3) * 112,
+      fade: 1,
+      dismissed: false
     });
   };
 
@@ -189,7 +219,8 @@ export const createFeverSink = (
         position,
         tuning.color,
         event === 'fever-start' || event === 'round-end',
-        tag
+        tag,
+        event === 'combo-milestone'
       );
     }
     if (event === 'jar-hit' && state.combo % 5 === 0)
@@ -258,7 +289,9 @@ export const createFeverSink = (
       for (let i = popups.length - 1; i >= 0; i -= 1) {
         const p = popups[i];
         p.age += realDt;
-        if (p.age > 1.4) {
+        if (p.dismissed)
+          p.fade = Math.max(0, p.fade - realDt / POPUP_DISMISS_SECONDS);
+        if (p.age > 1.4 || p.fade <= 0) {
           p.element.remove();
           popups.splice(i, 1);
           continue;
@@ -268,7 +301,9 @@ export const createFeverSink = (
         p.element.style.top = `${p.screen ? 40 : (-projected.y * 0.5 + 0.5) * 100}%`;
         const spring = 1 - Math.exp(-p.age * 12) * Math.cos(p.age * 20);
         p.element.style.transform = `translate(-50%, calc(-100% - ${p.age * 75 + p.lift}px)) scale(${spring}) rotate(-5deg)`;
-        p.element.style.opacity = String(Math.min(1, (1.4 - p.age) * 3));
+        p.element.style.opacity = String(
+          Math.min(1, (1.4 - p.age) * 3) * p.fade
+        );
       }
       if (state.feverRemaining > 0) {
         fireworksTimer += realDt;

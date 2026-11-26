@@ -38,6 +38,12 @@ test('scripted jar hits build combo into FEVER without losing portrait framing',
         );
       }
     }
+    // 15 hits 8 frames apart: without the cap about ten callouts and three milestones would still be on screen.
+    const live = [
+      ...document.querySelectorAll<HTMLElement>(
+        '.fever-popup:not(.fever-popup--hero):not([data-dismissed])'
+      )
+    ].map((p) => p.textContent);
     const state = bridge.getJuiceState!();
     const game = bridge.getGameState!();
     const tag = [...document.querySelectorAll('.fever-popup')]
@@ -66,6 +72,7 @@ test('scripted jar hits build combo into FEVER without losing portrait framing',
       game,
       maxNdc,
       milestoneSeparated,
+      live,
       points: tag?.firstChild?.textContent,
       tag: tag?.querySelector('.fever-popup__tag')?.textContent,
       feverStats,
@@ -85,6 +92,13 @@ test('scripted jar hits build combo into FEVER without losing portrait framing',
   expect(result.game.score).toBe(320);
   expect(result.game.hits).toBe(15);
   expect(result.milestoneSeparated).toBe(true);
+  // Fast hits keep at most four score callouts, and the newest milestone replaced the older ones.
+  expect(
+    result.live.filter((text) => !text?.endsWith('COMBO!')).length
+  ).toBeLessThanOrEqual(4);
+  expect(result.live.filter((text) => text?.endsWith('COMBO!'))).toEqual([
+    '15 COMBO!'
+  ]);
   // The popup shows the awarded points, with the multiplier as a separate tag.
   expect(result.points).toBe('+30');
   expect(result.tag).toBe('×3');
