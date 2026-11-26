@@ -7,6 +7,7 @@ import {
   InstancedMesh,
   Mesh,
   MeshBasicMaterial,
+  MeshStandardMaterial,
   Object3D,
   PlaneGeometry,
   type Camera,
@@ -24,7 +25,10 @@ import {
   MARQUEE_CHASE,
   odometer,
   scoreDigits,
-  spring
+  spring,
+  stepTumble,
+  tumbleScale,
+  type TumbleBall
 } from './boardLogic';
 import { HEAT_COLOR, roundedRectPoints } from './show';
 import type { Heat } from './state';
@@ -44,6 +48,11 @@ const PLATE_Y = HOUSING_HEIGHT / 2 - 0.05;
 const DIAL_X = (0.29 - 0.5) * 2.45;
 const DIAL_Y = (0.5 - (512 * 0.3 + 170) / 512) * 1.18;
 const DIAL_SIZE = ((146 * 2) / 1024) * 2.45 * 1.3;
+// The hole at the bottom of classic's ball sphere (centre 0.75 w, the dial's height; inner radius 124 px).
+const HOLE_X = (0.75 - 0.5) * 2.45;
+const HOLE_Y = (0.5 - (512 * 0.3 + 170 + 124) / 512) * 1.18;
+const LIP_Y = -HOUSING_HEIGHT / 2 + 0.02;
+const TUMBLERS = 12;
 const CANVAS_W = 680;
 const CANVAS_H = 180;
 const DIGIT_COLOR: Record<Heat, string> = {
@@ -72,6 +81,9 @@ export class FeverBoard {
   private readonly alarmCanvas = document.createElement('canvas');
   private readonly alarmTexture: CanvasTexture;
   private alarmSecond = -1;
+  private readonly tumblers: InstancedMesh;
+  private readonly tumbling: TumbleBall[] = [];
+  private balls = -1;
   private time = Infinity;
   private readonly canvas = document.createElement('canvas');
   private readonly context: CanvasRenderingContext2D | null;
@@ -164,7 +176,27 @@ export class FeverBoard {
     );
     this.alarm.position.set(DIAL_X, DIAL_Y, FRONT_Z + 0.015);
     this.alarm.visible = false;
-    this.root.add(this.halos, this.bulbs, this.plate, this.alarm);
+    this.tumblers = this.instanced(
+      new SphereGeometry(0.052, 12, 10),
+      new MeshStandardMaterial({
+        color: '#e0304f',
+        roughness: 0.35,
+        emissive: '#ff3355',
+        emissiveIntensity: 0.25
+      }),
+      TUMBLERS
+    );
+    for (let i = 0; i < TUMBLERS; i += 1) {
+      this.tumblers.setColorAt(i, this.color.set('#ffffff'));
+      this.place(this.tumblers, i, 0, 0, 0, 0);
+    }
+    this.root.add(
+      this.halos,
+      this.bulbs,
+      this.plate,
+      this.alarm,
+      this.tumblers
+    );
     this.paint('calm');
   }
 
@@ -244,6 +276,27 @@ export class FeverBoard {
     this.time = seconds;
   }
 
+  /** Balls left; each one used tumbles out of the counter's hole. */
+  public setBalls(count: number): void {
+    if (this.balls >= 0 && count < this.balls)
+      for (let n = 0; n < Math.min(3, this.balls - count); n += 1) {
+        if (this.tumbling.length >= TUMBLERS) this.tumbling.shift();
+        const side = Math.random() < 0.5 ? -1 : 1;
+        this.tumbling.push({
+          x: HOLE_X,
+          y: HOLE_Y,
+          z: FRONT_Z + 0.06,
+          vx: side * (0.25 + Math.random() * 0.35),
+          vy: -0.2,
+          vz: 0.25,
+          spin: side * (8 + Math.random() * 6),
+          age: -n * 0.08,
+          bounced: false
+        });
+      }
+    this.balls = count;
+  }
+
   public update(realDt: number, heat: Heat): void {
     this.root.visible = this.display.visible;
     this.applyBounce(realDt);
@@ -284,6 +337,31 @@ export class FeverBoard {
     this.plate.scale.set(2 - pop, pop, 1);
     this.paint(heat);
     this.updateAlarm();
+    this.updateTumblers(realDt);
+  }
+
+  private updateTumblers(realDt: number): void {
+    for (let i = this.tumbling.length - 1; i >= 0; i -= 1) {
+      const ball = this.tumbling[i];
+      if (ball.age < 0) ball.age += realDt;
+      else if (!stepTumble(ball, realDt, LIP_Y)) this.tumbling.splice(i, 1);
+    }
+    for (let i = 0; i < TUMBLERS; i += 1) {
+      const ball = this.tumbling[i];
+      if (!ball || ball.age < 0) {
+        this.place(this.tumblers, i, 0, 0, 0, 0);
+        continue;
+      }
+      this.scratch.position.set(ball.x, ball.y, ball.z);
+      this.scratch.rotation.set(0, 0, ball.spin * ball.age);
+      // Stretch along the fall; the bounce snaps it back round.
+      const stretch = 1 + Math.min(0.25, Math.abs(ball.vy) * 0.08);
+      const s = tumbleScale(ball.age);
+      this.scratch.scale.set(s / Math.sqrt(stretch), s * stretch, s);
+      this.scratch.updateMatrix();
+      this.tumblers.setMatrixAt(i, this.scratch.matrix);
+    }
+    this.tumblers.instanceMatrix.needsUpdate = true;
   }
 
   private updateAlarm(): void {
@@ -338,6 +416,11 @@ export class FeverBoard {
     this.time = Infinity;
     this.alarmSecond = -1;
     this.alarm.visible = false;
+    this.tumbling.length = 0;
+    this.balls = -1;
+    for (let i = 0; i < TUMBLERS; i += 1)
+      this.place(this.tumblers, i, 0, 0, 0, 0);
+    this.tumblers.instanceMatrix.needsUpdate = true;
     if (this.bouncing) this.display.scale.copy(this.baseScale);
     this.bouncing = false;
     this.bounceAge = Infinity;
@@ -470,14 +553,15 @@ export class FeverBoard {
 
   private instanced(
     geometry: BufferGeometry,
-    material: Material
+    material: Material,
+    count = BULBS
   ): InstancedMesh {
     const mesh = this.track(
-      new InstancedMesh(this.track(geometry), this.track(material), BULBS)
+      new InstancedMesh(this.track(geometry), this.track(material), count)
     );
     mesh.instanceMatrix.setUsage(DynamicDrawUsage);
     mesh.frustumCulled = false;
-    for (let i = 0; i < BULBS; i += 1)
+    for (let i = 0; i < count; i += 1)
       mesh.setColorAt(i, this.color.set('#000000'));
     return mesh;
   }

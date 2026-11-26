@@ -505,6 +505,7 @@ export const createFeverSink = (
         if (p.points && !p.dismissed) inFlight += p.points;
       board.setScore(score - inFlight);
       board.setTime(ended ? Infinity : timeRemaining);
+      board.setBalls(ballsRemaining);
       board.update(realDt, state.heat);
       const second = ended ? null : countdownTick(lastTime, timeRemaining);
       if (second !== null) sound.countdown(second);

@@ -11,7 +11,10 @@ import {
   POINTS_FLY_SECONDS,
   POINTS_RISE_SECONDS,
   scoreDigits,
-  spring
+  spring,
+  stepTumble,
+  TUMBLE_SECONDS,
+  tumbleScale
 } from '../../src/juice/boardLogic';
 
 describe('Fever board score reels', () => {
@@ -134,5 +137,38 @@ describe('Fever board countdown', () => {
     expect(countdownTick(Infinity, 30)).toBeNull();
     expect(countdownTick(Infinity, 9.5)).toBe(10);
     expect(countdownTick(5, 6)).toBeNull();
+  });
+});
+
+describe('Fever board tumbling balls', () => {
+  it('falls, bounces once on the lip at half speed, and finishes', () => {
+    const ball = {
+      ...{ x: 0, y: 0, z: 0, vx: 0.3, vy: -0.2, vz: 0.25 },
+      ...{ spin: 8, age: 0, bounced: false }
+    };
+    let bounces = 0;
+    let alive = true;
+    let frames = 0;
+    while (alive && frames < 600) {
+      const wasBounced = ball.bounced;
+      alive = stepTumble(ball, 1 / 60, -0.3);
+      if (ball.bounced && !wasBounced) {
+        bounces += 1;
+        expect(ball.y).toBe(-0.3);
+        expect(ball.vy).toBeGreaterThan(0);
+      }
+      frames += 1;
+    }
+    expect(bounces).toBe(1);
+    expect(ball.y).toBeLessThan(-0.3);
+    expect(frames).toBeCloseTo(TUMBLE_SECONDS * 60, -1);
+  });
+
+  it('pops in, holds, and shrinks away by the end', () => {
+    expect(tumbleScale(-0.1)).toBe(0);
+    expect(tumbleScale(0.03)).toBeCloseTo(0.5);
+    expect(tumbleScale(0.3)).toBe(1);
+    expect(tumbleScale(TUMBLE_SECONDS * 0.9)).toBeCloseTo(0.3);
+    expect(tumbleScale(TUMBLE_SECONDS)).toBe(0);
   });
 });

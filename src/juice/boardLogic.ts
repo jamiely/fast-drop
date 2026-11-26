@@ -106,6 +106,49 @@ export const flyProgress = (age: number): number => {
   return t <= 0 ? 0 : t >= 1 ? 1 : t * t;
 };
 
+/** A ball tumbling out of the counter, in board units: launched from the hole, one bounce on the lip, then off the front. */
+export interface TumbleBall {
+  x: number;
+  y: number;
+  z: number;
+  vx: number;
+  vy: number;
+  vz: number;
+  spin: number;
+  age: number;
+  bounced: boolean;
+}
+
+export const TUMBLE_SECONDS = 1.1;
+const TUMBLE_GRAVITY = 6;
+
+/** Steps a tumbling ball; it bounces once, at half its speed, where it meets `lip`. False once it is done. */
+export const stepTumble = (
+  ball: TumbleBall,
+  dt: number,
+  lip: number
+): boolean => {
+  ball.age += dt;
+  ball.vy -= TUMBLE_GRAVITY * dt;
+  ball.x += ball.vx * dt;
+  ball.y += ball.vy * dt;
+  ball.z += ball.vz * dt;
+  if (!ball.bounced && ball.y <= lip && ball.vy < 0) {
+    ball.y = lip;
+    ball.vy = -ball.vy * 0.5;
+    ball.vz += 0.5;
+    ball.bounced = true;
+  }
+  return ball.age < TUMBLE_SECONDS;
+};
+
+/** Ball size through its tumble: pops in, holds, then shrinks away over the last third. */
+export const tumbleScale = (age: number): number =>
+  age < 0 || age >= TUMBLE_SECONDS
+    ? 0
+    : Math.min(1, age / 0.06) *
+      Math.min(1, ((TUMBLE_SECONDS - age) / TUMBLE_SECONDS) * 3);
+
 export const COUNTDOWN_SECONDS = 10;
 
 /** Heartbeat envelope of the last 10 s: lub on each whole second, a softer dub 0.16 s later; 0 outside. */
