@@ -305,6 +305,9 @@ export const createFeverSink = (
     }
     if (event === 'jar-hit') board.screenFeedback(10 * state.multiplier);
     if (event === 'miss') board.screenFeedback(0);
+    if (event === 'combo-milestone')
+      board.screenCelebrate('streak', state.combo);
+    if (event === 'fever-start') board.screenCelebrate('fever', state.combo);
     let text = tuning.text;
     let tag = '';
     if (event === 'jar-hit') {
@@ -312,14 +315,20 @@ export const createFeverSink = (
       if (state.multiplier > 1) tag = `×${state.multiplier}`;
     }
     if (event === 'combo-milestone') text = `${state.combo} COMBO!`;
-    if (text && event !== 'round-end' && (event !== 'miss' || worldPos)) {
+    if (
+      text &&
+      event !== 'round-end' &&
+      event !== 'combo-milestone' &&
+      event !== 'fever-start' &&
+      (event !== 'miss' || worldPos)
+    ) {
       popup(
         text,
         position,
         tuning.color,
-        event === 'fever-start',
+        false,
         tag,
-        event === 'combo-milestone',
+        false,
         event === 'jar-hit' ? 10 * state.multiplier : 0
       );
     }

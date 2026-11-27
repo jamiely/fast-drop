@@ -345,6 +345,10 @@ export class FeverBoard {
     return this.screen.snapshot;
   }
 
+  public screenCelebrate(kind: 'streak' | 'fever', combo: number): void {
+    this.screen.celebrate(kind, combo);
+  }
+
   public screenFeedback(points: number): void {
     this.screen.feedback(points);
   }

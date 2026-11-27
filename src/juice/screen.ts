@@ -8,11 +8,17 @@ import {
 import type { Heat } from './state';
 import {
   flipScale,
+  INSTRUMENT_STRIP_Y,
+  scheduleTakeover,
+  takeoverVisible,
+  type Takeover,
   lowBalls,
   screenMood,
   timerShake,
   urgentTime
 } from './screenLogic';
+
+const TAKEOVER_COLORS = ['#ff66b7', '#f4d674', '#8eeafb', '#b690ff'];
 
 /** Fever-owned, one-draw screen. Fixed storage; no particles or objects allocated in the frame loop. */
 export class FeverScreen {
@@ -21,6 +27,17 @@ export class FeverScreen {
   private readonly texture: CanvasTexture;
   public readonly mesh: Mesh<PlaneGeometry, MeshBasicMaterial>;
   private phase = 0;
+  private takeover: Takeover = 'none';
+  private takeoverAge = Infinity;
+  private streak = 0;
+
+  celebrate(kind: Takeover, combo: number): void {
+    const next = scheduleTakeover(this.takeover, this.takeoverAge, kind);
+    if (next !== kind) return;
+    this.takeover = next;
+    this.takeoverAge = 0;
+    this.streak = combo;
+  }
   private feedbackAge = Infinity;
   private lastPoints = 0;
   private missed = false;
@@ -60,6 +77,7 @@ export class FeverScreen {
 
   update(dt: number, seconds: number, balls: number): void {
     this.phase += dt;
+    this.takeoverAge += dt;
     this.feedbackAge += dt;
     const second = Number.isFinite(seconds)
       ? Math.max(0, Math.ceil(seconds))
@@ -180,7 +198,83 @@ export class FeverScreen {
       111
     );
     this.paintMascot(seconds);
+    if (takeoverVisible(this.takeover, this.takeoverAge))
+      this.paintTakeover(seconds, balls);
     this.texture.needsUpdate = true;
+  }
+
+  private paintTakeover(seconds: number, balls: number): void {
+    const g = this.g;
+    const fever = this.takeover === 'fever';
+    g.fillStyle = fever ? '#20113f' : '#15263c';
+    g.fillRect(0, 0, 1024, 512);
+    // A rainbow fan and little dancing stars are all on the display, not another world layer.
+    const colors = TAKEOVER_COLORS;
+    for (let i = 0; i < 4; i++) {
+      g.strokeStyle = colors[i];
+      g.lineWidth = 15;
+      g.beginPath();
+      g.arc(512, 440, 265 + i * 24, Math.PI + 0.12, -0.12);
+      g.stroke();
+    }
+    g.fillStyle = '#ffffff';
+    for (let i = 0; i < 18; i++) {
+      const x = (i * 157 + this.phase * 23) % 1024;
+      const y = 35 + ((i * 83) % 330);
+      const size = 3 + Math.sin(this.phase * 9 + i) * 2;
+      g.fillRect(x - size, y, size * 2, 3);
+      g.fillRect(x, y - size, 3, size * 2);
+    }
+    if (fever) {
+      g.save();
+      g.translate(512, 117);
+      g.rotate(Math.sin(this.phase * 3) * 0.12);
+      g.fillStyle = '#cddced';
+      g.beginPath();
+      g.arc(0, 0, 68, 0, Math.PI * 2);
+      g.fill();
+      g.save();
+      g.clip();
+      for (let row = -3; row <= 3; row++)
+        for (let col = -3; col <= 3; col++) {
+          g.fillStyle = colors[(row + col + 8) % 4];
+          g.fillRect(
+            col * 21 - 9 + Math.sin(this.phase * 3) * 8,
+            row * 21 - 9,
+            16,
+            16
+          );
+        }
+      g.restore();
+      g.restore();
+    }
+    g.save();
+    g.translate(512, fever ? 270 : 230);
+    const pop = flipScale(this.takeoverAge);
+    g.scale(1 / Math.sqrt(pop), pop);
+    g.fillStyle = '#ffffff';
+    g.font = 'italic 900 100px system-ui, sans-serif';
+    g.fillText(fever ? 'FEVER!!' : `${this.streak} COMBO!`, 0, 0);
+    g.restore();
+    g.font = '900 36px system-ui, sans-serif';
+    g.fillStyle = '#f4d674';
+    g.fillText(
+      fever ? `DISCO OVERDRIVE  ×${this.multiplier}` : 'KEEP THE STREAK ALIVE',
+      512,
+      350
+    );
+    // Painted last, outside the takeover artwork: the countdown never disappears.
+    g.fillStyle = '#0c102b';
+    g.fillRect(0, INSTRUMENT_STRIP_Y, 1024, 112);
+    g.font = '900 47px system-ui, sans-serif';
+    g.fillStyle = urgentTime(seconds) ? '#ff5076' : '#ffffff';
+    g.fillText(
+      `TIME  ${String(this.second).padStart(2, '0')}`,
+      265 + timerShake(seconds, this.phase),
+      458
+    );
+    g.fillStyle = lowBalls(balls) ? '#ff7ca3' : '#8eeafb';
+    g.fillText(`BALLS  ${Math.max(0, balls)}`, 755, 458);
   }
 
   private paintMascot(seconds: number): void {
@@ -245,6 +339,10 @@ export class FeverScreen {
 
   get snapshot() {
     return {
+      takeover: takeoverVisible(this.takeover, this.takeoverAge)
+        ? this.takeover
+        : 'none',
+      instrumentsVisible: true,
       seconds: this.second,
       balls: this.balls,
       combo: this.combo,
@@ -257,6 +355,8 @@ export class FeverScreen {
 
   reset(): void {
     this.phase = 0;
+    this.takeover = 'none';
+    this.takeoverAge = Infinity;
     this.feedbackAge = Infinity;
     this.lastPoints = 0;
     this.missed = false;

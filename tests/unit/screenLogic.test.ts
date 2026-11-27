@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   flipScale,
+  scheduleTakeover,
+  takeoverVisible,
+  INSTRUMENT_STRIP_Y,
   lowBalls,
   screenMood,
   timerShake,
@@ -8,6 +11,15 @@ import {
 } from '../../src/juice/screenLogic';
 
 describe('Fever screen instruments', () => {
+  it('prioritizes FEVER over streaks, expires and reserves a readable instrument strip', () => {
+    expect(scheduleTakeover('streak', 0.2, 'fever')).toBe('fever');
+    expect(scheduleTakeover('fever', 0.2, 'streak')).toBe('fever');
+    expect(scheduleTakeover('fever', 3, 'streak')).toBe('streak');
+    expect(takeoverVisible('streak', 1.6)).toBe(false);
+    expect(takeoverVisible('fever', 2.59)).toBe(true);
+    expect(takeoverVisible('none', 0)).toBe(false);
+    expect(512 - INSTRUMENT_STRIP_Y).toBeGreaterThanOrEqual(100);
+  });
   it('reacts briefly, then sweats only in the live final ten', () => {
     expect(screenMood(40, Infinity, false)).toBe('dance');
     expect(screenMood(40, 0.2, false)).toBe('cheer');

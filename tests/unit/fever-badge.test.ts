@@ -23,6 +23,7 @@ vi.mock('../../src/juice/board', async () => {
         return out;
       }
       hit() {}
+      screenCelebrate() {}
       screenFeedback() {}
       screenState = screenState;
       setScore() {}

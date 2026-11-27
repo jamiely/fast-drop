@@ -16,6 +16,8 @@ for (const viewport of [
       .toBe(true);
     await page.evaluate(() => {
       const b = window.__FAST_DROP_TEST_BRIDGE__!;
+      b.dropBall();
+      b.stepFrames(20);
       for (let n = 0; n < 15; n++) b.scriptJarHit!();
       b.stepFrames(12);
     });
@@ -41,6 +43,15 @@ for (const viewport of [
     );
     expect(board.score).toBeGreaterThan(0);
     expect(board.maxNdc).toBeLessThan(1);
+    const game = await page.evaluate(() =>
+      window.__FAST_DROP_TEST_BRIDGE__!.getGameState!()
+    );
+    expect(board.screen).toMatchObject({
+      balls: game.ballsRemaining,
+      seconds: Math.ceil(game.timeRemaining),
+      takeover: 'fever',
+      instrumentsVisible: true
+    });
     await page.evaluate(() => {
       const b = window.__FAST_DROP_TEST_BRIDGE__!;
       b.setTimeRemaining!(0);
@@ -88,6 +99,7 @@ test('restart is fresh through Space and attract', async ({ page }) => {
     await page.keyboard.press('Space');
     const fresh = await page.evaluate(() => {
       const b = window.__FAST_DROP_TEST_BRIDGE__!;
+      b.stepFrames(1);
       return {
         game: b.getGameState!(),
         juice: b.getJuiceState!(),
@@ -110,7 +122,16 @@ test('restart is fresh through Space and attract', async ({ page }) => {
       cracks: 0
     });
     await expect(page.locator('.fever-hud')).toBeVisible();
-    expect(fresh.stats?.board?.screen.multiplier).toBe(1);
+    expect(fresh.stats?.board?.screen).toMatchObject({
+      multiplier: 1,
+      balls: 50,
+      seconds: Math.ceil(fresh.game.timeRemaining),
+      combo: 0,
+      points: 0,
+      missed: false,
+      takeover: 'none',
+      instrumentsVisible: true
+    });
     await expect(page.locator('.fever-popup, .fever-finale')).toHaveCount(0);
     await expect(page.locator('.fever-badge')).toHaveCount(0);
   }
@@ -233,16 +254,9 @@ test('scripted jar hits build combo into FEVER without losing portrait framing',
       bridge.scriptJarHit!(i % 5);
       bridge.stepFrames(8);
       if (i === 4) {
-        const popups = [...document.querySelectorAll('.fever-popup')];
-        const score = popups
-          .find((p) => p.textContent === '+20×2')
-          ?.getBoundingClientRect();
-        const milestone = popups
-          .find((p) => p.textContent === '5 COMBO!')
-          ?.getBoundingClientRect();
-        milestoneSeparated = Boolean(
-          score && milestone && score.top >= milestone.bottom
-        );
+        const screen = bridge.getJuiceStats!()!.board!.screen;
+        milestoneSeparated =
+          screen.takeover === 'streak' && screen.instrumentsVisible;
       }
     }
     const milestone = [...document.querySelectorAll('.fever-popup')].find(
@@ -323,15 +337,18 @@ test('scripted jar hits build combo into FEVER without losing portrait framing',
   expect(result.flying).toBe(320);
   expect(result.game.hits).toBe(15);
   expect(result.milestoneSeparated).toBe(true);
-  expect(result.milestoneText).toBe('15 COMBO!');
-  expect(result.milestoneTags).toBe(0);
+  expect(result.milestoneText).toBeUndefined();
+  expect(result.milestoneTags).toBeUndefined();
+  expect(result.feverStats!.board!.screen).toMatchObject({
+    takeover: 'fever',
+    instrumentsVisible: true,
+    combo: 16
+  });
   // Fast hits keep at most four score callouts, and the newest milestone replaced the older ones.
   expect(
     result.live.filter((text) => !text?.endsWith('COMBO!')).length
   ).toBeLessThanOrEqual(4);
-  expect(result.live.filter((text) => text?.endsWith('COMBO!'))).toEqual([
-    '15 COMBO!'
-  ]);
+  expect(result.live.filter((text) => text?.endsWith('COMBO!'))).toEqual([]);
   // The popup shows the awarded points, with the multiplier as a separate tag.
   expect(result.points).toBe('+30');
   expect(result.tag).toBe('×3');

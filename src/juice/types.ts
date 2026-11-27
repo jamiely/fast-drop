@@ -25,6 +25,8 @@ export interface JuiceStats {
   /** The score the board's reels show and the one they roll toward. */
   board?: {
     screen: {
+      takeover: string;
+      instrumentsVisible: boolean;
       seconds: number;
       balls: number;
       combo: number;

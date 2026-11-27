@@ -3,6 +3,18 @@ import { countdownPulse } from './boardLogic';
 /** Shared alarm/heartbeat timing; no second countdown clock. */
 export const urgentTime = (seconds: number): boolean =>
   seconds > 0 && seconds <= 10;
+export type Takeover = 'none' | 'streak' | 'fever';
+export const takeoverVisible = (kind: Takeover, age: number): boolean =>
+  kind !== 'none' && age < (kind === 'fever' ? 2.6 : 1.6);
+export const scheduleTakeover = (
+  current: Takeover,
+  age: number,
+  incoming: Takeover
+): Takeover =>
+  current === 'fever' && takeoverVisible(current, age) ? 'fever' : incoming;
+/** Instrument strip is never part of the takeover mask. */
+export const INSTRUMENT_STRIP_Y = 400;
+
 export type ScreenMood = 'dance' | 'cheer' | 'gasp' | 'sweat';
 export const screenMood = (
   seconds: number,
