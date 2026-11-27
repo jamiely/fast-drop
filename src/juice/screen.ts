@@ -6,7 +6,13 @@ import {
   SRGBColorSpace
 } from 'three';
 import type { Heat } from './state';
-import { flipScale, lowBalls, timerShake, urgentTime } from './screenLogic';
+import {
+  flipScale,
+  lowBalls,
+  screenMood,
+  timerShake,
+  urgentTime
+} from './screenLogic';
 
 /** Fever-owned, one-draw screen. Fixed storage; no particles or objects allocated in the frame loop. */
 export class FeverScreen {
@@ -173,7 +179,68 @@ export class FeverScreen {
       220,
       111
     );
+    this.paintMascot(seconds);
     this.texture.needsUpdate = true;
+  }
+
+  private paintMascot(seconds: number): void {
+    const g = this.g;
+    const mood = screenMood(seconds, this.feedbackAge, this.missed);
+    const bounce = Math.sin(this.phase * 8);
+    g.save();
+    g.translate(512, 310 + bounce * 7);
+    g.rotate(Math.sin(this.phase * 4) * 0.09);
+    const pop = flipScale(this.feedbackAge);
+    g.scale(1 / Math.sqrt(pop), pop);
+    g.fillStyle = '#f4d674';
+    g.strokeStyle = '#211738';
+    g.lineWidth = 7;
+    g.beginPath();
+    g.arc(0, 0, 54, 0, Math.PI * 2);
+    g.fill();
+    g.stroke();
+    g.strokeStyle = '#211738';
+    g.lineWidth = 6;
+    g.lineCap = 'round';
+    for (let side = -1; side <= 1; side += 2) {
+      const x = side * 21;
+      if (mood === 'cheer') {
+        g.beginPath();
+        g.moveTo(x - 10, -9);
+        g.quadraticCurveTo(x, -25, x + 10, -9);
+        g.stroke();
+      } else {
+        g.fillStyle = '#211738';
+        g.beginPath();
+        g.ellipse(x, -12, 6, mood === 'gasp' ? 12 : 9, 0, 0, Math.PI * 2);
+        g.fill();
+      }
+      g.fillStyle = '#f67ba8';
+      g.beginPath();
+      g.ellipse(side * 33, 9, 10, 6, 0, 0, Math.PI * 2);
+      g.fill();
+    }
+    g.fillStyle = '#211738';
+    g.beginPath();
+    if (mood === 'gasp') g.ellipse(0, 22, 10, 15, 0, 0, Math.PI * 2);
+    else {
+      g.moveTo(-18, 12);
+      g.quadraticCurveTo(0, mood === 'cheer' ? 55 : 38, 18, 12);
+      g.closePath();
+    }
+    g.fill();
+    if (mood === 'sweat') {
+      g.fillStyle = '#8eeafb';
+      for (let i = 0; i < 2; i++) {
+        const y = -38 + ((this.phase * 65 + i * 35) % 65);
+        g.beginPath();
+        g.moveTo(46 + i * 12, y - 13);
+        g.quadraticCurveTo(30 + i * 12, y + 12, 46 + i * 12, y + 12);
+        g.quadraticCurveTo(60 + i * 12, y + 12, 46 + i * 12, y - 13);
+        g.fill();
+      }
+    }
+    g.restore();
   }
 
   get snapshot() {

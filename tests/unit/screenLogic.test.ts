@@ -2,11 +2,19 @@ import { describe, expect, it } from 'vitest';
 import {
   flipScale,
   lowBalls,
+  screenMood,
   timerShake,
   urgentTime
 } from '../../src/juice/screenLogic';
 
 describe('Fever screen instruments', () => {
+  it('reacts briefly, then sweats only in the live final ten', () => {
+    expect(screenMood(40, Infinity, false)).toBe('dance');
+    expect(screenMood(40, 0.2, false)).toBe('cheer');
+    expect(screenMood(8, 0.2, true)).toBe('gasp');
+    expect(screenMood(8, 1, true)).toBe('sweat');
+    expect(screenMood(0, 1, true)).toBe('dance');
+  });
   it('squashes once per flip and settles without drifting', () => {
     expect(flipScale(0)).toBe(1);
     expect(flipScale(0.15)).toBeCloseTo(1.18);
