@@ -75,8 +75,12 @@ export class FeverScreen {
     this.mesh.position.z = 0.075;
   }
 
-  update(dt: number, seconds: number, balls: number): void {
-    this.phase += dt;
+  /**
+   * `dt` drives the timers (takeovers, feedback, flips), so they always expire; `motionDt` drives decorative
+   * motion only, and is 0 on the low tier.
+   */
+  update(dt: number, motionDt: number, seconds: number, balls: number): void {
+    this.phase += motionDt;
     this.takeoverAge += dt;
     this.feedbackAge += dt;
     const second = Number.isFinite(seconds)
@@ -92,6 +96,12 @@ export class FeverScreen {
     }
     this.flipAge += dt;
     this.dropAge += dt;
+    if (takeoverVisible(this.takeover, this.takeoverAge)) {
+      // The takeover covers the whole face: paint only it.
+      this.paintTakeover(seconds, balls);
+      this.texture.needsUpdate = true;
+      return;
+    }
     const g = this.g;
     const beat = Math.sin(this.phase * Math.PI * 4);
     g.fillStyle = '#100d2c';
@@ -198,8 +208,6 @@ export class FeverScreen {
       111
     );
     this.paintMascot(seconds);
-    if (takeoverVisible(this.takeover, this.takeoverAge))
-      this.paintTakeover(seconds, balls);
     this.texture.needsUpdate = true;
   }
 

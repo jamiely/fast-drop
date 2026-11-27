@@ -94,7 +94,6 @@ it.each([3, 7])(
       hits < 5 ? 1 : 2,
       'calm'
     );
-    expect(host.querySelector('.fever-badge')).toBeNull();
     vi.unstubAllGlobals();
   }
 );

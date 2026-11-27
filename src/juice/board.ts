@@ -74,7 +74,7 @@ const crackPaths = (level: 1 | 2): Array<Array<[number, number]>> => {
   const random = seeded(level === 1 ? 7 : 19);
   const hw = HOUSING_WIDTH / 2;
   const hh = HOUSING_HEIGHT / 2;
-  // Hot cracks the two corners the combo sticker leaves free; FEVER adds the rest and the bottom bezel.
+  // Hot cracks two corners; FEVER adds the rest and the bottom bezel.
   const origins: Array<[number, number, number]> = [
     [hw - 0.04, hh - 0.06, -2.5],
     [-hw + 0.04, -hh + 0.06, 0.6]
@@ -455,7 +455,12 @@ export class FeverBoard {
     this.root.scale.copy(this.display.scale);
     if (!this.root.visible) return;
 
-    this.screen.update(this.animated ? realDt : 0, this.time, this.balls);
+    this.screen.update(
+      realDt,
+      this.animated ? realDt : 0,
+      this.time,
+      this.balls
+    );
     const chase = MARQUEE_CHASE[heat];
     const dt = this.animated ? realDt : 0;
     this.phase += dt * chase.speed;

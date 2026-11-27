@@ -36,7 +36,7 @@ for (const viewport of [
         expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
       }
     };
-    await fit('.fever-popup, .fever-edition, .fever-badge, .fever-meter-label');
+    await fit('.fever-popup, .fever-edition, .fever-meter-label');
     // The board's score plate and marquee are 3D, so they are checked in NDC.
     const board = await page.evaluate(
       () => window.__FAST_DROP_TEST_BRIDGE__!.getJuiceStats!()!.board!
@@ -65,6 +65,26 @@ for (const viewport of [
     await fit('.fever-rank, .fever-tally, .fever-finale small');
   });
 }
+
+test('screen takeovers expire on the low quality tier', async ({ page }) => {
+  await page.goto('/');
+  await expect
+    .poll(() =>
+      page.evaluate(() => !!window.__FAST_DROP_TEST_BRIDGE__?.getJuiceState)
+    )
+    .toBe(true);
+  const takeovers = await page.evaluate(() => {
+    const b = window.__FAST_DROP_TEST_BRIDGE__!;
+    b.setQualityTier!('low');
+    for (let n = 0; n < 15; n++) b.scriptJarHit!();
+    b.stepFrames(1);
+    const during = b.getJuiceStats!()!.board!.screen.takeover;
+    // FEVER's takeover lasts 2.6 s: 4 s of frames must end it, even with decorative motion frozen.
+    b.stepFrames(240);
+    return { during, after: b.getJuiceStats!()!.board!.screen.takeover };
+  });
+  expect(takeovers).toEqual({ during: 'fever', after: 'none' });
+});
 
 test('restart is fresh through Space and attract', async ({ page }) => {
   await page.goto('/');

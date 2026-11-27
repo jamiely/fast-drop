@@ -74,46 +74,6 @@ export const MARQUEE_CHASE: Record<
   fever: { speed: 28, period: 2, dim: 0.35 }
 };
 
-export interface ComboLook {
-  visible: boolean;
-  /** Badge scale: grows with the combo. */
-  scale: number;
-  /** Shake amplitude, in px at 1050 wide. */
-  shake: number;
-  color: string;
-}
-
-const COMBO_COLOR: Record<Heat, string> = {
-  calm: '#72efff',
-  warm: '#ffe78a',
-  hot: '#ff85de',
-  fever: '#ffffff'
-};
-const COMBO_SHAKE: Record<Heat, number> = {
-  calm: 0,
-  warm: 1.5,
-  hot: 3,
-  fever: 4.5
-};
-
-/** The board's combo badge: hidden at 0, grows to 1.4× by a 20 combo, shakes and changes colour per tier. */
-export const comboLook = (
-  combo: number,
-  heat: Heat,
-  out: ComboLook = {
-    visible: false,
-    scale: 1,
-    shake: 0,
-    color: COMBO_COLOR.calm
-  }
-): ComboLook => {
-  out.visible = combo > 0;
-  out.scale = 1 + Math.min(Math.max(0, combo), 20) * 0.02;
-  out.shake = COMBO_SHAKE[heat];
-  out.color = COMBO_COLOR[heat];
-  return out;
-};
-
 /** Seconds a "+N" rises from its jar, then flies into the score plate. */
 export const POINTS_RISE_SECONDS = 0.42;
 export const POINTS_FLY_SECONDS = 0.32;

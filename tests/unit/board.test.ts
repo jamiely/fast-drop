@@ -3,7 +3,6 @@ import {
   approachScore,
   boardBounce,
   boardDamage,
-  comboLook,
   countdownPulse,
   countdownTick,
   emitCount,
@@ -85,22 +84,6 @@ describe('Fever board marquee', () => {
     for (let i = 1; i < tiers.length; i += 1) {
       expect(tiers[i].speed).toBeGreaterThan(tiers[i - 1].speed);
       expect(tiers[i].period).toBeLessThanOrEqual(tiers[i - 1].period);
-    }
-  });
-});
-
-describe('Fever board combo badge', () => {
-  it('hides at no combo, grows to a cap, and shakes and recolours per tier', () => {
-    expect(comboLook(0, 'calm').visible).toBe(false);
-    expect(comboLook(1, 'calm')).toMatchObject({ visible: true, shake: 0 });
-    expect(comboLook(20, 'hot').scale).toBeCloseTo(1.4);
-    expect(comboLook(60, 'hot').scale).toBeCloseTo(1.4);
-    const tiers = (['calm', 'warm', 'hot', 'fever'] as const).map((heat) =>
-      comboLook(5, heat)
-    );
-    for (let i = 1; i < tiers.length; i += 1) {
-      expect(tiers[i].shake).toBeGreaterThan(tiers[i - 1].shake);
-      expect(tiers[i].color).not.toBe(tiers[i - 1].color);
     }
   });
 });
