@@ -341,6 +341,18 @@ export class FeverBoard {
     this.bounceAge = 0;
   }
 
+  public get screenStateSnapshot() {
+    return this.screen.snapshot;
+  }
+
+  public screenFeedback(points: number): void {
+    this.screen.feedback(points);
+  }
+
+  public screenState(combo: number, multiplier: number, heat: Heat): void {
+    this.screen.setState(combo, multiplier, heat);
+  }
+
   public setAnimated(animated: boolean): void {
     this.animated = animated;
   }

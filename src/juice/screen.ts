@@ -5,6 +5,7 @@ import {
   PlaneGeometry,
   SRGBColorSpace
 } from 'three';
+import type { Heat } from './state';
 import { flipScale, lowBalls, timerShake, urgentTime } from './screenLogic';
 
 /** Fever-owned, one-draw screen. Fixed storage; no particles or objects allocated in the frame loop. */
@@ -14,6 +15,24 @@ export class FeverScreen {
   private readonly texture: CanvasTexture;
   public readonly mesh: Mesh<PlaneGeometry, MeshBasicMaterial>;
   private phase = 0;
+  private feedbackAge = Infinity;
+  private lastPoints = 0;
+  private missed = false;
+  private combo = 0;
+  private multiplier = 1;
+  private heat: Heat = 'calm';
+
+  feedback(points: number): void {
+    this.lastPoints = points;
+    this.missed = points === 0;
+    this.feedbackAge = 0;
+  }
+
+  setState(combo: number, multiplier: number, heat: Heat): void {
+    this.combo = combo;
+    this.multiplier = multiplier;
+    this.heat = heat;
+  }
   private second = -1;
   private balls = -1;
   private flipAge = 1;
@@ -35,6 +54,7 @@ export class FeverScreen {
 
   update(dt: number, seconds: number, balls: number): void {
     this.phase += dt;
+    this.feedbackAge += dt;
     const second = Number.isFinite(seconds)
       ? Math.max(0, Math.ceil(seconds))
       : 60;
@@ -121,11 +141,61 @@ export class FeverScreen {
     g.font = '700 21px system-ui, sans-serif';
     g.fillStyle = '#a9bce5';
     g.fillText('SECONDS', 272, 422);
+    // A dedicated feedback ribbon never covers the two persistent instruments.
+    g.save();
+    g.translate(220, 65);
+    g.scale(flipScale(this.feedbackAge), flipScale(this.feedbackAge));
+    g.font = '900 80px system-ui, sans-serif';
+    g.fillStyle = this.missed ? '#ff7ca3' : '#8eeafb';
+    g.fillText(
+      this.feedbackAge === Infinity
+        ? 'DROP!'
+        : this.missed
+          ? 'MISS'
+          : `+${this.lastPoints}`,
+      0,
+      0
+    );
+    g.restore();
+    g.fillStyle = '#ffffff';
+    g.font = '900 36px system-ui, sans-serif';
+    g.fillText(`${this.combo} COMBO`, 530, 55);
+    g.fillStyle = '#f4d674';
+    g.fillText(`${this.heat.toUpperCase()}  ×${this.multiplier}`, 815, 55);
+    g.font = '700 19px system-ui, sans-serif';
+    g.fillStyle = '#a9bce5';
+    g.fillText(
+      this.feedbackAge === Infinity
+        ? 'READY WHEN YOU ARE'
+        : this.missed
+          ? 'NEXT ONE IS YOURS'
+          : 'LAST HIT',
+      220,
+      111
+    );
     this.texture.needsUpdate = true;
+  }
+
+  get snapshot() {
+    return {
+      seconds: this.second,
+      balls: this.balls,
+      combo: this.combo,
+      multiplier: this.multiplier,
+      heat: this.heat,
+      points: this.lastPoints,
+      missed: this.missed
+    };
   }
 
   reset(): void {
     this.phase = 0;
+    this.feedbackAge = Infinity;
+    this.lastPoints = 0;
+    this.missed = false;
+    this.combo = 0;
+    this.multiplier = 1;
+    this.heat = 'calm';
     this.second = -1;
     this.balls = -1;
   }

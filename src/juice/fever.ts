@@ -4,7 +4,6 @@ import { FeverBloom } from './bloom';
 import { FeverBoard } from './board';
 import {
   boardDamage,
-  comboLook,
   countdownTick,
   flyProgress,
   POINTS_RISE_SECONDS
@@ -65,21 +64,12 @@ export const createFeverSink = (
       <div class="fever-meter" role="meter" aria-label="Fever" aria-valuemin="0" aria-valuemax="15" aria-valuenow="0"><i></i></div>
     </header>
     <div class="fever-flash"></div>
-    <div class="fever-badge" data-visible="false"><strong data-fever-combo>0</strong><span data-fever-combo-label>COMBO</span><b data-fever-multiplier>×1</b></div>
     <div class="fever-attract" hidden>
       <span>DEMO</span>
       <b>PRESS DROP</b>
     </div>`;
   host.append(root);
-  const badge = root.querySelector<HTMLElement>('.fever-badge')!;
-  const comboCount = root.querySelector<HTMLElement>('[data-fever-combo]')!;
-  const comboLabel = root.querySelector<HTMLElement>(
-    '[data-fever-combo-label]'
-  )!;
   const label = root.querySelector<HTMLElement>('[data-fever-label]')!;
-  const multiplier = root.querySelector<HTMLElement>(
-    '[data-fever-multiplier]'
-  )!;
   const meter = root.querySelector<HTMLElement>('.fever-meter')!;
   const fill = root.querySelector<HTMLElement>('.fever-meter i')!;
   const flash = root.querySelector<HTMLElement>('.fever-flash')!;
@@ -168,8 +158,6 @@ export const createFeverSink = (
   };
   const fallback = new Vector3(0, 1.1, 0);
   const plateWorld = new Vector3();
-  const corner = new Vector3();
-  let lastCombo = 0;
   let lastTime = Infinity;
   let sparkCarry = 0;
   const damageAt = new Vector3();
@@ -181,32 +169,6 @@ export const createFeverSink = (
     viewHeight = entry.contentRect.height;
   });
   resize.observe(root);
-  let badgeAge = Infinity;
-  const badgeLook = comboLook(0, 'calm');
-  /** The board's combo sticker: it sits on the housing's corner, pops per hit, grows, shakes and recolours by tier. */
-  const updateBadge = (realDt: number): void => {
-    const look = comboLook(state.combo, state.heat, badgeLook);
-    const visible = look.visible && !ended && stage.statusDisplay.visible;
-    badge.dataset.visible = String(visible);
-    if (state.combo !== lastCombo) {
-      if (state.combo > lastCombo) badgeAge = 0;
-      lastCombo = state.combo;
-      comboCount.textContent = String(state.combo);
-    }
-    // FEVER can expire without a hit: combo alone does not determine the multiplier.
-    multiplier.textContent = `×${state.multiplier}`;
-    comboLabel.textContent = state.heat === 'fever' ? 'FEVER!' : 'COMBO';
-    badgeAge += realDt;
-    if (!visible) return;
-    board.anchor('corner', corner).project(scene.camera);
-    const pop = 1 + 0.35 * Math.exp(-badgeAge * 9) * Math.cos(badgeAge * 22);
-    const unit = viewWidth / 1050;
-    const shake = look.shake * unit;
-    badge.style.left = `${(corner.x * 0.5 + 0.5) * viewWidth + (Math.random() * 2 - 1) * shake}px`;
-    badge.style.top = `${(-corner.y * 0.5 + 0.5) * viewHeight + (Math.random() * 2 - 1) * shake}px`;
-    badge.style.transform = `translate(-50%, -50%) rotate(-10deg) scale(${look.scale * pop})`;
-    badge.style.setProperty('--badge-color', look.color);
-  };
   const projected = new Vector3();
 
   const popup = (
@@ -341,6 +303,8 @@ export const createFeverSink = (
       const jar = scene.jars[nearest].position;
       ringShow?.burstAt(Math.atan2(jar.z, jar.x));
     }
+    if (event === 'jar-hit') board.screenFeedback(10 * state.multiplier);
+    if (event === 'miss') board.screenFeedback(0);
     let text = tuning.text;
     let tag = '';
     if (event === 'jar-hit') {
@@ -478,7 +442,6 @@ export const createFeverSink = (
       flash.style.opacity = String(light * 0.5);
       root.dataset.heat = state.heat;
       root.dataset.ended = String(ended);
-      updateBadge(realDt);
       label.textContent = ended
         ? 'ROUND COMPLETE'
         : state.feverRemaining > 0
@@ -512,6 +475,7 @@ export const createFeverSink = (
       let inFlight = 0;
       for (const p of popups)
         if (p.points && !p.dismissed) inFlight += p.points;
+      board.screenState(state.combo, state.multiplier, state.heat);
       board.setScore(score - inFlight);
       board.setTime(ended ? Infinity : timeRemaining);
       board.setBalls(ballsRemaining);
@@ -579,8 +543,12 @@ export const createFeverSink = (
           const toLeft = (plateWorld.x * 0.5 + 0.5) * 100;
           const toTop = (-plateWorld.y * 0.5 + 0.5) * 100;
           // Landing points are measured to the popup's centre, so its anchor slides from its foot to its middle.
-          left += (toLeft - left) * t;
-          top += (toTop - top) * t;
+          // Route points round the screen's left edge, not through its instruments/ribbon.
+          left = Math.max(
+            9,
+            left + (toLeft - left) * t - Math.sin(Math.PI * t) * 52
+          );
+          top += (toTop - top) * Math.min(1, t * 2.3);
           rise *= 1 - t;
           anchorY = -100 + 50 * t;
           size = spring * (1 - 0.45 * t);
@@ -632,9 +600,7 @@ export const createFeverSink = (
       director.reset();
       machinery.reset();
       board.reset();
-      lastCombo = -1;
       lastTime = Infinity;
-      badgeAge = Infinity;
       theme.reset();
       machine = { ...HEAT_MACHINERY.calm };
       punchAge = Infinity;
@@ -660,6 +626,7 @@ export const createFeverSink = (
       juiceMs,
       particles: particles.live,
       board: {
+        screen: board.screenStateSnapshot,
         shown: board.shown,
         score: board.score,
         maxNdc: board.maxNdc(scene.camera),

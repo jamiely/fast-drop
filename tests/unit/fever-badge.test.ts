@@ -4,7 +4,8 @@ import { Group, PerspectiveCamera } from 'three';
 import type { SceneRoot } from '../../src/scene/SceneRoot';
 import { createFeverSink } from '../../src/juice/fever';
 
-const { effect } = vi.hoisted(() => ({
+const { effect, screenState } = vi.hoisted(() => ({
+  screenState: vi.fn(),
   effect: class {
     constructor() {
       return new Proxy(this, {
@@ -22,6 +23,8 @@ vi.mock('../../src/juice/board', async () => {
         return out;
       }
       hit() {}
+      screenFeedback() {}
+      screenState = screenState;
       setScore() {}
       setTime() {}
       setBalls() {}
@@ -46,7 +49,7 @@ vi.mock('../../src/juice/sound', () => ({ FeverSound: effect }));
 vi.mock('../../src/juice/theme', () => ({ DiscoTheme: effect }));
 
 it.each([3, 7])(
-  'refreshes the sticker after FEVER expires with %i post-miss hits',
+  'refreshes the screen after FEVER expires with %i post-miss hits',
   (hits) => {
     vi.stubGlobal(
       'ResizeObserver',
@@ -78,21 +81,19 @@ it.each([3, 7])(
     sink.emit('miss', 1);
     for (let i = 0; i < hits; i++) sink.emit('jar-hit', 1);
     sink.update(0.01, 0, 50, 60);
-    expect(host.querySelector('[data-fever-multiplier]')?.textContent).toBe(
-      '×3'
-    );
+    expect(screenState).toHaveBeenLastCalledWith(hits, 3, 'fever');
     sink.update(6, 0, 50, 60);
     expect(sink.getState()).toMatchObject({
       combo: hits,
       multiplier: hits < 5 ? 1 : 2,
       heat: 'calm'
     });
-    expect(host.querySelector('[data-fever-multiplier]')?.textContent).toBe(
-      `×${hits < 5 ? 1 : 2}`
+    expect(screenState).toHaveBeenLastCalledWith(
+      hits,
+      hits < 5 ? 1 : 2,
+      'calm'
     );
-    expect(host.querySelector('[data-fever-combo-label]')?.textContent).toBe(
-      'COMBO'
-    );
+    expect(host.querySelector('.fever-badge')).toBeNull();
     vi.unstubAllGlobals();
   }
 );

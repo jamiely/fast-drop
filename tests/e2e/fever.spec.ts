@@ -110,12 +110,9 @@ test('restart is fresh through Space and attract', async ({ page }) => {
       cracks: 0
     });
     await expect(page.locator('.fever-hud')).toBeVisible();
-    await expect(page.locator('[data-fever-multiplier]')).toHaveText('×1');
+    expect(fresh.stats?.board?.screen.multiplier).toBe(1);
     await expect(page.locator('.fever-popup, .fever-finale')).toHaveCount(0);
-    await expect(page.locator('.fever-badge')).toHaveAttribute(
-      'data-visible',
-      'false'
-    );
+    await expect(page.locator('.fever-badge')).toHaveCount(0);
   }
 });
 
@@ -353,11 +350,13 @@ test('scripted jar hits build combo into FEVER without losing portrait framing',
     'fever'
   );
   // 15 scripted hits, plus the bonus hit that exercised the FOV punch.
-  await expect(page.locator('[data-fever-combo]')).toHaveText('16');
-  await expect(page.locator('.fever-badge')).toHaveAttribute(
-    'data-visible',
-    'true'
-  );
+  expect(
+    await page.evaluate(
+      () =>
+        window.__FAST_DROP_TEST_BRIDGE__!.getJuiceStats!()!.board!.screen.combo
+    )
+  ).toBe(16);
+  await expect(page.locator('.fever-badge')).toHaveCount(0);
   await expect(page.getByRole('meter', { name: 'Fever' })).toBeVisible();
   expect(errors).toEqual([]);
   console.log(

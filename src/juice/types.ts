@@ -24,6 +24,15 @@ export interface JuiceStats {
   juiceMs: number;
   /** The score the board's reels show and the one they roll toward. */
   board?: {
+    screen: {
+      seconds: number;
+      balls: number;
+      combo: number;
+      multiplier: number;
+      heat: string;
+      points: number;
+      missed: boolean;
+    };
     shown: number;
     score: number;
     maxNdc: number;
