@@ -21,7 +21,6 @@ import {
   approachScore,
   boardBounce,
   boardDamage,
-  emitCount,
   COUNTDOWN_SECONDS,
   countdownPulse,
   MARQUEE_CHASE,
@@ -128,6 +127,10 @@ export class FeverBoard {
   private readonly disposables: Array<
     BufferGeometry | Material | InstancedMesh | CanvasTexture
   > = [];
+  private readonly reels: number[] = [];
+  private readonly digitColor = new Color();
+  private readonly white = new Color('#ffffff');
+  private readonly bounce = { y: 1, x: 1, dip: 0 };
   private readonly bulbs: InstancedMesh;
   private readonly halos: InstancedMesh;
   private readonly spots: Array<[number, number]>;
@@ -471,13 +474,11 @@ export class FeverBoard {
   }
 
   private updateSteam(realDt: number, heat: Heat): void {
-    const vent = emitCount(
-      this.cracks.visible ? boardDamage(heat).steam : 0,
-      realDt,
-      this.steamCarry
-    );
-    this.steamCarry = vent.carry;
-    for (let n = 0; n < vent.count && this.crackPoints.length; n += 1) {
+    const rate = this.cracks.visible ? boardDamage(heat).steam : 0;
+    this.steamCarry += Math.max(0, rate) * Math.max(0, realDt);
+    const vent = Math.floor(this.steamCarry);
+    this.steamCarry -= vent;
+    for (let n = 0; n < vent && this.crackPoints.length; n += 1) {
       const [x, y] =
         this.crackPoints[Math.floor(Math.random() * this.crackPoints.length)];
       if (this.puffs.length >= PUFFS) this.puffs.shift();
@@ -672,7 +673,7 @@ export class FeverBoard {
       this.bouncing = false;
       return;
     }
-    const b = boardBounce(this.bounceAge, this.bounceWeight);
+    const b = boardBounce(this.bounceAge, this.bounceWeight, this.bounce);
     this.display.scale.set(
       this.baseScale.x * b.x,
       this.baseScale.y * b.y,
@@ -712,15 +713,14 @@ export class FeverBoard {
     g.restore();
 
     const digits = scoreDigits(this.target);
-    const reels = odometer(value, digits);
+    const reels = odometer(value, digits, this.reels);
     const cell = Math.min(118, (CANVAS_W - 160) / digits);
     const reelH = CANVAS_H - 44;
     const left = 120 + (CANVAS_W - 140 - cell * digits) / 2;
     const top = 22;
-    const digitColor = new Color(DIGIT_COLOR[heat]).lerp(
-      new Color('#ffffff'),
-      this.flash
-    );
+    const digitColor = this.digitColor
+      .set(DIGIT_COLOR[heat])
+      .lerp(this.white, this.flash);
     g.font = `italic 900 ${Math.round(reelH * 0.9)}px system-ui, Arial Black, sans-serif`;
     for (let k = 0; k < digits; k += 1) {
       const x = left + (digits - 1 - k) * cell;

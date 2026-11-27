@@ -5,7 +5,6 @@ import { FeverBoard } from './board';
 import {
   boardDamage,
   comboLook,
-  emitCount,
   countdownTick,
   flyProgress,
   POINTS_RISE_SECONDS
@@ -183,9 +182,10 @@ export const createFeverSink = (
   });
   resize.observe(root);
   let badgeAge = Infinity;
+  const badgeLook = comboLook(0, 'calm');
   /** The board's combo sticker: it sits on the housing's corner, pops per hit, grows, shakes and recolours by tier. */
   const updateBadge = (realDt: number): void => {
-    const look = comboLook(state.combo, state.heat);
+    const look = comboLook(state.combo, state.heat, badgeLook);
     const visible = look.visible && !ended && stage.statusDisplay.visible;
     badge.dataset.visible = String(visible);
     if (state.combo !== lastCombo) {
@@ -201,9 +201,9 @@ export const createFeverSink = (
     board.anchor('corner', corner).project(scene.camera);
     const pop = 1 + 0.35 * Math.exp(-badgeAge * 9) * Math.cos(badgeAge * 22);
     const unit = viewWidth / 1050;
-    const jitter = (): number => (Math.random() * 2 - 1) * look.shake * unit;
-    badge.style.left = `${(corner.x * 0.5 + 0.5) * viewWidth + jitter()}px`;
-    badge.style.top = `${(-corner.y * 0.5 + 0.5) * viewHeight + jitter()}px`;
+    const shake = look.shake * unit;
+    badge.style.left = `${(corner.x * 0.5 + 0.5) * viewWidth + (Math.random() * 2 - 1) * shake}px`;
+    badge.style.top = `${(-corner.y * 0.5 + 0.5) * viewHeight + (Math.random() * 2 - 1) * shake}px`;
     badge.style.transform = `translate(-50%, -50%) rotate(-10deg) scale(${look.scale * pop})`;
     badge.style.setProperty('--badge-color', look.color);
   };
@@ -517,9 +517,10 @@ export const createFeverSink = (
       lastTime = timeRemaining;
       // Hot and FEVER: sparks spit from the board's cracks (the board puffs its own steam).
       const damage = boardDamage(ended ? 'calm' : state.heat);
-      const sparks = emitCount(damage.sparks, realDt, sparkCarry);
-      sparkCarry = sparks.carry;
-      for (let n = 0; n < sparks.count; n += 1) {
+      sparkCarry += Math.max(0, damage.sparks) * Math.max(0, realDt);
+      const sparks = Math.floor(sparkCarry);
+      sparkCarry -= sparks;
+      for (let n = 0; n < sparks; n += 1) {
         if (!board.damagePoint(damageAt)) break;
         particles.spawn(
           damageAt.x,

@@ -6,15 +6,19 @@ import type { Heat } from './state';
  * Odometer reel positions for `value`, least significant digit first, each in [0, 10): the ones reel turns
  * continuously and every higher reel only turns while the reel below it rolls from 9 to 0.
  */
-export const odometer = (value: number, digits: number): number[] => {
+export const odometer = (
+  value: number,
+  digits: number,
+  reels: number[] = []
+): number[] => {
   const v = Math.max(0, value);
-  const reels: number[] = [];
+  reels.length = digits;
   for (let k = 0; k < digits; k += 1) {
     const place = 10 ** k;
     const whole = Math.floor(v / place);
     const below = v - whole * place;
     const roll = k === 0 ? below : Math.max(0, below - (place - 1));
-    reels.push((whole % 10) + roll);
+    reels[k] = (whole % 10) + roll;
   }
   return reels;
 };
@@ -48,11 +52,15 @@ export const spring = (
 /** The board's squash on a jar hit of weight 2–4: y squashes, x keeps the volume, and it dips. */
 export const boardBounce = (
   age: number,
-  weight: number
+  weight: number,
+  out = { y: 1, x: 1, dip: 0 }
 ): { y: number; x: number; dip: number } => {
   const amount = 0.02 + 0.012 * Math.max(0, Math.min(4, weight));
   const y = spring(age, amount);
-  return { y, x: 1 / Math.sqrt(y), dip: (1 - y) * 1.6 };
+  out.y = y;
+  out.x = 1 / Math.sqrt(y);
+  out.dip = (1 - y) * 1.6;
+  return out;
 };
 
 /** Marquee chase per heat: bulbs per second, one lit bulb every `period`, and the unlit glow. */
@@ -89,12 +97,22 @@ const COMBO_SHAKE: Record<Heat, number> = {
 };
 
 /** The board's combo badge: hidden at 0, grows to 1.4× by a 20 combo, shakes and changes colour per tier. */
-export const comboLook = (combo: number, heat: Heat): ComboLook => ({
-  visible: combo > 0,
-  scale: 1 + Math.min(Math.max(0, combo), 20) * 0.02,
-  shake: COMBO_SHAKE[heat],
-  color: COMBO_COLOR[heat]
-});
+export const comboLook = (
+  combo: number,
+  heat: Heat,
+  out: ComboLook = {
+    visible: false,
+    scale: 1,
+    shake: 0,
+    color: COMBO_COLOR.calm
+  }
+): ComboLook => {
+  out.visible = combo > 0;
+  out.scale = 1 + Math.min(Math.max(0, combo), 20) * 0.02;
+  out.shake = COMBO_SHAKE[heat];
+  out.color = COMBO_COLOR[heat];
+  return out;
+};
 
 /** Seconds a "+N" rises from its jar, then flies into the score plate. */
 export const POINTS_RISE_SECONDS = 0.42;
