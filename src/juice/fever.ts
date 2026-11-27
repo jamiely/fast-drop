@@ -239,7 +239,8 @@ export const createFeverSink = (
     element.className = `fever-popup${screen ? ' fever-popup--hero' : ''}`;
     element.textContent = text;
     element.style.color = color;
-    if (tag) {
+    // Milestones read as one clean title; the board sticker already shows the multiplier.
+    if (tag && !milestone) {
       // The multiplier that produced these points, as a badge: "+30" is what was awarded, not 30 × 3.
       const badge = document.createElement('small');
       badge.className = 'fever-popup__tag';

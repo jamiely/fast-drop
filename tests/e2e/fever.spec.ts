@@ -248,6 +248,12 @@ test('scripted jar hits build combo into FEVER without losing portrait framing',
         );
       }
     }
+    const milestone = [...document.querySelectorAll('.fever-popup')].find(
+      (p) => p.firstChild?.textContent === '15 COMBO!'
+    );
+    const milestoneText = milestone?.textContent;
+    const milestoneTags =
+      milestone?.querySelectorAll('.fever-popup__tag').length;
     // 15 hits 8 frames apart: without the cap about ten callouts and three milestones would still be on screen.
     const live = [
       ...document.querySelectorAll<HTMLElement>(
@@ -286,6 +292,8 @@ test('scripted jar hits build combo into FEVER without losing portrait framing',
       game,
       maxNdc,
       milestoneSeparated,
+      milestoneText,
+      milestoneTags,
       live,
       points: tag?.firstChild?.textContent,
       tag: tag?.querySelector('.fever-popup__tag')?.textContent,
@@ -318,6 +326,8 @@ test('scripted jar hits build combo into FEVER without losing portrait framing',
   expect(result.flying).toBe(320);
   expect(result.game.hits).toBe(15);
   expect(result.milestoneSeparated).toBe(true);
+  expect(result.milestoneText).toBe('15 COMBO!');
+  expect(result.milestoneTags).toBe(0);
   // Fast hits keep at most four score callouts, and the newest milestone replaced the older ones.
   expect(
     result.live.filter((text) => !text?.endsWith('COMBO!')).length
