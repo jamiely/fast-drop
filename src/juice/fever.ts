@@ -192,8 +192,9 @@ export const createFeverSink = (
       if (state.combo > lastCombo) badgeAge = 0;
       lastCombo = state.combo;
       comboCount.textContent = String(state.combo);
-      multiplier.textContent = `×${state.multiplier}`;
     }
+    // FEVER can expire without a hit: combo alone does not determine the multiplier.
+    multiplier.textContent = `×${state.multiplier}`;
     comboLabel.textContent = state.heat === 'fever' ? 'FEVER!' : 'COMBO';
     badgeAge += realDt;
     if (!visible) return;
