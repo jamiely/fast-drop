@@ -161,6 +161,29 @@ it('unlocks on the first key and bounds/cleans scheduled sources with a minimal 
   expect(sources.filter((s) => s.disconnect.mock.calls.length)).toHaveLength(
     sources.length
   );
+  const stampStart = sources.length;
+  sound.finale();
+  // Five brass pitches, two detuned layers apiece, at the immediate rank stamp.
+  expect(
+    sources
+      .slice(stampStart, stampStart + 10)
+      .map((s) => s.start.mock.calls[0] as number[])
+  ).toEqual(Array.from({ length: 10 }, () => [0]));
+  context.currentTime = 0.15;
+  sound.update(state, 1, 1 / 60);
+  expect(
+    sources.some((s) =>
+      s.start.mock.calls.some((call) => Math.abs(call[0] - 0.2) < 0.001)
+    )
+  ).toBe(true);
+  sound.stopFinale();
+  expect(sources.every((s) => s.disconnect.mock.calls.length > 0)).toBe(true);
+  const stopped = sources.length;
+  context.currentTime = 4;
+  sound.emit('round-end', state);
+  sound.update(state, 1, 1 / 60);
+  expect(sources).toHaveLength(stopped);
+  sound.reset();
   const before = sources.length;
   sound.update({ ...state, heat: 'hot' }, 0.25, 1 / 60);
   expect(sources.length).toBeGreaterThan(before);

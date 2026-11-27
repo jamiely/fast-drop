@@ -380,7 +380,10 @@ export const createFeverSink = (
       celebrate(roundRank(score, hits, ballsTotal), score);
     },
     skipFinale() {
-      if (!shortFinale && canSkipFinale(finaleAge)) finaleAge = TALLY_SECONDS;
+      if (!shortFinale && canSkipFinale(finaleAge)) {
+        finaleAge = TALLY_SECONDS;
+        sound.stopFinale();
+      }
     },
     update(realDt, ballsRemaining, score = 0, timeRemaining = Infinity) {
       const started = performance.now();

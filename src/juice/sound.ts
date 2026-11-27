@@ -1,4 +1,4 @@
-import { ODE_TO_JOY } from './finale';
+import { discoFinale, midiFrequency, type DiscoNote } from './finale';
 import type { Heat, JuiceState } from './state';
 import type { JuiceEvent } from './types';
 import { comboFrequency, heatMusic, VoiceLimit } from './soundLogic';
@@ -91,7 +91,8 @@ export class FeverSound {
     duration: number,
     volume: number,
     at: number,
-    color?: BiquadFilterNode
+    color?: BiquadFilterNode,
+    attack = 0.006
   ): void {
     const context = this.context!;
     const token = this.limit.acquire();
@@ -102,7 +103,10 @@ export class FeverSound {
     }
     const gain = context.createGain();
     gain.gain.setValueAtTime(0.0001, at);
-    gain.gain.exponentialRampToValueAtTime(Math.min(0.055, volume), at + 0.006);
+    gain.gain.exponentialRampToValueAtTime(
+      Math.min(0.055, volume),
+      at + attack
+    );
     gain.gain.exponentialRampToValueAtTime(0.0001, at + duration);
     source.connect(color ?? gain);
     if (color) color.connect(gain);
@@ -182,23 +186,74 @@ export class FeverSound {
 
   private celebration: {
     at: number;
-    end: number;
+    score: readonly DiscoNote[];
     note: number;
-    beat: number;
   } | null = null;
+
+  private discoVoice(note: DiscoNote, at: number): void {
+    const context = this.context!;
+    for (const midi of note.notes) {
+      const layers = note.part === 'horn' ? [0.997, 1.003] : [1];
+      for (const detune of layers) {
+        const source = context.createOscillator();
+        source.type = note.part === 'kick' ? 'sine' : 'sawtooth';
+        const frequency =
+          note.part === 'kick' ? 145 : midiFrequency(midi) * detune;
+        source.frequency.setValueAtTime(frequency, at);
+        if (note.part === 'kick')
+          source.frequency.exponentialRampToValueAtTime(42, at + note.duration);
+        const color = context.createBiquadFilter();
+        color.type = note.part === 'wah' ? 'bandpass' : 'lowpass';
+        const from = {
+          kick: 500,
+          bass: 900,
+          wah: 500,
+          strings: 700,
+          horn: 6000,
+          chord: 3500
+        }[note.part];
+        color.frequency.setValueAtTime(from, at);
+        color.frequency.exponentialRampToValueAtTime(
+          note.part === 'wah' ? 3200 : note.part === 'strings' ? 7000 : from,
+          at + note.duration * 0.8
+        );
+        this.voice(
+          source,
+          note.duration,
+          note.part === 'kick' ? 0.055 : note.part === 'bass' ? 0.035 : 0.009,
+          at,
+          color,
+          note.part === 'strings' ? note.duration * 0.8 : 0.006
+        );
+      }
+    }
+  }
+
+  public stopFinale(): void {
+    this.celebration = null;
+    this.stopVoices();
+  }
 
   public finale(short = false): void {
     if (this.context?.state !== 'running') return;
     this.celebration = {
       at: this.context.currentTime,
-      end: short ? 4 : ODE_TO_JOY.length,
-      note: 0,
-      beat: 0
+      score: discoFinale(short),
+      note: 0
     };
     this.stopVoices();
-    for (let n = 0; n < 12; n += 1)
-      this.noise(0.07, 0.008 + n * 0.001, 1800, n * 0.055);
-    this.noise(1.2, 0.05, 4500, 0.7);
+    this.scheduleFinale(this.context.currentTime);
+  }
+
+  private scheduleFinale(now: number): void {
+    const c = this.celebration;
+    if (!c) return;
+    while (c.note < c.score.length && c.at + c.score[c.note].at < now + 0.1) {
+      const note = c.score[c.note++];
+      this.discoVoice(note, Math.max(now, c.at + note.at));
+    }
+    const last = c.score[c.score.length - 1];
+    if (now >= c.at + last.at + last.duration) this.celebration = null;
   }
 
   public emit(event: JuiceEvent, state: JuiceState): void {
@@ -275,24 +330,13 @@ export class FeverSound {
     const context = this.context;
     if (!context || context.state !== 'running') return;
     const now = context.currentTime;
-    const c = this.celebration;
-    if (c && c.note < c.end && now >= c.at + c.beat * 0.26) {
-      const [midi, length] = ODE_TO_JOY[c.note];
-      const frequency = 440 * 2 ** ((midi - 69) / 12);
-      for (const detune of [0.996, 1.004])
-        this.tone(frequency * detune, length * 0.26, 0.012, 'sawtooth');
-      if (c.note % 4 === 0)
-        for (const f of [130.81, 164.81, 196])
-          this.tone(f, 0.7, 0.012, 'triangle');
-      c.note += 1;
-      c.beat += length;
-    }
+    this.scheduleFinale(now);
     this.filter!.frequency.setTargetAtTime(
       timeScale < 0.99 ? 800 : 18000,
       now,
       0.035
     );
-    if (this.ended || realDt <= 0) {
+    if (this.celebration || this.ended || realDt <= 0) {
       this.nextBeat = now;
       return;
     }

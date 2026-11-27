@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
   canSkipFinale,
-  ODE_TO_JOY,
+  discoFinale,
+  DISCO_BARS,
+  DISCO_BEAT,
+  DISCO_BASS,
+  DISCO_CHORD,
+  midiFrequency,
+  STAMP_SECONDS,
+  TALLY_SECONDS,
   roundRank,
   tallyScore
 } from '../../src/juice/finale';
@@ -26,10 +33,38 @@ describe('finale', () => {
     expect(canSkipFinale(1.499)).toBe(false);
     expect(canSkipFinale(1.5)).toBe(true);
   });
-  it('keeps the public-domain melody pitches and rhythm', () => {
-    expect(ODE_TO_JOY.map((n) => n[0])).toEqual([
-      64, 64, 65, 67, 67, 65, 64, 62, 60, 60, 62, 64, 64, 62, 62
-    ]);
-    expect(ODE_TO_JOY.reduce((sum, n) => sum + n[1], 0)).toBe(16);
+  it('scores an original octave-jumping disco pocket over three bars', () => {
+    expect(DISCO_BARS * 4 * DISCO_BEAT).toBeCloseTo(TALLY_SECONDS);
+    expect(DISCO_BASS).toEqual([38, 50, 38, 53, 41, 53, 45, 57]);
+    expect(DISCO_CHORD).toEqual([62, 65, 69, 72, 76]);
+    expect(midiFrequency(69)).toBe(440);
+    expect(midiFrequency(50)).toBeCloseTo(midiFrequency(38) * 2);
+    const score = discoFinale();
+    expect(score.filter((n) => n.part === 'kick').map((n) => n.at)).toEqual(
+      Array.from({ length: 11 }, (_, i) => i * DISCO_BEAT)
+    );
+    expect(
+      score
+        .filter((n) => n.part === 'wah')
+        .every((n) => n.at % DISCO_BEAT > 0.19)
+    ).toBe(true);
   });
+  it.each([false, true])(
+    'schedules the stamp, swell and resolving chord (short=%s)',
+    (short) => {
+      const score = discoFinale(short);
+      const horn = score.find((n) => n.part === 'horn')!;
+      const swell = score.find((n) => n.part === 'strings')!;
+      const chord = score.find((n) => n.part === 'chord')!;
+      expect(horn.at).toBe(STAMP_SECONDS);
+      expect(swell.at + swell.duration).toBeCloseTo(chord.at);
+      expect(chord.at + chord.duration).toBeCloseTo(short ? 1.5 : 4.8);
+      expect(Math.max(...score.map((n) => n.at + n.duration))).toBeCloseTo(
+        short ? 1.5 : 4.8
+      );
+      expect(score.map((n) => n.at)).toEqual(
+        [...score.map((n) => n.at)].sort((a, b) => a - b)
+      );
+    }
+  );
 });
