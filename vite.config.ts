@@ -40,6 +40,7 @@ export default defineConfig({
         'src/juice/ledShow.ts',
         'src/juice/machinery.ts',
         'src/juice/board.ts',
+        'src/juice/screen.ts',
         'src/juice/theme.ts',
         'src/juice/sound.ts',
         'src/testhooks/**',

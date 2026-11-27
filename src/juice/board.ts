@@ -33,6 +33,7 @@ import {
 } from './boardLogic';
 import { HEAT_COLOR, roundedRectPoints } from './show';
 import type { Heat } from './state';
+import { FeverScreen } from './screen';
 
 // Status display housing, in its local units (StatusDisplay.ts: screen 2.45 × 1.18, housing ×1.14 / ×1.24).
 const HOUSING_WIDTH = 2.45 * 1.14;
@@ -124,6 +125,7 @@ const DIGIT_COLOR: Record<Heat, string> = {
  */
 export class FeverBoard {
   public readonly root = new Group();
+  private readonly screen = new FeverScreen();
   private readonly disposables: Array<
     BufferGeometry | Material | InstancedMesh | CanvasTexture
   > = [];
@@ -179,6 +181,7 @@ export class FeverBoard {
   private animated = true;
 
   public constructor(private readonly display: Group) {
+    this.root.add(this.screen.mesh);
     // Bulbs the score plate covers on the top edge are left out.
     this.spots = roundedRectPoints(
       HOUSING_WIDTH * 1.025,
@@ -436,6 +439,7 @@ export class FeverBoard {
     this.root.scale.copy(this.display.scale);
     if (!this.root.visible) return;
 
+    this.screen.update(this.animated ? realDt : 0, this.time, this.balls);
     const chase = MARQUEE_CHASE[heat];
     const dt = this.animated ? realDt : 0;
     this.phase += dt * chase.speed;
@@ -612,24 +616,11 @@ export class FeverBoard {
     ring.addColorStop(1, 'rgba(255,47,94,0)');
     g.fillStyle = ring;
     g.fillRect(0, 0, 256, 256);
-    // The seconds left, big and red in the dial's face, over a light disc so the needle stays behind it.
-    g.fillStyle = 'rgba(224,251,255,0.82)';
-    g.beginPath();
-    g.arc(c, c, 46, 0, Math.PI * 2);
-    g.fill();
-    g.font = 'italic 900 78px system-ui, Arial Black, sans-serif';
-    g.textAlign = 'center';
-    g.textBaseline = 'middle';
-    g.lineJoin = 'round';
-    g.lineWidth = 8;
-    g.strokeStyle = '#ffffff';
-    g.strokeText(String(second), c - 2, c + 4);
-    g.fillStyle = '#e8173f';
-    g.fillText(String(second), c - 2, c + 4);
     this.alarmTexture.needsUpdate = true;
   }
 
   public reset(): void {
+    this.screen.reset();
     this.rolled = 0;
     this.target = 0;
     this.flash = 0;
@@ -656,6 +647,7 @@ export class FeverBoard {
   }
 
   public dispose(): void {
+    this.screen.dispose();
     if (this.bouncing) this.display.scale.copy(this.baseScale);
     this.root.removeFromParent();
     this.disposables.forEach((item) => item.dispose());
